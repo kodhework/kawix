@@ -1,0 +1,24 @@
+database: 
+	
+	# core library 
+	"core": 
+		"repo": "https://github.com/voxsoftware/kawix/tree/master/core"
+		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/core/${file}"
+	
+	# dhs library
+	"dhs": 
+		"repo": "https://github.com/voxsoftware/kawix/tree/master/dhs"
+		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/dhs/${file}"
+		# find the best suitable extension
+		"extensions": [
+			".js"
+			".coffee"
+			".json"
+			".cson"
+		]
+
+	# standar library
+	"std": 
+		"repo": "https://github.com/voxsoftware/kawix/tree/master/std"
+		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/std/${file}"
+

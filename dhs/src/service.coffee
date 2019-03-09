@@ -6,7 +6,7 @@ import Path from 'path'
 import Cluster from 'cluster'
 import Config from './config'
 import ConfigIPC from './config.ipc'
-
+import Os from 'os'
 import IPC from './channel/ipc'
 
 

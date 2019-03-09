@@ -69,9 +69,9 @@ class Reply{
             this.code(code).header("location",url)
         }
         else{
-            this.code(302).header("location",url)
+            this.code(302).header("location",url || code)
         }
-        return this
+        return this.end()
     }
     serialize(payload){
         if(typeof payload == "function"){
