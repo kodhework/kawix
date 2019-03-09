@@ -6,16 +6,12 @@ It is in a premature stage. You can start testing:
 
 
 ```bash
-mkdir @kawix
-cd @kawix
-git clone https://github.com/voxsoftware/kawix-core core
-git clone https://github.com/voxsoftware/kawix-std std
-cd core 
+npm -g install @kawix/core@latest
 
 
 # using --force to allow always download last changes before executing 
 # don't use --force on production
 
 # this is a basic replication of tar command
-./bin/kwcore --force  "https://raw.githubusercontent.com/voxsoftware/kawix-std/master/compression/example/bin/basic-tar.js" --help
+kwcore --force  "https://kwx.kodhe.com/x/std/compression/example/bin/basic-tar.js" --help
 ```
