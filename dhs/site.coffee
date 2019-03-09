@@ -1,6 +1,0 @@
-
-class Site
-
-    constructor:(@dirname)->
-
-    
