@@ -1,0 +1,34 @@
+name: 'kowix'
+id: 'kowix'
+cluster: [
+    {
+        # address to listen 
+        "address": "0.0.0.0:43106"
+        "purpose": "default"
+
+		# all for use all CPU cores
+        "count": 'all'
+    }
+
+    {
+        # address to listen 
+        "address": "127.0.0.1:44001"
+        "purpose": "control"
+        "count": 1
+
+        # use this process like sharing for all cluster
+        "env":
+            "MEMSHARING": "1"
+            "CRON_ENABLED": "1"
+    }
+]
+
+# folder for vhosts 
+include: [
+    {
+        "win32": "$USERPROFILE\\Projects\\*\\app.config.*"
+        "default": "/home/$USER/projects/*/app.config.*"
+    },
+    "../../hosts/*/app.config.*"
+    "../../sites*/*/app.config.*"
+]

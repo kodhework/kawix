@@ -1,0 +1,5 @@
+host: 
+    name: 'test.10.site'
+    id: 'test.10.site'
+    preload:
+        "fastify": "../../../../std/http/fastify.js"

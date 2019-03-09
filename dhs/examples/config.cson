@@ -1,0 +1,11 @@
+constants:
+    yeah: 617
+    kio: 1000
+    na: 100
+# database info 
+database: 
+    type: 'mongo'
+    connection: 'yeah'
+cpus: 100
+clear: no
+include: "./sites/*/app.config.*"

@@ -1,0 +1,8 @@
+host: 
+    name: 'test.02.site'
+    id: 'test.02.site'
+    hostnames: [
+        "test_01.kodhe.com"
+        "test_02.kodhe.com"
+        "test_03.kodhe.com"
+    ]

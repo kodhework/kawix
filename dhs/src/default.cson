@@ -1,0 +1,17 @@
+name: 'kowix'
+id: 'kowix'
+
+
+
+# address to listen 
+"address": "0.0.0.0:43106"
+
+# folder for vhosts 
+include: [
+    {
+        "win32": "$USERPROFILE\\Projects\\*\\app.config.*"
+        "default": "/home/$USER/projects/*/app.config.*"
+    },
+    "../../hosts/*/app.config.*"
+    "../../sites*/*/app.config.*"
+]
