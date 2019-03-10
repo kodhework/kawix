@@ -1,6 +1,7 @@
 import Path from 'path'
 import ipc from './lib/_ipc'
 import Os from 'os'
+import fs from './lib/_fs'
 
 class IPC extends ipc 
 	constructor: (id)->
