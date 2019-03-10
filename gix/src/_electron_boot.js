@@ -1,7 +1,8 @@
 var arg, kawix, n, id
 for(var i=0;i<process.argv.length;i++){
 	arg= process.argv[i]
-	if(arg.indexOf("kawix")>=0){
+	if(arg.indexOf("core/main.js")>=0){
+		
 		// require kawix core
 		kawix= require(arg)
 		n= true

@@ -678,7 +678,7 @@ var changeSource= function(source){
 				uid: unq,
 				parent: module
 			})
-			if(true /*promise&& promise.then*/)
+			if(promise&& typeof promise.then == "function")
 				promise.then(__load).catch(reject)
 			else 
 				__load()
@@ -841,7 +841,7 @@ exports.require= Mod.require= function(file, options){
 		module.KModule = nmod
 		
 
-
+		var p
 		var continue1 = function () {
 
 			//console.info("exports.__kawi= function(KModule){" + ast.code + "}")
@@ -878,9 +878,14 @@ exports.require= Mod.require= function(file, options){
 		}
 
 		if (ast.inject) {
-			ast.inject(nmod).then(function () {
+			p=ast.inject(nmod)
+			if(p && typeof p.then == "function"){
+				p.then(function () {
+					continue1()
+				}).catch(reject)
+			}else{
 				continue1()
-			}).catch(reject)
+			}
 		} else {
 			continue1()
 		}
@@ -948,6 +953,7 @@ exports.require= Mod.require= function(file, options){
 
 	promise= Mod.compile(file,options)
 	promise2= new Promise(function(resolve, reject){
+		
 		promise.then(function(ast){
 			if(ast && ast.redirect){
 				options.mask= getMask(file, ast)
@@ -1049,7 +1055,7 @@ var readHttp= function(url){
 	var http= httpr[xhttp]
 	if (!http)
 		http = httpr[xhttp]= require(xhttp)
-	
+	var uri= Url.parse(url)
 	var promise= new Promise(function(resolve, reject){
 		var callback= function(resp){
 			
@@ -1078,7 +1084,8 @@ var readHttp= function(url){
 					
 					return resolve({
 						code: code,
-						"type": resp.headers["content-type"]
+						"type": resp.headers["content-type"],
+						"name": uri.pathname
 					})
 				})
 			}
@@ -1410,7 +1417,8 @@ exports.compile= Mod.compile= function(file, options){
 					return resolve(value)
 				}
 				else if(value.type){
-					
+					if(value.name)
+						basename= value.name 
 					isjson= value.type.startsWith("application/json")
 					value= value.code 
 				}
@@ -1429,6 +1437,8 @@ exports.compile= Mod.compile= function(file, options){
 						
 						options.transpile= false
 					}
+				 
+
 					json= transpile(file, basename, value, options)
 				}
 				str= JSON.stringify(json,null,'\t')
