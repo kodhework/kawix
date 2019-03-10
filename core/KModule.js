@@ -63,7 +63,7 @@ var _getCachedFilename= function(uri, options){
 		uri.pathname= Path.normalize(uri.pathname)
 	}
 
-	var name= (options.mask || uri.format()).replace(/\:|\?/g, '').replace(/\\/g, '/')
+	var name= (options.mask || Url.format(uri)).replace(/\:|\?/g, '').replace(/\\/g, '/')
 	if(uri.search){
 		name += uri.search.replace(/\:|\?|\\/g, '')
 	}
@@ -223,6 +223,7 @@ Mod.resolveVirtual= function(name, parent){
 		possibles.push(name)
 	}
 	else{
+		
 		dirname= Path.dirname(parent.filename)
 	
 		if(name.startsWith("./") || name.startsWith("../")){
@@ -331,8 +332,14 @@ Mod.resolveVirtual= function(name, parent){
 
 
 var validateFileUrl= function(file){
+	
 	var uri = Url.parse(file)
+	if(Os.platform() == "win32"){
+		if(file[1]==":")
+			uri= Url.pathToFileURL(file)
+	}
 	if (uri.protocol) {
+		
 		if (uri.protocol != "http:"  && uri.protocol != "npm:" && uri.protocol != "npmi:" && uri.protocol != "https:" && uri.protocol != "file:") {
 			throw new Error("Protocol " + uri.protocol + " not supported")
 		}
@@ -1201,7 +1208,7 @@ exports.compile= Mod.compile= function(file, options){
 
 	var uri= validateFileUrl(file)
 	if(uri.protocol == "file:"){
-		file= Url.fileURLToPath(file)
+		file= Url.fileURLToPath(Url.format(uri))
 		file= Path.normalize(file)
 	}
 

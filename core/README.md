@@ -9,6 +9,8 @@
 
 > **IMPORTANT**: In version **0.1.5** solve some bugs present only in Windows. If you are a windows user, you can now test this version using **--force** parameter.
 
+> **IMPORTANT**: In version **0.1.6** solve the bug on Windows when loading a local file. If you are a windows user, you can now test this version using **--force** parameter.
+
 ```bash
 > npm install -g @kawix/core@latest
 > kwcore --force "https://raw.githubusercontent.com/voxsoftware/kawi-core/master/example/http.js"
