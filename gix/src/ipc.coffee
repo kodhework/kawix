@@ -31,7 +31,9 @@ class IPC extends ipc
 				path1= Path.join(path1, process.env.KAWIX_GIX_CHANNEL_NAME)
 			else 
 				path1= Path.join(path1, "gix")
-			if Os.platform() is "win32"
+			if Os.platform() is "win32"				
+				if(path1[1]==":")
+					path1= path1.substring(2).replace(/\\/g,'/')
 				return "//./pipe/" + path1
 		
 		path1+= "."+ @id if @id 

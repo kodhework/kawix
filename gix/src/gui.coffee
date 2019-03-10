@@ -232,11 +232,10 @@ class Gui extends EventEmitter
 		# open electron
 		file1= Path.join(__dirname, "_electron_boot.js")
 		file3= Path.join(__dirname,"start")
-		if file1.startsWith("http:") or file1.startsWith("https:")
+		if __filename.startsWith("http:") or __filename.startsWith("https:")
 			file3= Url.resolve(__filename, 'start')
 			file1= await @_createBootFile()
 		file2= kawix.__file
-		
 		id= @id
 		def= @deferred()
 		
@@ -250,13 +249,15 @@ class Gui extends EventEmitter
 			def.reject(Exception.create("Failed start electron")) if not def.good
 
 		@_p.stdout.on "data", (d)->
-			process.stdout.write(" [GIX Electron]: ")
-			process.stdout.write(d)
-			if not def.good and d.toString().indexOf("ELECTRON PROCESS LISTENING") >=0 
-				def.good= yes 
-				def.resolve() 
-		
-		
+			try 
+				process.stdout.write(" [GIX Electron]: ")
+				process.stdout.write(d.toString())
+				if not def.good and d.toString().indexOf("ELECTRON PROCESS LISTENING") >=0 
+					def.good= yes 
+					def.resolve() 
+			
+			catch e 
+				console.error("error here?",e)
 		await def.promise
 		await @ipc.connect() 
 		this.connected= yes
@@ -276,6 +277,7 @@ class Gui extends EventEmitter
 		await fs.writeFileAsync(file, """
 
 var arg, kawix, n, id, start
+var Path= require("path")
 for(var i=0;i<process.argv.length;i++){
 	arg= process.argv[i]
 	if(n==0){
@@ -286,7 +288,7 @@ for(var i=0;i<process.argv.length;i++){
 		start = arg
 		break 
 	}
-	else if (arg.indexOf("core/main.js") >= 0) {
+	else if (arg.indexOf("core"+Path.sep+"main.js") >= 0) {
 
 		// require kawix core
 		kawix = require(arg)

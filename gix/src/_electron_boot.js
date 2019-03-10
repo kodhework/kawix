@@ -1,13 +1,13 @@
 var arg, kawix, n, id, start
-for(var i=0;i<process.argv.length;i++){
-	arg= process.argv[i]
-	if(n==0){
-		id= arg 
-		n= 1
+for (var i = 0; i < process.argv.length; i++) {
+	arg = process.argv[i]
+	if (n == 0) {
+		id = arg
+		n = 1
 	}
 	else if (n == 1) {
 		start = arg
-		break 
+		break
 	}
 	else if (arg.indexOf("core/main.js") >= 0) {
 
