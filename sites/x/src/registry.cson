@@ -15,6 +15,7 @@ database:
 			".coffee"
 			".json"
 			".cson"
+			".ts"
 		]
 
 	# standar library
@@ -22,3 +23,16 @@ database:
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/std"
 		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/std/${file}"
 
+
+	# gix library
+	"gix": 
+		"repo": "https://github.com/voxsoftware/kawix/tree/master/gix"
+		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/gix/${file}"
+		# find the best suitable extension
+		"extensions": [
+			".js"
+			".coffee"
+			".json"
+			".cson"
+			".ts"
+		]

@@ -4,6 +4,11 @@ exports.Promise= global.Promise
 
 global.kwcore= global.kawix= module.exports 
 
+// good helpers
+global.kwcore.__path= __dirname 
+global.kwcore.__file = __filename 
+
+
 var op={}
 
 /** Access to object for transpile code */

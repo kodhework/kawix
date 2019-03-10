@@ -108,8 +108,3 @@ export invoke = (env, ctx)->
 export _state= state
 export kawixDynamic=
 	time: 15000
-	reload: (oldm, newm)->
-		# this method is executed in hot reloading
-		# this allows preserve cache and state properties
-		newm._state= oldm._state
-		newm 

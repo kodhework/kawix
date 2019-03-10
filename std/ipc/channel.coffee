@@ -1,27 +1,22 @@
 import Net from 'net'
 import Os from 'os'
-import fs from '../lib/_fs'
 import Path from 'path'
-import Exception from '../exception'
-import uniqid from '../lib/_uniqid'
 import {EventEmitter} from 'events'
+
+
+
+import fs from '../fs/mod.js'
+import uniqid from '../util/uniqid.js'
+import Exception from '../util/exception.js'
+
+
+
+
 class IPC extends EventEmitter
-	# get a server from id 
-	constructor:(@server, @id)->
+	
+	constructor:(@id)->
 		super()
 		@_deferred= {} 
-
-
-
-	@fromClientSocket:(socket, server)->
-		c= new IPC(server)
-		#c.IPC= IPC
-		server.channel.on "response", c._in_response_i.bind(c)
-		c.socket= socket 
-		c._type= 'client'
-
-		return c
-
 
 	
 
@@ -41,30 +36,22 @@ class IPC extends EventEmitter
 
 
 
-	_getListenPath: ()->
-		
-		if process.env.KAWIX_CHANNEL_PATH
-			path1= process.env.KAWIX_CHANNEL_PATH
-		else 
-			config= @server.config.readCached()
-			path1= Path.join(Os.homedir(),".kawi")
-			path1= Path.join(path1, ".sockets")
-			if not await @_checkFileExists(path1)
-				await fs.mkdirAsync(path1)
-			if process.env.KAWIX_CHANNEL_NAME
-				path1= Path.join(path1, process.env.KAWIX_CHANNEL_NAME)
-			else 
-				path1= Path.join(path1, config.name or ("default." + Date.now()))
-			path1+=".socket"
-			if Os.platform() is "win32"
-				return "//./pipe/" + path1
-		
-		path1+= "."+ @id if @id 
-		path1 
+	_setAddress: ()->
+		this._address= value 
+	
+	_getAddress: ()->
+		return this._address
+
+	Object.defineProperty IPC::, 'address', 
+		get: IPC::_getAddress
+		set: IPC::_setAddress
+	
 		
 	
-	connect: ()->
-		listen= await @_getListenPath() 
+	connect: (address)->
+		this._setAddress address if address 
+
+		listen= @_address
 		@socket= socket= new Net.Socket() 
 		socket.connect listen 
 		def= @deferred()
@@ -77,8 +64,12 @@ class IPC extends EventEmitter
 		@_connection @socket 
 
 
-	listen: (path)->
-		listen= path ? await @_getListenPath() 
+	listen: (address)->
+		
+		this._setAddress address if address 
+		
+		listen= @_address
+		
 		
 		# try a connect for see is being used
 		try 
@@ -274,7 +265,6 @@ class IPC extends EventEmitter
 
 	_connection: (socket)->
 		
-
 		buffer= []
 		self= this 
 		state= {}
@@ -303,14 +293,18 @@ class IPC extends EventEmitter
 			if y >= 0	
 				analyzeRequest(y)
 		
+		
 		socket.on "error", (e)->
 			console.error("Socket underlying error: ",e)
 			
 		if @_type is 'client'
+			self.connected= true 
 			socket.on "disconnect", ()->
 				for id, val of self._deferred
 					val.reject Exception.create("IPC Channel disconnected").putCode("DISCONNECTED")
-				
+
+
+				self.connected= false
 				self._deferred={}
 				if not self._stopped 
 					self.connect()

@@ -456,21 +456,28 @@ class Service
 		config= @config.readCached()
 		if config.sites  
 
-			# check global prefixes 
+			
+			# check global prefixes and hostnames 
+			host= env.request.headers["host"]
+
 			for site in config.sites 
 				if site._arouter?.handle 
 					await site._arouter.handle(env)
 					if env.response.finished 
 						return 
 
-			# check now hostnames 
-			host= env.request.headers["host"]
-			if host 
-				for site in config.sites 
-					if site._hrouter?.handle 
-						await site._hrouter.find("GET", "/" + host)
-						if env.response.finished 
-							return 
+				if site._hrouter?.handle 
+					func= site._hrouter.find("GET", "/" + host)
+					if typeof func == "function"
+						await func(env)
+					if env.response.finished 
+						return 
+
+				else if not site._arouter and site.routes
+					await site._urouter.handle(env)
+					if env.response.finished 
+						return 
+			
 
 		# kowix Site?
 		# TODO

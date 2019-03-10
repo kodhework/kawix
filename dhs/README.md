@@ -20,6 +20,3 @@
 NOTE: You can go to [@kawix/sites/x](../sites/x) for see an example
 
 
-
-
-
