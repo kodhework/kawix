@@ -251,7 +251,7 @@ class Gui extends EventEmitter
 		@_p.stdout.on "data", (d)->
 			try 
 				process.stdout.write(" [GIX Electron]: ")
-				process.stdout.write(d.toString())
+				process.stdout.write(d)
 				if not def.good and d.toString().indexOf("ELECTRON PROCESS LISTENING") >=0 
 					def.good= yes 
 					def.resolve() 
