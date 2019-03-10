@@ -319,38 +319,40 @@ class Service
 		if not config.sites 
 			return 
 
-
+		
 		for site in config.sites 
-			if not site._hrouter 				
-				site._hrouter= new KawixHttp.router() 
-				site._urouter= new KawixHttp.router() 
+			try 
+				if not site._hrouter 				
+					site._hrouter= new KawixHttp.router() 
+					site._urouter= new KawixHttp.router() 
 
-				if site.hostnames 
-					for host in site.hostnames
-						site._hrouter.get "/" + host, site._urouter 
-				
-				if site.globalprefixes 
-					site._arouter= new KawixHttp.router() 
-					# global prefixes can be analyzed before? 
-					for prefix in site.globalprefixes
-						site._arouter.use prefix, site._urouter 
-
-				if site.prefixes 
-					for prefix in site.prefixes 
-						site._urouter.use prefix, this._createCallback(route, site), route.store
-
-				if site.routes	
-					for route in site.routes 
-						site._urouter[route.method or "all"](route.path, this._createCallback(route, site), route.store)
-	
-				if site.defaultroute
-					route= site.defaultroute 
-					if typeof route is "string"
-						route= 
-							method: "all"
-							file: route 
-					site._urouter.NOTFOUND(this._createCallback(route, site), route.store)
+					if site.hostnames 
+						for host in site.hostnames
+							site._hrouter.get "/" + host, site._urouter 
 					
+					if site.globalprefixes 
+						site._arouter= new KawixHttp.router() 
+						# global prefixes can be analyzed before? 
+						for prefix in site.globalprefixes
+							site._arouter.use prefix, site._urouter 
+
+					if site.prefixes 
+						for prefix in site.prefixes 
+							site._urouter.use prefix, this._createCallback(route, site), route.store
+
+					if site.routes	
+						for route in site.routes 
+							site._urouter[route.method or "all"](route.path, this._createCallback(route, site), route.store)
+		
+					if site.defaultroute
+						route= site.defaultroute 
+						if typeof route is "string"
+							route= 
+								method: "all"
+								file: route 
+						site._urouter.NOTFOUND(this._createCallback(route, site), route.store)
+			catch e 
+				console.error(" > [KAWIX] Failed reloading site routes: ",e)
 
 	_siteimport: ()->
 		self= this

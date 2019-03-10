@@ -5,7 +5,7 @@ import {EventEmitter} from 'events'
 import Child from 'child_process'
 import Path from 'path'
 import Os from 'os'
-
+import Url from 'url'
 
 import Registry from './lib/_registry'
 import fs from './lib/_fs'
@@ -225,15 +225,23 @@ class Gui extends EventEmitter
 				folder: mod.folder 
 				install: install 
 				dist: dist 
+		else 
+			dist= @electron.dist
 			
+		
 		# open electron
 		file1= Path.join(__dirname, "_electron_boot.js")
+		file3= Path.join(__dirname,"start")
+		if file1.startsWith("http:") or file1.startsWith("https:")
+			file3= Url.resolve(__filename, 'start')
+			file1= await @_createBootFile()
 		file2= kawix.__file
+		
 		id= @id
-
 		def= @deferred()
 		
-		@_p= Child.spawn dist , [file1,file2,id]
+		
+		@_p= Child.spawn dist , [file1,file2,id,file3]
 		@_p.on "error", def.reject 
 
 		@_p.on "exit", ()=>
@@ -258,7 +266,56 @@ class Gui extends EventEmitter
 			"params": {}
 		@_start_read_events()
 		return 
-		
+
+	_createBootFile: ()->
+		path= Path.join(Os.homedir(), ".kawi")
+		if not await @_checkFileExists(path)
+			await fs.mkdirAsync(path)
+
+		file= Path.join(path, ".electron.boot.tmp.js")
+		await fs.writeFileAsync(file, """
+
+var arg, kawix, n, id, start
+for(var i=0;i<process.argv.length;i++){
+	arg= process.argv[i]
+	if(n==0){
+		id= arg 
+		n= 1
+	}
+	else if (n == 1) {
+		start = arg
+		break 
+	}
+	else if (arg.indexOf("core/main.js") >= 0) {
+
+		// require kawix core
+		kawix = require(arg)
+		n = 0
+	}
+}
+
+
+var init1= function(){
+	if(kawix){
+		kawix.KModule.injectImport()
+		if (!start) start = __dirname + "/start.js"
+		kawix.KModule.import(start).then(function(response){
+			response.default(id).then(function(){
+
+			}).catch(function(e){
+				console.error("Failed execute: ", e)
+				process.exit(10)	
+			})
+		}).catch(function(e){
+			console.error("Failed execute: ", e)
+			process.exit(10)	
+		})
+	}
+}
+require("electron").app.once("ready", init1)
+		""")
+		return file
+
 
 
 

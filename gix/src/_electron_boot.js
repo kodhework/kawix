@@ -1,14 +1,19 @@
-var arg, kawix, n, id
+var arg, kawix, n, id, start
 for(var i=0;i<process.argv.length;i++){
 	arg= process.argv[i]
-	if(arg.indexOf("core/main.js")>=0){
-		
-		// require kawix core
-		kawix= require(arg)
-		n= true
-	}else if(n){
+	if(n==0){
 		id= arg 
+		n= 1
+	}
+	else if (n == 1) {
+		start = arg
 		break 
+	}
+	else if (arg.indexOf("core/main.js") >= 0) {
+
+		// require kawix core
+		kawix = require(arg)
+		n = 0
 	}
 }
 
@@ -16,7 +21,8 @@ for(var i=0;i<process.argv.length;i++){
 var init1= function(){
 	if(kawix){
 		kawix.KModule.injectImport()
-		kawix.KModule.import(__dirname + "/start.js").then(function(response){
+		if (!start) start = __dirname + "/start.js"
+		kawix.KModule.import(start).then(function(response){
 			response.default(id).then(function(){
 
 			}).catch(function(e){

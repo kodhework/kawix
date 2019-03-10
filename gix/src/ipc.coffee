@@ -9,6 +9,7 @@ class IPC extends ipc
 
 	listen: ()->
 		@_address= await @_getListenPath()  if not @_address
+		
 		return await super.listen(...arguments)
 	
 	connect: ()->
