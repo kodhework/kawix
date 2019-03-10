@@ -14,6 +14,10 @@ var Mod= exports.Module= function(){
 }
 
 
+var isVirtualFile= function(file){
+	if(Os.platform() == "win32" && file.startsWith("\\virtual")) return true;
+	return file.startsWith("/virtual")
+}
 
 Mod._cache = {}
 Mod._cacherequire = {}
@@ -185,7 +189,7 @@ Module._resolveFilename= function(name,parent){
 	}
 	else{
 		
-		if(parent && parent.filename && parent.filename.startsWith("/virtual")){
+		if(parent && parent.filename && isVirtualFile(parent.filename)){
 			// Allow resolve
 			result= Mod.resolveVirtual(name,parent)
 			if(!result){
@@ -201,28 +205,38 @@ Module._resolveFilename= function(name,parent){
 	return Module._originalResolveFilename.apply(Module, arguments)
 }
 
-
 Mod.resolveVirtual= function(name, parent){
 	var possibles=[]
-	var path,dirname, path1
-	if(name.startsWith("/virtual")){
+	var path,dirname, path1, normalize=function(a){return a}
+	
+	/*
+	if(Os.platform() == "win32"){
+		console.log('here')
+		normalize= function(a){
+			console.log("file", a)
+			a = a.replace(/\\/g,'/')
+			return a
+		}
+	}*/
+	
+	if(isVirtualFile(name)){
 		possibles.push(name)
 	}
 	else{
 		dirname= Path.dirname(parent.filename)
 	
 		if(name.startsWith("./") || name.startsWith("../")){
-			path= Path.normalize(Path.join(dirname, name))
-			possibles.push(path)
+			path= normalize(Path.normalize(Path.join(dirname, name)))
+			possibles.push(normalize(path))
 		}
 		else{
 			path= Path.join(dirname, "node_modules", name)
 			possibles.push(path)
 			path1= dirname 
-			while(path1 && path1 != "/virtual" && path1 != "/"){
+			while (path1 && path1 != (Path.sep + "virtual") && path1 != Path.sep  && path1 != ""){
 				path1= Path.dirname(path1)
 				path= Path.join(path1, "node_modules", name)
-				possibles.push(path)
+				possibles.push(normalize(path))
 			}
 		}
 	}
@@ -233,13 +247,13 @@ Mod.resolveVirtual= function(name, parent){
 		}
 		return possibles
 	}
-
+	
 
 	var possiblesFromFolder= function(name){
 		var possibles={}, path, data, pjson, rpossibles=[]
 
 		// package json?
-		path= Path.join(name,"package.json")
+		path= normalize(Path.join(name,"package.json"))
 		data= Mod._virtualfile[path]
 		if(data){
 			if(typeof data == "function")
@@ -248,7 +262,7 @@ Mod.resolveVirtual= function(name, parent){
 			pjson= data.content.toString()
 			pjson= JSON.parse(pjson)
 			if(pjson.main){
-				path= Path.normalize(Path.join(name, pjson.main))
+				path= normalize(Path.normalize(Path.join(name, pjson.main)))
 				possibles[path]= true 
 				for(var ext in Mod.extensions){
 					possibles[path+ext]= true 
@@ -257,9 +271,9 @@ Mod.resolveVirtual= function(name, parent){
 		}
 
 
-		possibles[Path.join(name,"index.js")]= true 
+		possibles[normalize(Path.join(name,"index.js"))]= true 
 		for(var ext in Mod.extensions){
-			possibles[Path.join(name,"index"+ext)]= true 
+			possibles[normalize(Path.join(name,"index"+ext))]= true 
 		}
 
 		for(var id in possibles){
@@ -275,6 +289,7 @@ Mod.resolveVirtual= function(name, parent){
 		var possible, vfile, result, possibles1
 		for(var i=0;i<possibles.length;i++){
 			possible= possibles[i]
+			
 			vfile= Mod._virtualfile[possible]
 			if(vfile){
 				if(typeof vfile == "function")
@@ -332,7 +347,7 @@ Mod.replaceSyncRequire= function(originalrequire, parent){
 			return originalrequire(name)
 
 		var file= Module._resolveFilename(name, parent)
-		if(file.startsWith("/virtual/")){
+		if(isVirtualFile(file)){
 			return Mod.requireVirtualSync(file,parent)
 		}else{
 			return originalrequire(name,parent)
@@ -476,8 +491,7 @@ exports.import= Mod.import= function(file, options){
 
 
 	var getBetter= function(){
-
-		if(file.startsWith("/virtual")){
+		if(isVirtualFile(file)){
 			file= Mod.resolveVirtual(file,{
 				filename: (options.parent && options.parent.filename) || options.parent 
 			})

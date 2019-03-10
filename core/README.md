@@ -5,13 +5,16 @@
 **@kawix/core** allows requiring modules in async and more elegant way, and use last features of EcmaScript (for example async/await) without requiring a lot of dependencies, packagers or build scripts
 
 
-> **IMPORTANT**: In version **0.1.1** was solved some bugs, but still is in development some new features. If you stop using **@kawix/core** due to bugs in previous versions, please try with this new version using **--force** parameter. If you find bugs, please report to github. How use **--force** parameter: 
+> **IMPORTANT**: In version **0.1.1** was solved some bugs, but still is in development some new features. If you stop using **@kawix/core** due to bugs in previous versions, please try with this new version using **--force** parameter. 
+
+> **IMPORTANT**: In version **0.1.5** solve some bugs present only in Windows. If you are a windows user, you can now test this version using **--force** parameter.
 
 ```bash
 > npm install -g @kawix/core@latest
 > kwcore --force "https://raw.githubusercontent.com/voxsoftware/kawi-core/master/example/http.js"
 ``` 
  
+
 
 
 
