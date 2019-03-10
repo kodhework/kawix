@@ -1,8 +1,11 @@
 
 
+
 import '../src/mod.js'
 import Gui from '../src/gui'
 import Path from 'path'
+import Url from 'url'
+
 init()
 async function init() {
 	try {
@@ -14,9 +17,15 @@ async function init() {
 			console.log("You tried opening another instance: ", argv, cwd)
 		})
 		
+		var thisPath= __filename , url
+		if(thisPath.startsWith("http:") || thisPath.startsWith("https:")){
+			url= Url.resolve(thisPath, '../html/hello.world.html')
+		}else{
+			url= `file://${Path.join(__dirname, "..", "html", "hello.world.html")}`
+		}
 
 		var params = {
-			url: `file://${Path.join(__dirname, "..", "html", "hello.world.html")}`,
+			url,
 			args: {
 				width: 600,
 				height: 400,
