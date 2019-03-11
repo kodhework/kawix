@@ -203,6 +203,8 @@ class Gui extends EventEmitter
 			dist= Path.join(mod.folder,"dist", "electron")
 			if Os.platform() is "win32"
 				dist += ".exe"
+			else if Os.platform() is "darwin"
+				dist = Path.join(mod.folder,"dist", "Electron.app","Contents","MacOS","Electron")
 			
 			if not await @_checkFileExists(dist)
 				#install electron
