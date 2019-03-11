@@ -1,4 +1,5 @@
-# kawix 
+![logo](./icons/icon-text.png)
+
 
 The next generation Javascript runtime written in and for nodejs
 
