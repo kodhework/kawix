@@ -1,7 +1,9 @@
 
-require("./Promise")
+require("./crossplatform/src/Promise")
 exports.Promise= global.Promise 
 
+
+global.regeneratorRuntime = require("./crossplatform/src/runtime.js")
 global.kwcore= global.kawix= module.exports 
 
 // good helpers
@@ -28,6 +30,6 @@ Object.defineProperty(exports, "KModule", {
 /** Access to babel transpilator */
 Object.defineProperty(exports, "babel", {
 	get: function () {
-		return op.babel ? op.babel : (op.babel = require("./babel"))
+		return op.babel ? op.babel : (op.babel = require("./crossplatform/async/src/babel.js"))
 	}
 })

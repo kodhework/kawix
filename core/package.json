@@ -1,6 +1,7 @@
 {
   "name": "@kawix/core",
   "description": "The next generation module loader for nodejs",
+  "browser": "./crossplatform/dist/main.js",
   "keywords": [
     "loader",
     "transpiler",
@@ -12,7 +13,7 @@
     "kawi",
     "kodhe"
   ],
-  "version": "0.1.6",
+  "version": "0.1.7",
   "main": "main.js",
   "directories": {
     "example": "example",

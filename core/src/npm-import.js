@@ -1,4 +1,6 @@
-import Registry from 'https://raw.githubusercontent.com/voxsoftware/kawix-std/master/package/registry.js'
+//import Registry from 'https://raw.githubusercontent.com/voxsoftware/kawix-std/master/package/registry.js'
+
+import Registry from '../../std/package/registry.js'
 
 exports.require= exports.import= async function(module, options){
 

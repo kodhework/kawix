@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// kawi converted. Preserve this line, Kawi transpiler will not reprocess if this line found
 var regeneratorRuntime = (function (exports) {
   "use strict";
 

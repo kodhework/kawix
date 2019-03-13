@@ -1,3 +1,5 @@
+
+// kawi converted. Preserve this line, Kawi transpiler will not reprocess if this line found
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
