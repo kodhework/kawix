@@ -116,8 +116,8 @@ class Registry
 
 
 		tarball= Path.join folder, securename + ".tar.gz"
+		file= Path.join folder, securename + ".json"
 		
-		file= Path.join folder, pack1 + ".json"
 		if not await @_fileExists(file)
 			config= 
 				file: file  
@@ -219,7 +219,7 @@ class Registry
 		cachedInfo= await @_getPackageCacheConfig(module, version)
 		if not cachedInfo.moduleinfo
 			json= await fs.readFileAsync cachedInfo.file 
-			cachedInfo.moduleinfo= JSON.parse json 
+			cachedInfo.moduleinfo= JSON.parse(json) || {}
 		
 		if cachedInfo.moduleinfo.versions
 			versions= Object.keys(cachedInfo.moduleinfo.versions)
@@ -239,7 +239,9 @@ class Registry
 
 
 			resolvedversion = null
-			data= cachedInfo.moduleinfo.data        
+			data= cachedInfo.moduleinfo.data       
+			
+				 
 			versions= Object.keys(data.versions )
 			versions.sort (a,b) -> if a > b then -1 else (if a < b then 1 else 0)
 			if data["dist-tags"]?[version]
@@ -331,24 +333,34 @@ class Registry
 			else 
 				version= "*"
 
-		if not ignorecache
-			cacher= Registry.cache[module] 
-			if cacher
-				versions= Object.keys cacher 
-				versions.sort (a,b)->
-					return 1 if a < b
-					return -1 if a > b
-					return 0
+		cacher= Registry.cache[module] 
+		if cacher
+			versions= Object.keys cacher 
+			versions.sort (a,b)->
+				return 1 if a < b
+				return -1 if a > b
+				return 0
 
-				for ver in versions  
-					if Semver.satisfies ver, version 
-						moduledesc= cacher[ver] 
-						break 
+			for ver in versions  
+				if Semver.satisfies ver, version 
+					moduledesc= cacher[ver] 
+					break 
+
+		if ignorecache and moduledesc
+			if not Path.dirname(moduledesc.folder).endsWith("npm-inst")
+				moduledesc= null 
+			
+		
+			
 		
 
 		if not moduledesc
-			moduledesc= await @_resolve module, version 
-			
+			try 
+				moduledesc= await @_resolve module, version 
+			catch e 
+				er= new Error("Failed loading module: #{module}@{version}: #{e.message}")
+				er.innerException= e 
+				throw e
 			# save cache 
 			
 			Registry.cache[moduledesc.name]= Registry.cache[moduledesc.name] ? {}
@@ -453,7 +465,7 @@ class Registry
 			await @_lock cachedInfo.tarball+".lock"
 			try 
 				
-				#console.info("Cachedinfo:",cachedInfo.moduleinfo)
+				await @_getNpmInfo(cachedInfo, module) if not cachedInfo.moduleinfo.data
 				dist= cachedInfo.moduleinfo.data.versions[result.version]?.dist
 				if not dist?.tarball 
 					throw new Error("Failed to get a tarball for module #{module}@#{version}")

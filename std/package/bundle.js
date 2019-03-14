@@ -14,12 +14,8 @@ class Bundle{
         if(options.ignoreIrrelevantFiles == undefined){
             options.ignoreIrrelevantFiles= true
         }
+        this._extensions= {}
     }
-
-    test(){
-        import(this.jaja)
-    }
-    
 
     
 
@@ -77,17 +73,29 @@ class Bundle{
         return this.options.disableTranspile= value
     }
 
-    get ignoreIrrelevantFiles(){
+    get ignoreIrrelevantFiles() {
         return this.options.ignoreIrrelevantFiles
     }
-    set ignoreIrrelevantFiles(value){
-        return this.options.ignoreIrrelevantFiles= value
+    set ignoreIrrelevantFiles(value) {
+        return this.options.ignoreIrrelevantFiles = value
+    }
+    get filter() {
+        return this.options.filter
+    }
+    set filter(value) {
+        return this.options.filter = value
+    }
+    get profile() {
+        return this.options.profile
+    }
+    set profile(value) {
+        return this.options.profile = value
     }
 
     async bundle(path){
 
         if(!this._header){
-            this._stream.write("(function(){\n\t")
+            this._stream.write("(function(global, context){\n\t")
             this._stream.write("var fileData=[]")
             this._header= true 
         }
@@ -154,17 +162,35 @@ class Bundle{
             }
             return {}
         }
+
+        var transpiledExtensions= ${JSON.stringify(this._extensions)}
+        
+
         /*
         if(typeof module == "object"){
             module.exports.__kawi= mod1
         }*/
+        if(global.Buffer){
+            context.Buffer= global.Buffer
+        }
 
         if(typeof window == "object"){
             if(window.KModuleLoader){
-                module.exports= mod1(window.KModuleLoader, module.exports)
+                for(var id in transpiledExtensions){
+                    if(!window.KModuleLoader.extensions[id])
+                        window.KModuleLoader.extensions[id]= null           
+                }
+                context.Buffer= global.___kmodule___basic.mod.buffer.Buffer
+                context.module= window.KModuleLoader.generateModule()
+                context.module.exports= mod1(window.KModuleLoader, context.module.exports)
+                return mod1
             }
         }
         if(typeof KModule == "object"){
+            for(var id in transpiledExtensions){
+                if(!KModule.extensions[id])
+                    KModule.extensions[id]= null           
+            }
             module.exports= mod1(KModule, module.exports)
         }
         return mod1
@@ -172,7 +198,7 @@ class Bundle{
         
         
         this._stream.write(virtualAdd)
-        this._stream.write("\n})()")
+        this._stream.write("\n})(typeof global == 'object' ? global : window, {})")
         // this allow not reprocessed in kawix transpiler
         this._stream.write(kwcore.NextJavascript.transpiledLineComment)
         if(this._lastwriteError)
@@ -208,7 +234,7 @@ class Bundle{
             path= this._path 
 
         var stat= await fs.statAsync(path)
-        var rep, files, str, fullfile, continue1, rev, comp, ast,comp1
+        var rep, files, str, fullfile, continue1, rev, comp, ast, comp1, transoptions
 
         continue1= true 
         rev= Path.relative(this._path, path)
@@ -222,7 +248,7 @@ class Bundle{
             }
             else if(comp){
                 
-                if(comp1 == "TEST" || comp1 == "TESTS" || comp1 == "EXAMPLE" || comp1 == "EXAMPLES" || comp.endsWith(".MD")){
+                if(comp1 == "TEST" || comp1 == "TESTS" || comp1 == "EXAMPLE" || comp1 == "EXAMPLES" || comp1.endsWith(".MD")){
                     continue1= false 
                 }
                 else if(comp.toUpperCase() == "LICENSE"){
@@ -235,6 +261,9 @@ class Bundle{
         }
         if(continue1 && comp && comp.toUpperCase() == ".GIT"){
             continue1= false
+        }
+        if(continue1 && typeof this.filter == "function"){
+            continue1= this.filter(rev)
         }
 
 
@@ -259,17 +288,25 @@ class Bundle{
                 }
                 else if(this.options.transpile !== false){
                     if(!rep.filename.endsWith(".json")){
+                        transoptions = {
+                            comments: false
+                        }
+                        
+                        /*
+                        if(this.profile == "browser"){
+                            transoptions.sourceMaps= "inline"
+                        }*/
+
                         for( var ext in kawix.KModule.Module.extensions){
                             if(rep.filename.endsWith(ext)){
                                 ast= await kawix.KModule.Module.compile(rev, {
                                     source: rep.content.toString(),
                                     force: 1,
                                     mtime: Date.now(),
-                                    transpilerOptions: {
-                                        comments: false
-                                    }
+                                    transpilerOptions: transoptions
                                 })
                                 rep.content= ast.code 
+                                this._extensions[ext]= true
                                 break 
                             }
                         }
@@ -284,7 +321,7 @@ class Bundle{
                 if(Buffer.isBuffer(rep.content)){
                     rep.content= rep.content.toString('binary')
                     str= JSON.stringify(rep, null, '\t')
-                    this._stream.write(`\n\tfileData.push(function(){ var item= ${str}; item.content= Buffer.from(item.content,'binary'); return item; })`)
+                    this._stream.write(`\n\tfileData.push(function(){ var item= ${str}; item.content= context.Buffer.from(item.content,'binary'); return item; })`)
                 }
                 else{
                     str= JSON.stringify(rep, null, '\t')
@@ -332,3 +369,6 @@ class Bundle{
 }
 
 export default Bundle
+export var kawixDynamic= {
+    time: 45000
+}

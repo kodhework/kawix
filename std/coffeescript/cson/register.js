@@ -25,8 +25,12 @@ var compile= function(code, file, options){
 
 var register= function(){
     var extensions= kwcore.KModule.Module.extensions
+    var languages = kwcore.KModule.Module.languages
     if(!extensions[".cson"]){
         extensions[".cson"]= compile
+    }
+    if (!languages["cson"]) {
+        languages["cson"] = ".cson"
     }
 }
 

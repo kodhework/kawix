@@ -8,7 +8,7 @@ var init= async function(){
     var bundler= new Bundler(path)
     bundler.virtualName= 'tar$v$4.4.8/node_modules'
     bundler.mainScript= "tar"
-
+    bundler.disableTranspile= true
     await bundler.writeToFile(outfile).bundle()
 }
 
