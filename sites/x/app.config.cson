@@ -1,5 +1,5 @@
 site: 
-	name: '@kawix/x'
+	name: '@kawix.x'
 	description: 'This is the webserver based on dhs for the https://kwx.kodhe.com/x/ service.'
 	# purpose
 	longdescription: 'This service allows people to create pretty URLs which redirect to github (or other content)'
