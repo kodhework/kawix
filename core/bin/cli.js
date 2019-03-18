@@ -7,7 +7,7 @@ var args= [].concat(process.argv)
 for(var i=2;i<args.length;i++){
     arg= args[i]
     if(!arg)
-        break 
+        break
 
     if(arg == "--reload" || arg == "--force"){
         process.argv.splice(offset + i,1)
@@ -21,15 +21,16 @@ for(var i=2;i<args.length;i++){
         offset--
     }
     else{
-        
+
         // require file using KModule
         Kawix.KModule.injectImport()
         Kawix.KModule.import(arg,{
-            parent: process.cwd() + "/cli.js"
+            parent: {
+                filename: process.cwd() + "/cli.js"
+            }
         }).then(function(){}).catch(function(e){
             console.error("Failed executing: ", e)
         })
-        break 
+        break
     }
 }
-

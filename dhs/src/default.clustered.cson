@@ -29,6 +29,7 @@ include: [
         "win32": "$USERPROFILE\\Projects\\*\\app.config.*"
         "default": "/home/$USER/projects/*/app.config.*"
     },
-    "../../hosts/*/app.config.*"
-    "../../sites*/*/app.config.*"
+    "../../../hosts/*/app.config.*"
+    "../../../sites*/*/app.config.*"
+    "../../sites/*/app.config.*"
 ]
