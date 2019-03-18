@@ -195,8 +195,10 @@ class Gui extends EventEmitter
 
 	connect: ()->
 
+		if process.env.GIX_ELECTRON_PATH
+			dist= process.env.GIX_ELECTRON_PATH
 		# require electron
-		if not @electron 
+		else if not @electron 
 			reg= new Registry()
 			mod= await reg.resolve "electron@^4.0.8"
 			install= Path.join(mod.folder,"install.js")
@@ -241,8 +243,9 @@ class Gui extends EventEmitter
 		id= @id
 		def= @deferred()
 		
-		
-		@_p= Child.spawn dist , [file1,file2,id,file3]
+		env= Object.assign({}, process.env)
+		delete env.ELECTRON_RUN_AS_NODE
+		@_p= Child.spawn dist, [file1,file2,id,file3], {env: env}
 		@_p.on "error", def.reject 
 
 		@_p.on "exit", ()=>
