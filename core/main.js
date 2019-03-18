@@ -1,14 +1,14 @@
 
 require("./crossplatform/src/Promise")
-exports.Promise= global.Promise 
+exports.Promise= global.Promise
 
 
 global.regeneratorRuntime = require("./crossplatform/src/runtime.js")
-global.kwcore= global.kawix= module.exports 
+global.kwcore= global.kawix= module.exports
 
 // good helpers
-global.kwcore.__path= __dirname 
-global.kwcore.__file = __filename 
+global.kwcore.__path= __dirname
+global.kwcore.__file = __filename
 
 
 var op={}
@@ -33,3 +33,6 @@ Object.defineProperty(exports, "babel", {
 		return op.babel ? op.babel : (op.babel = require("./crossplatform/async/src/babel.js"))
 	}
 })
+
+// virtual @kawix/core folder
+exports.KModule.Module.addVirtualFile("@kawix/core", __dirname)
