@@ -1011,10 +1011,44 @@ Mod.compileSync= function(file, options){
 	}
 }
 
+var importing={}
+Mod.import= function(file,options){
+	var id= this.filename, def, c
+	if(!id && options && options.parent){
+		id= options.parent.filename
+		if(!id) id= "/default.js"
+	}
+	id+= "-" + file
+	if(importing[id]){
+		def= deferred()
+		importing[id].push(def)
+		return def.promise
+	}
+
+	var result= Mod._import.call(this,file,options)
+	if(result && result.then){
+		def= deferred()
+		c= importing[id]  || (importing[id] = [])
+		result.then(function(a){
+			def.resolve(a)
+			for(var i=0;i<c.length;i++){
+				c[i].resolve(a)
+			}
+			delete importing[id]
+		}).catch(function(e){
+			def.reject(e)
+			for(var i=0;i<c.length;i++){
+				c[i].reject(e)
+			}
+			delete importing[id]
+		})
+		return def.promise
+	}
+	return result
+}
 
 
-
-Mod.import= function(file, options){
+Mod._import= function(file, options){
 	var uri2 , promise, original, filename, uri, parts, resolved
 	original= file
 	options= createDefault(options)
@@ -1079,16 +1113,12 @@ Mod.import= function(file, options){
 	else{
 
 		if(!this.filename){
-
 			this.filename= options.parent && options.parent.filename
 			if(!this.filename)
 				this.filename= "/default.js"
 		}
 
-
-
 		if (file.startsWith("./") || file.startsWith("../") || !file.startsWith("/")) {
-
 			uri2 = Url.parse(this.filename)
 			if (uri2.protocol) {
 				if(file.startsWith("./"))
@@ -1098,7 +1128,6 @@ Mod.import= function(file, options){
 				return Mod.require(file, options)
 			}
 			else{
-
 				if(!file.startsWith(".")){
 					parts = file.split(/\/|\\/)
 					parts = Path.normalize("/virtual/" + parts[0])
@@ -1107,7 +1136,6 @@ Mod.import= function(file, options){
 						if (file) return Mod.require(file, options)
 					}
 				}
-
 				// find this or with extensions
 				file= Path.join(Path.dirname(this.filename), file)
 				return getBetter()
@@ -1117,9 +1145,7 @@ Mod.import= function(file, options){
 			file= require.resolve(file)
 			return Mod.require(file, options)
 		}
-
 	}
-
 }
 
 
@@ -1142,7 +1168,7 @@ Mod.removeCached= function(file){
 		delete Module._cache[file]
 		delete Mod._cacherequire[file]
 	}
-	delete Mod._cache[file]
+	//delete Mod._cache[file]
 }
 
 
@@ -1159,12 +1185,43 @@ Mod.addVirtualFile= function(file, data){
 
 
 /** require a module (file or url) */
-Mod.require= function(file, options){
+requiring= {}
+Mod.require = function(file, options){
+	var def, result, c
+	if(requiring[file]){
+		def= deferred()
+		requiring[file].def.push(def)
+		return def.promise
+	}
+	result= Mod._require.call(this,file,options)
+	if(result && typeof result.then == "function"){
+		def= deferred()
+		c = requiring[file]={
+			def:[def]
+		}
+		result.then(function(a){
+			for(var i=0;i<c.def.length;i++){
+				c.def[i].resolve(a)
+			}
+			delete requiring[file]
+		}).catch(function(e){
+			for(var i=0;i<c.def.length;i++){
+				c.def[i].reject(e)
+			}
+			delete requiring[file]
+		})
+		return def.promise
+	}
+	return result
+}
+
+
+Mod._require= function(file, options){
 	options=options || {}
 	var cached = Mod._cacherequire[file]
 	var promise, promise2 , generate, module
 
-	var generate= function(ast, a, b){
+	var generate= function(ast, resolve, reject){
 
 		module = new Module(file, options.parent)
 		module.filename= file
@@ -1173,40 +1230,11 @@ Mod.require= function(file, options){
 		module.KModule = nmod
 
 
-		var resolve= function(data){
-			module.processing= false
-			a(data)
-			if(module._def){
-				var defi= module._def
-				delete module._def
-				for(var i=0;i<defi.length;i++){
-					defi[i].resolve(data)
-				}
-			}
-		}
-
-
-		var reject= function(data){
-			module.processing= false
-			b(data)
-			if(module._def){
-				var defi= module._def
-				delete module._def
-				for(var i=0;i<defi.length;i++){
-					defi[i].reject(data)
-				}
-			}
-		}
-
-
 		var p
 		var continue1 = function () {
-
-
 			// custom mod for each file
 			Module._cache[file] = module
 			Mod._cacherequire[file] = module
-
 
 
 			//console.info("exports.__kawi= function(KModule){" + ast.code + "}")
@@ -1214,28 +1242,21 @@ Mod.require= function(file, options){
 				"\trequire= KModule.replaceSyncRequire(require,module);\n"
 				+ ast.code + "\n}", file)
 
-			module.processing= true
 			module.__kawi_uid = {}
 			if (options.uid)
 				module.__kawi_uid[options.uid] = true
 
 
 			var maybePromise = module.exports.__kawi(nmod,nmod.import.bind(nmod))
-
 			if(module.exports && module.exports.then){
-
 				/** this will be Deprecated, now is used on bundles */
 				module.exports.then(function(result){
 					module.exports= result
 					cached= module
 					resolve(returnData(true))
 				}).catch(reject)
-
 			}
-
-
 			else if (module.exports && typeof module.exports.kawixPreload == "function") {
-
 				var r0= module.exports.kawixPreload()
 				if(r0 && r0.then){
 					r0.then(function () {
@@ -1246,7 +1267,6 @@ Mod.require= function(file, options){
 					cached= module
 					resolve(returnData(true))
 				}
-
 			}
 			else{
 				cached= module
@@ -1254,12 +1274,10 @@ Mod.require= function(file, options){
 			}
 		}
 
-
 		if (ast.injectCode && !ast.inject) {
 			// inject the code
 			loadInjectImportFunc(ast)
 		}
-
 		if (ast.inject) {
 			p=ast.inject(nmod)
 			if(p && typeof p.then == "function"){
@@ -1274,20 +1292,8 @@ Mod.require= function(file, options){
 		}
 	}
 
-
-
-
 	var returnData= function(novalidate){
 
-		if(!novalidate){
-			var ocached= Module._cache[file]
-			if(ocached && ocached.processing){
-				ocached._def= ocached._def || []
-				var d= deferred()
-				ocached._def.push(d)
-				return d.promise
-			}
-		}
 
 
 		Module._cache[file] = cached
@@ -1314,6 +1320,7 @@ Mod.require= function(file, options){
 			promise2 = new Promise(function (resolve, reject) {
 				var nc=function(ast){
 					if(!ast){
+
 						return resolve(returnData())
 					}else{
 
@@ -1405,6 +1412,7 @@ var helper= {
 	// protect concurrency, loading the same file at time
 	lock: function(file){
 
+
 		if(Os.platform() == "browser"){
 			return
 		}
@@ -1431,7 +1439,6 @@ var helper= {
 		}
 		check= function(){
 			if(Date.now()-time >= 30000){
-				console.log(fs.existsSync(file))
 				return def.reject(new Error("Timedout requiring exclusive access for compile: " + file))
 			}
 
@@ -1463,11 +1470,10 @@ var helper= {
 
 	unlock: function(file){
 
+
 		var locks= this._locks
 		if(locks && locks[file]){
 			fs.rmdir(file,function(er){
-				if(er)
-					console.error(er)
 			})
 			delete locks[file]
 		}
@@ -1476,7 +1482,7 @@ var helper= {
 	getCachedData: function(file, uri, options, autounlock){
 		var def= deferred()
 		var promise= helper.getCachedFilename(uri,options)
-		var cache_file, cache_dir, stat1, stat2, data, vfile, locked, self, lockfile
+		var cache_file, cache_dir, stat1, stat2, data, vfile, locked, self, lockfile, updatetime
 		self= this
 
 		var beautyResponse= function(value){
@@ -1490,9 +1496,18 @@ var helper= {
 			op.data= value
 			if(value && value.unchanged){
 				op.unchanged= true
+
+			}
+			if(value){
+				if(!Mod._cache[file]){
+					value.time= Date.now()
+					Mod._cache[file]= value
+				}
 			}
 			return op
 		}
+
+
 
 
 		if(autounlock !== false){
@@ -1513,6 +1528,7 @@ var helper= {
 		}
 
 		var actioner= function(action, result, result2){
+			var ucached
 			try{
 				if(action == 1){
 					cache_file= result
@@ -1538,14 +1554,7 @@ var helper= {
 						fs.readFile(cache_file, 'utf8', actioner.bind(this, 4))
 					}
 					else{
-
-
-						lockfile= cache_file + ".lock1"
-						self.lock(lockfile).then(function(){
-							locked= true
-							fs.stat(cache_file, actioner.bind(this, 5))
-						}).catch(def.reject)
-
+						fs.stat(cache_file, actioner.bind(this, 5))
 					}
 				}
 				else if(action == 4){
@@ -1573,33 +1582,45 @@ var helper= {
 						fs.stat(file, actioner.bind(this, 6))
 					}
 				}
-				else if(action == 6){
+				else if(action >= 6 && action <= 6.5){
 					if(result) return def.reject(result)
 
-					stat2= result2
+					if(action ==  6)
+						stat2= result2
+					else
+						stat1= result2
+
+
 					if(stat1.mtimeMs >= stat2.mtimeMs){
 						// return unchanged
 						if(options.ignoreonunchanged){
-							return def.resolve(beautyResponse({
-								unchanged: true
-							}))
+
+							ucached= Mod._cache[file]
+
+							if(ucached && ucached.time >= stat1.mtimeMs){
+								return def.resolve(beautyResponse({
+									unchanged: true
+								}))
+							}
 						}
-
-						/*
-						if(vfile){
-							return actioner(7,null,vfile.content)
-						}*/
-
 						return fs.readFile(cache_file, 'utf8' , actioner.bind(this,7))
 					}
 
 					// NEED COMPILE
-					return def.resolve(beautyResponse())
-
+					if(action == 6){
+						lockfile= cache_file + ".lock1"
+						return self.lock(lockfile).then(function(){
+							locked= true
+							fs.stat(cache_file, actioner.bind(this, 6.5))
+						}).catch(def.reject)
+					}
+					else{
+						return def.resolve(beautyResponse())
+					}
 				}
 				else if(action == 7){
 					if(result) return def.reject(result)
-
+					updatetime= true
 					return def.resolve(beautyResponse(JSON.parse(result2)))
 				}
 			}catch(e){
@@ -1666,7 +1687,7 @@ var helper= {
 
 		if(basename.endsWith(".json")){
 			data= {
-				code: 'module.exports=' + JSON.stringify(source.code)
+				code: 'module.exports=' + source.code
 			}
 		}
 		else{
@@ -1688,6 +1709,10 @@ var helper= {
 		def= deferred()
 		fs.writeFile(cachedata.file, str, function(err){
 			if(err) def.reject(err)
+
+			data.time= Date.now()
+			Mod._cache[filename]= data
+
 			def.resolve(data)
 		})
 		return def.promise

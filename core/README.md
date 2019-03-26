@@ -7,12 +7,16 @@
 **@kawix/core** allows requiring modules in async and more elegant way, and use last features of EcmaScript (for example async/await) without requiring a lot of dependencies, packagers or build scripts
 
 
-> **IMPORTANT**: In version **0.1.6** solve the bug on Windows when loading a local file. If you are a windows user, you can now test this version using **--force** parameter.
+## What is new in 0.3.0 [IMPORTANT FIXED BUGS]
 
-```bash
-> npm install -g @kawix/core@latest
-> kwcore --force "https://kwx.kodhe.com/x/core/example/http.js"
-```
+* Fix bug with caching on modules imported.
+* Now imports are synchronized too between same process avoiding concurrency issues
+* Stable version near, I will be glad if anyone contribute to report bugs or add functionality
+
+
+## What is new in 0.2.1
+
+**Compilation** are now synchronized between processes, using a file lock. This is important, because avoid errors when you launch concurrent scripts that uses the same files.
 
 
 ## What is new in 0.1.8
@@ -22,9 +26,14 @@ Starting in version **0.1.8** was added *browser* support. You need add the file
 You can add also support for typescript and all transpilation features of this packages, adding ```crossplatform/async/dist/main.js```
 
 
-## What is new in 0.2.1
+> **IMPORTANT**: In version **0.1.6** solve the bug on Windows when loading a local file. If you are a windows user, you can now test this version using **--force** parameter.
 
-**Compilation** are now synchronized between processes, using a file lock. This is important, because avoid errors when you launch concurrent scripts that uses the same files.
+```bash
+> npm install -g @kawix/core@latest
+> kwcore --force "https://kwx.kodhe.com/x/core/example/http.js"
+```
+
+
 
 
 ## More info
@@ -145,7 +154,7 @@ Think in this code:
 // is builtin module, this line is untouched
 import fs from 'fs'
 // is processed by kawix
-import http from 'https://raw.githubusercontent.com/voxsoftware/kawi-core/master/example/http.js'
+import http from 'https://kwx.kodhe.com/x/core/example/http.js'
 // this is BAD, not recommended
 makeAnyOperation()
 
@@ -175,7 +184,7 @@ export default function(){
 
 // THIS will be executed before all file code
 var __kawi_async= async function(){
-	await KModule.import('https://raw.githubusercontent.com/voxsoftware/kawi-core/master/example/http.js', {
+	await KModule.import('https://kwx.kodhe.com/x/core/example/http.js', {
 		// this ensure create a cache for be usable later with import
 		uid: 'cached_result_on_1'
 	})
@@ -316,10 +325,10 @@ Test yourself from your terminal
 ```bash
 > npm install -g @kawix/core@latest
 
-> kwcore "https://raw.githubusercontent.com/voxsoftware/kawix-core/master/example/npmrequire/express.js"
+> kwcore "https://kwx.kodhe.com/x/core/example/npmrequire/express.js"
 
 # take care that this project is in active development, if fails use --force for invalidate cache
-> kwcore --force "https://raw.githubusercontent.com/voxsoftware/kawix-core/master/example/npmrequire/express.js"
+> kwcore --force "https://kwx.kodhe.com/x/core/example/npmrequire/express.js"
 ```
 
 **Use cases for dynamic loading?**
