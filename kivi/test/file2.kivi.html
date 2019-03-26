@@ -1,0 +1,80 @@
+<vw:section name='content-inmovible'>
+	<div class='container fluid inmovible'>
+		<style>
+			.loading-container{
+				position: fixed;
+				width:100%;
+				left:0;
+				top:0;
+				z-index:130000;
+			}
+			.loading-progress{
+				width:0;
+				height:3px;
+				box-shadow: 0 0 5px rgba(255,255,255,0.6);
+			}
+			.cover{
+				position: fixed;
+				top:0;
+				z-index: 129900;
+				left:0;
+				width: 100%;
+				height: 100%;
+				opacity:1;
+
+			}
+			.v-hidden{
+				padding-left: 10000px !important;
+				overflow: hidden !important;
+			}
+		</style>
+		<div class='cover gray lighten-5  loading-cover' style='display:none' align='center'>
+
+			<table style='border:0;table-layout:fixed;color:white;width:100%;height:100%;font-size: 2em'>
+				<tr style='width:100%;height:100%;'>
+					<td valign='middle' align='center'>
+						<!--<img style='height:60px' src='http://v.d0stream.com/image/59ae05443f3f860d9cc63c10/f/png/w/300'/>-->
+
+						<!--<span class='text-red '>Noticket</span>-->
+
+<!--						<i class='fa fa-spin fa-spinner'></i>-->
+					</td>
+				</tr>
+			</table>
+
+		</div>
+		<div class='container fluid loading-container noprintable'>
+			<div class='loading-progress purple lighten-3 transitioned'>
+
+			</div>
+		</div>
+	</div>
+</vw:section>
+<vw:section name='script'>
+	<script>
+		init.do(function(){
+
+			var progress= $(".loading-progress")
+			progress.css("transition-duration", "6s")
+			progress.css("width", "80%")
+
+			setTimeout(function(){
+				var router= new program.Util.Route()
+				var promise= program.WebSite.Application.current.getModule("routemanager").init(true)
+				console.log('here')
+				if(promise && promise.then){
+
+					promise.then(function(){
+						progress.css("transition-duration", "0.7s")
+						progress.css("width", "100%")
+						setTimeout(function(){
+							$(".cover").hide()
+							$(".loading-container").hide()
+						}, 500)
+					})
+				}
+			}, 100)
+
+		})
+	</script>
+</vw:section>

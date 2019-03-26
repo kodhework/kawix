@@ -1,0 +1,33 @@
+<html>
+	<head>
+		<title>My title</title>
+		<kivi:exp>James xD</kivi:exp>
+	</head>
+	
+	<body>
+		Name: <kivi:exp>data.name</kivi:exp>
+		Lastname: <kivi:raw>data.lastname</kivi:raw>
+		Age: ${data.age}
+
+		<kivi:section name='content'>
+			<kivi:lang lang='coffee'>
+				Children: #{ data.children }
+				<p>
+					<span>Some text important</span>
+					<kivi:exp>data.person?.address?.zip</kivi:exp>
+				</p>
+			</kivi:lang>
+		</kivi:section>
+		<script lang='coffee'>
+			export default ()->
+				return
+					name: 'John'
+					lastname: 'Smith'
+		</script>
+		<script lang='coffee' server-side>
+			console.log 'Executing inside kivi'
+		</script>
+		<kivi:import name='content' section></kivi:import>
+		<kivi:import name='other'></kivi:import>
+	</body>
+</html>
