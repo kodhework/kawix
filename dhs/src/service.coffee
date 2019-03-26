@@ -143,7 +143,7 @@ class Service
 		# determine if need reload clusters
 		if(this.__time && this.__time != config.__time)
 
-			console.info(" > [KAWIX] Base config changed. Need reload clusters: ", this.__time, config.__time)
+			console.info(" > [kawix/dhs] Base config changed. Need reload clusters: ", this.__time, config.__time)
 
 			this.__time= config.__time
 			clearTimeout @__reloadtimeout if @__reloadtimeout
@@ -182,7 +182,7 @@ class Service
 
 		#clearTimeout @_in01 if @_in01
 		config= @config
-		console.info("> [KAWIX] Reloading config in worker: ", process.pid)
+		console.info("> [kawix/dhs] Reloading config in worker: ", process.pid)
 		config._load()
 
 		###
@@ -241,7 +241,7 @@ class Service
 			if not w.finished
 				self._fork(cluster)
 			else
-				console.info(" > [KAWIX] Worker #{w.pid} fully closed")
+				console.info(" > [kawix/dhs] Worker #{w.pid} fully closed")
 
 
 		###
@@ -430,7 +430,7 @@ class Service
 			ccron._executed= Date.now() if ccron
 
 		catch e
-			console.error(" > [@kawix/dhs] Failed executing cron: #{cron.name or 'nodefined'} in site #{site.name}. Error: ", e)
+			console.error(" > [kawix/dhs] Failed executing cron: #{cron.name or 'nodefined'} in site #{site.name}. Error: ", e)
 		finally
 			cron._executing= no
 			ccron._executing= no if ccron
@@ -440,7 +440,6 @@ class Service
 
 
 		@config.once "change", @buildRoutes.bind(@)
-		console.info("building routes: ", process.pid)
 		config= @config.readCached()
 		if not config.sites
 			return
@@ -496,7 +495,7 @@ class Service
 								file: route
 						site._urouter.NOTFOUND(this._createCallback(route, site), route.store)
 			catch e
-				console.error(" > [KAWIX] Failed reloading site routes: ",e)
+				console.error(" > [kawix/dhs] Failed reloading site routes: ",e)
 
 
 
@@ -572,7 +571,6 @@ class Service
 
 	_addGlobalPrefix: (prefix, site)->
 		if prefix?.middleware
-			console.log "middleware:", prefix.middleware, prefix.path
 			h= @_createCallback(prefix.middleware, site)
 			c= (env,ctx)->
 				await h(env,ctx)
@@ -751,7 +749,7 @@ class Service
 				env.error = e
 				@api_500(env)
 			else
-				console.error("Error in server handle: ",e)
+				console.error(" > [kawix/dhs] Error in server handle: #{e.stack}")
 
 			env= null
 		finally
