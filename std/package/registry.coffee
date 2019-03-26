@@ -440,7 +440,43 @@ class Registry
 			if not Registry.cache[moduledesc.name][moduledesc.version]
 				Registry.cache[moduledesc.name][moduledesc.version]= moduledesc
 
+		ignoredependencies= @options.ignoredependencies
 		if not moduledesc.packageinfo
+
+
+
+			binding= Path.join moduledesc.folder, "binding.gyp"
+			# is a native module?
+			if await @_fileExists binding
+				# download NPM
+				newr= new Registry({})
+				npmmodule= await @require("npm@6.9.0")
+				npmfile= Path.join(npmmodule.folder, "bin", "npm-cli.js")
+				# execute npm install on folder
+				p= Child.spawn process.execPath, [npmfile, "install"],
+					env: Object.assign {ELECTRON_RUN_AS_NODE: 1}, process.env
+					cwd: moduledesc.folder
+
+				err= []
+				promise= new Promise (a,b)->
+					p.stderr.on "data",  (data)->
+						data= data.toString()
+						if data.indexOf("ERR!") >= 0
+							err.push(data)
+					p.stdout.on "data",  (data)->
+						data= data.toString()
+						if data.indexOf("ERR!") >= 0
+							err.push(data)
+
+					p.on "exit", ()->
+						if err.length
+							b(new Error(err.join("\n")))
+						else
+							a()
+
+				await promise
+
+
 			pjson= Path.join moduledesc.folder, "package.json"
 			pjson= await fs.readFileAsync(pjson, 'utf8')
 			pjson= JSON.parse pjson
@@ -450,7 +486,8 @@ class Registry
 			else
 				moduledesc.main= Path.join(moduledesc.folder, "index.js")
 
-		if @options.ignoredependencies isnt true
+
+		if ignoredependencies
 			try
 				if not moduledesc.fullyloaded
 					await @_resolveDependencies moduledesc, moduledesc.packageinfo
