@@ -444,37 +444,44 @@ class Registry
 		if not moduledesc.packageinfo
 
 
+			if @options.nativeEnabled
+				binding= Path.join moduledesc.folder, "binding.gyp"
+				binding_check= Path.join moduledesc.folder, "binding-installed--.gyp"
+				
+				# is a native module?
+				if await @_fileExists(binding) and (not await @_fileExists(binding_check))
 
-			binding= Path.join moduledesc.folder, "binding.gyp"
-			# is a native module?
-			if await @_fileExists binding
-				# download NPM
-				newr= new Registry({})
-				npmmodule= await @require("npm@6.9.0")
-				npmfile= Path.join(npmmodule.folder, "bin", "npm-cli.js")
-				# execute npm install on folder
-				p= Child.spawn process.execPath, [npmfile, "install"],
-					env: Object.assign {ELECTRON_RUN_AS_NODE: 1}, process.env
-					cwd: moduledesc.folder
 
-				err= []
-				promise= new Promise (a,b)->
-					p.stderr.on "data",  (data)->
-						data= data.toString()
-						if data.indexOf("ERR!") >= 0
-							err.push(data)
-					p.stdout.on "data",  (data)->
-						data= data.toString()
-						if data.indexOf("ERR!") >= 0
-							err.push(data)
+					# download NPM
+					newr= new Registry({})
+					npmmodule= await newr.resolve("npm@6.9.0")
+					npmfile= Path.join(npmmodule.folder, "bin", "npm-cli.js")
+					# execute npm install on folder
+					p= Child.spawn process.execPath, [npmfile, "install"],
+						env: Object.assign {ELECTRON_RUN_AS_NODE: 1}, process.env
+						cwd: moduledesc.folder
 
-					p.on "exit", ()->
-						if err.length
-							b(new Error(err.join("\n")))
-						else
-							a()
+					err= []
+					promise= new Promise (a,b)->
+						p.stderr.on "data",  (data)->
+							process.stderr.write data
+							data= data.toString()
+							if data.indexOf("ERR!") >= 0
+								err.push(data)
+						p.stdout.on "data",  (data)->
+							process.stdout.write data
+							data= data.toString()
+							if data.indexOf("ERR!") >= 0
+								err.push(data)
 
-				await promise
+						p.on "exit", ()->
+							if err.length
+								b(new Error(err.join("\n")))
+							else
+								a()
+
+					await promise
+					await fs.mkdirAsync(binding_check)
 
 
 			pjson= Path.join moduledesc.folder, "package.json"
@@ -487,7 +494,7 @@ class Registry
 				moduledesc.main= Path.join(moduledesc.folder, "index.js")
 
 
-		if ignoredependencies
+		if not ignoredependencies
 			try
 				if not moduledesc.fullyloaded
 					await @_resolveDependencies moduledesc, moduledesc.packageinfo
