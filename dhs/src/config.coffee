@@ -22,7 +22,7 @@ class Config extends EventEmitter
 			@_readFromParent= yes
 			return
 
-		@_read= setInterval @_read1.bind(@), 10000
+		@_read= setInterval @_read1.bind(@), 30000
 		@_read.unref()
 		@_read1()
 
@@ -162,6 +162,9 @@ class Config extends EventEmitter
 			newconfig= await `import(path)`
 			if newconfig.configfile
 				return await @_include(config, newconfig.configfile, timeout)
+			else if newconfig["kawix.app"]
+				return await @_include(config, Path.join(newconfig["kawix.app"].resolved, "app.config"), timeout)
+
 
 			@emit "include", path
 			@_removeinclude config, path, no
@@ -170,7 +173,7 @@ class Config extends EventEmitter
 			config._includes[path]= true
 
 
-			newconfig.__time= newconfig.__time or Date.now()
+			newconfig.__time= newconfig.__time ? Date.now()
 			if not newconfig.kawixDynamic
 				Object.defineProperty newconfig, "kawixDynamic",
 					enumerable: no

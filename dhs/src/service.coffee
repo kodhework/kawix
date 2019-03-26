@@ -18,7 +18,8 @@ class Service
 		@_crons={}
 		@_router= new KawixHttp.router()
 		@workers= []
-
+		@_contexts= {}
+		@_concurrent=0
 
 	createIPC: (id)->
 		new IPC(@, id)
@@ -91,6 +92,8 @@ class Service
 
 		else
 
+			@config.stop()
+			delete @config
 
 			@channel= new IPC(@)
 			await @channel.connect()
@@ -100,9 +103,6 @@ class Service
 				params:
 					pid: process.pid
 				name: "service"
-
-
-
 
 			@config= new ConfigIPC(@channel)
 			@config._load()
@@ -138,43 +138,58 @@ class Service
 
 	_config_to_workers: (config)->
 
+		return if not Cluster.isMaster
 
 		# determine if need reload clusters
 		if(this.__time && this.__time != config.__time)
-			console.info(" > [KAWIX] Base config changed. Need reload clusters")
+
+			console.info(" > [KAWIX] Base config changed. Need reload clusters: ", this.__time, config.__time)
+
+			this.__time= config.__time
 			clearTimeout @__reloadtimeout if @__reloadtimeout
-			@__reloadtimeout= setTimeout(@reloadCluster.bind(@), 2000)
+			@__reloadtimeout= setTimeout(@reloadCluster.bind(@), 1000)
+
+
+			return
 
 
 
 		this.__time= config.__time
-
-
 		for w in @workers
-			if not w.IPC
-				undefined
-				#console.warn "No IPC channel on worker: ", w.id
-			else
-				if not w.IPC.__loaded
+			if not w.finished
+				if not w.IPC
+					undefined
+					#console.warn "No IPC channel on worker: ", w.id
+				else
+					if not w.IPC.__loaded
+						await w.IPC.send
+							action: 'import'
+							args: [__filename]
+							name: "service"
+
+						w.IPC.__loaded= yes
+
+
 					await w.IPC.send
-						action: 'import'
-						args: [__filename]
+						action: 'call'
+						args: []
+						method: '_load_config'
 						name: "service"
-
-					w.IPC.__loaded= yes
-
-
-				await w.IPC.send
-					action: 'call'
-					args: []
-					method: '_load_config'
-					name: "service"
 
 
 
 	_load_config: ()->
+
+		#clearTimeout @_in01 if @_in01
+		config= @config
 		console.info("> [KAWIX] Reloading config in worker: ", process.pid)
-		@config._load()
+		config._load()
+
+		###
+		@_in01= setTimeout ()->
+
+		, 1000
+		###
 
 
 	_include_to_workers: (path)->
@@ -274,16 +289,17 @@ class Service
 		for w in @workers
 			w.finished= yes
 
-		cid= Date.now().toString(24)
-		await @_cluster(cid)
 
+		await @_cluster()
 		await @sleep 3000
+
+
 		for w in @workers
 			if w.finished
 				# send signal to exit
 				if w.IPC
 					w.finished= yes
-					w.IPC.send
+					await w.IPC.send
 						action: 'call'
 						name: 'service'
 						method: 'closeAndExit',
@@ -293,7 +309,7 @@ class Service
 				else
 					w.finished= yes
 					w.disconnect()
-					w.kill()
+					w.kill('SIGTERM')
 
 
 
@@ -310,6 +326,8 @@ class Service
 
 		# create the server
 		@http= new KawixHttp.server()
+		if config.maxqueuecount
+			@http.maxqueuecount= config.maxqueuecount
 		#address= @parseAddress(addr)
 
 		def= @deferred()
@@ -326,9 +344,9 @@ class Service
 		console.info "Listening on: ", @address
 
 
-		@_router.get "/.o./config", @api_config.bind(@)
-		@_router.NOTFOUND @api_404.bind(@)
-		@_router.ERROR @api_500.bind(@)
+		#@_router.get "/.o./config", @api_config.bind(@)
+		#@_router.all "*", @api_404.bind(@)
+		#@_router.ERROR @api_500.bind(@)
 
 		# build Router for each Site
 
@@ -337,8 +355,8 @@ class Service
 		# date integer when started
 		@started= Date.now()
 
-
-		@_startCron()
+		if parseInt(process.env.CRON_ENABLED) is 1
+			@_startCron()
 
 		# start accept
 		@_accept()
@@ -386,7 +404,7 @@ class Service
 							cron._executed= ccron._executed
 
 						if c is "all" or (parseInt(process.env[c]) is 1)
-							if ((cron.interval or 120000) >= (cron._executed or 0)) and not cron._executing
+							if ((cron.interval or 120000) >= (Date.now() - (cron._executed or Date.now())) ) and not cron._executing
 								@_executeCron site, cron, ctx
 
 		setImmediate @_startCron.bind(@)
@@ -422,11 +440,13 @@ class Service
 
 
 		@config.once "change", @buildRoutes.bind(@)
-
+		console.info("building routes: ", process.pid)
 		config= @config.readCached()
 		if not config.sites
 			return
 
+		for id,val of @_contexts
+			val.config= config
 
 		for site in config.sites
 			try
@@ -496,23 +516,32 @@ class Service
 				if cached.kawixDynamic
 					cached.__time= Date.now() + (cached.kawixDynamic.time || 10000)
 				this.__mod[file]= cached
+
 			return cached
 
 	getContext: (site)->
+		sitename= site
 		config= @.config.readCached()
+
+		if typeof sitename == "object"
+			sitename= site.name
+
 		if typeof site is "string"
 			for s in config.sites
 				if s.name is site
 					site= s
 
 			if typeof site is "string"
-				site= {name: "$default", _notfound:yes}
+				site= { name: "$default", _notfound:yes}
+		ctx= @_contexts[sitename]
+		if not ctx
+			ctx= @_contexts[sitename]= {}
+			ctx.server= @
+			ctx.config= config
 
-
-		return
-			server: @
-			site: site
-			config: config
+		ctx.site= site
+		ctx.config= config
+		return ctx
 
 
 
@@ -559,36 +588,45 @@ class Service
 
 		if route.static
 			return @_createStaticCallback(route,site)
-		# route to file
+
+
 		self= this
-		if not site.import
-			site.import= this._siteimport()
+		par=
+			c: {}
+		if route.folder
+			par.folder= self.config.resolvePath route.folder, site
+		if route.file
+			par.file= self.config.resolvePath route.file, site
+		ctx= self.getContext(site)
 
 
 		g=  (env)->
 			try
-				if route.folder
+				if par.folder
 					name= env.params.file or env.params["*"]
 					if not name
 						Exception.create("Failed to get a file to execute").putCode("PARAM_NOT_FOUND")
 
-					file= self.config.pathJoin route.folder, name
+					file= Path.join par.folder, name
 				else
-					file= route.file
+					file= par.file
 
 
+				mod= par.c[file]
+				if not mod or (mod.__expire && Date.now() >= mod.__expire)
+					mod= await `import(file)`
+					if mod.kawixDynamic
+						mod.__expire= Date.now() + (mod.kawixDynamic.time ? 30000)
+					par.c[file]= mod
 
-				mod= await site.import(file)
-				ctx= self.getContext(site)
 				env.server= self
-
-
-
-				method= env.request.method.toUpperCase()
+				method= env.request.method.toLowerCase()
 				if typeof mod.router?.handle == "function"
 					return await mod.router.handle(env,ctx)
 				else if typeof mod[method] == "function"
 					return await mod[method](env,ctx)
+				else if typeof mod.httpInvoke == "function"
+					return await mod.httpInvoke(env,ctx)
 				else if typeof mod.invoke == "function"
 					return await mod.invoke(env,ctx)
 				else
@@ -609,19 +647,24 @@ class Service
 	_accept:()->
 		while yes
 			env= await @http.accept()
-			@_router.handle env
+			if not env
+				break
+			@_handle env
+			env= null
 
 
 
 	api_config: (env)->
 		config= @config.readCached()
-		env.reply.send config
+		env.reply.code(200).send config
 
 	api_500: (env)->
 		env.reply.code(500).send
-			message: env.error.message
-			code: env.error.code
-			stack: env.error.stack
+			error:
+				message: env.error.message
+				code: env.error.code
+				stack: env.error.stack
+			status: 'error'
 
 
 	_bundle: (env)->
@@ -636,10 +679,9 @@ class Service
 		if not @__ks2
 			@__ks2 = new KawixHttp.router()
 			bund= @_bundle.bind(@)
-			@__ks2.all "/.static./local/bundle/:site/*", bund
-			@__ks2.all "/.static./bundle/:module", bund
-			@__ks2.all "/.static./bundle/:module/*", bund
-
+			@__ks2.get "/.static./local/bundle/:site/*", bund
+			@__ks2.get "/.static./bundle/:module", bund
+			@__ks2.get "/.static./bundle/:module/*", bund
 
 		uri= env.request.uri
 		if not uri
@@ -656,37 +698,64 @@ class Service
 		else
 			await @__ks2.handle(env)
 
+		env= null
 
-	api_404: (env)->
+
+	_handle: (env)->
 
 		# check routes
 		config= @config.readCached()
-		if config.sites
-			# check global prefixes and hostnames
-			host= env.request.headers.host
-
-			for site in config.sites
-				if site._arouter?.handle
-					await site._arouter.handle(env)
-					return if env.response.finished
+		if config.maxconcurrent and (@_concurrent >= config.maxconcurrent)
+			env.reply.code(503).send("Max concurrent connections reached")
+			env= null
+			return
 
 
-			for site in config.sites
-				if site._hrouter?.handle
-					func= site._hrouter.find("GET", "/" + host)
-					if typeof func == "function"
-						await func(env)
-					return if env.response.finished
+		@_concurrent++
+		try
 
-				else if not site._arouter and site.routes
-					await site._urouter.handle(env)
-					return if env.response.finished
+			if env.request?.url == "/.o./config"
+				return env.reply.code(200).send(config)
 
 
-		# TODO
-		await @api_kodhe(env) if not env.response.finished
-		env.reply.code(404).send "NOT FOUND" if not env.response.finished
 
+			if config.sites
+
+				# check global prefixes and hostnames
+				host= env.request.headers.host
+				for site in config.sites
+					if site._arouter?.handle
+						await site._arouter.handle(env)
+						return  if env.response.finished
+
+				for site in config.sites
+					if site._hrouter?.handle
+						func= site._hrouter.find("GET", "/" + host)
+						if typeof func?.handler == "function"
+							await func.handler(env)
+						return if env.response.finished
+
+					else if not site._arouter and site.routes
+						await site._urouter.handle(env)
+						return if env.response.finished
+
+
+			if env.request?.url.startsWith("/.static")
+				await @api_kodhe(env) if not env.response.finished
+
+			env.reply.code(404).send("NOT FOUND") if not env.response.finished
+			env= null
+
+		catch e
+			if env.response?.finished
+				env.error = e
+				@api_500(env)
+			else
+				console.error("Error in server handle: ",e)
+
+			env= null
+		finally
+			@_concurrent--
 
 
 
