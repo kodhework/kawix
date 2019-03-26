@@ -17,10 +17,10 @@ class Serializer{
 			}
 			if(data === null || data === undefined)
 				return "null"
-			
 
-			var code= reply.res.statusCode			
-			code= code || 200 
+
+			var code= reply.res.statusCode
+			code= code || 200
 			rschema= schema
 			if(schema.response){
 				rschema= schema.response[code]
@@ -38,17 +38,17 @@ class Serializer{
 			}
 			stringify= schemas[code]
 			if(!stringify){
-				// create stringify 
+				// create stringify
 				stringify= schemas[code]= FastJson(rschema)
 			}
-			
+
 			return stringify(data)
 		}
     }
-    
 
 
-    static defaultJSON(data, reply){
+
+    static default(data, reply){
         var type= reply.getHeader("content-type")
 
         if(Buffer.isBuffer(data)){
@@ -56,26 +56,29 @@ class Serializer{
                 reply.type("application/octect-stream")
             return data
         }
+        else if(data && typeof data.pipe == "function"){
+            return data
+        }
         else if(typeof data == "string"){
             if(!type)
                 reply.type("text/plain;Charset=utf8")
-            return data 
+            return data
         }
         else if(data === null){
-            return "null" 
+            return "null"
         }
         else if(data === undefined){
-            return "" 
+            return ""
         }
         else{
             str=  JSON.stringify(data)
             if(!type)
                 reply.type("application/json;Charset=utf8")
-            return str 
+            return str
         }
     }
 
 
 }
 
-export default Serializer 
+export default Serializer

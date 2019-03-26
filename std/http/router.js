@@ -11,26 +11,12 @@ class Router {
 	}
 
 
-	async _default(env ){		
-		var id= "$NOTFOUND"
-		var callbacks= this._routes[id]
-		var callback 
-		if(callbacks && callbacks.length){
-			for(var i=0;i<callbacks.length;i++){
-				callback= callbacks[i]
-				await callback(env)
-				if(env.response.finished)
-					return 
-			}
-		}
-	}
-
 
 	NOTFOUND(callback, store = {}){
 		if(typeof store == "function" && typeof callback == "object"){
 			var c= store
 			store= callback
-			callback= c 
+			callback= c
 		}
 		var id= "$NOTFOUND"
 		if(typeof store == "object"){
@@ -45,22 +31,22 @@ class Router {
 		if(typeof store == "function" && typeof callback == "object"){
 			var c= store
 			store= callback
-			callback= c 
+			callback= c
 		}
-		var id= "$ERROR"		
+		var id= "$ERROR"
 		if(typeof store == "object"){
 			callback= this._callback( callback, store)
 		}
 		var callbacks= this._routes[id]= this._routes[id] || []
 		callbacks.push(callback)
 	}
-	
+
 
 	_use(store, callback){
 		var self= this
 		return function(env){
 			var url= env.request.url
-			var uri= env.request.uri 
+			var uri= env.request.uri
 
 
 
@@ -68,21 +54,21 @@ class Router {
 			var y= url.indexOf(";")
 			var e = url.indexOf("#")
 			var nextu = ''
-			if((y < i && y >= 0) || i < 0) i= y				
-			if ((e < i && e >= 0) || i < 0) i = e 
+			if((y < i && y >= 0) || i < 0) i= y
+			if ((e < i && e >= 0) || i < 0) i = e
 			if (i >= 0) nextu= url.substring(i)
 
-			
-			if(uri) delete env.request.uri 
+
+			if(uri) delete env.request.uri
 			env.request.url= "/"  + (env.params["*"] || "") + nextu
 
 			var promise
 			if(callback instanceof Router)
 				promise= callback.handle(env)
-			else 
+			else
 				promise=  callback(env)
 			var end= function(){
-				env.request.url= url 
+				env.request.url= url
 				env.request.uri= uri
 			}
 			var def
@@ -91,11 +77,11 @@ class Router {
 				promise.then(function(a){
 					end()
 					return def.resolve(a)
-				}).catch(function(e){ 
-					end() 
+				}).catch(function(e){
+					end()
 					return def.reject(e)
 				})
-				return def.promise 
+				return def.promise
 			}else{
 				end()
 			}
@@ -106,7 +92,7 @@ class Router {
 
 	_callback(callback, store, env){
 		return function(env){
-			env.store= store 
+			env.store= store
 			if(typeof callback.handle == "function"){
 				return callback.handle(env)
 			}else{
@@ -118,25 +104,25 @@ class Router {
 
 
 	METHOD(method, route, callback, store= {}) {
-		
+
 		if(typeof store == "function" && typeof callback == "object"){
 			var c= store
 			store= callback
-			callback= c 
+			callback= c
 		}
-		
+
 
 		method= method.toUpperCase()
 		if(method == "USE" || method == "MIDDLEWARE"){
 			if(route.indexOf("/*") >=0 ){
 				throw new Error("Route cannot have /*")
-			}			
-			
+			}
+
 			this.METHOD("ALL", Path.join(route, "*"), this._use(store, callback))
 			this.METHOD("ALL", route, this._use(store, callback))
 			return this
 		}
-		
+
 		if(typeof store == "object"){
 			callback= this._callback(callback, store)
 		}
@@ -164,7 +150,7 @@ class Router {
 			//id= method + "." + route
 			//delete this._routes[id]
 			this._router.off(method, route)
-		}		
+		}
 		this._cached={}
 		return this
 	}
@@ -172,17 +158,17 @@ class Router {
 	deferred(){
 		var obj={}
 		obj.promise=new Promise(function(resolve,reject){
-			obj.resolve= resolve 
-			obj.reject= reject 
+			obj.resolve= resolve
+			obj.reject= reject
 		})
-		return obj 
+		return obj
 	}
 
 	async _error(reject, env, e){
 		var id= "$ERROR"
 		env.error= e
 		var callbacks= this._routes[id]
-		var callback 
+		var callback
 		if(callbacks && callbacks.length){
 			for(var i=0;i<callbacks.length;i++){
 				callback= callbacks[i]
@@ -205,44 +191,59 @@ class Router {
 		return url
 	}
 
-	find(method, url){
-		var path= this.sanitizeUrl(url)
+	find(method, path, sanitize= true){
+
+		if(sanitize){
+			path= this.sanitizeUrl(path)
+		}
+
 		var route= this._cached[path]
 		if(!route){
-			route= this._router.find(method.toUpperCase(), path)		
-			this._cached[path]= route || true 
+			route= this._router.find(method.toUpperCase(), path)
+			this._cached[path]= route || true
 		}
-		return route 
+		return route
 	}
-	
+
 	async handle(env) {
-		var result
+		var route, def
 		/*
 		if(this._router2){
 			result= await this._router2.handle(env)
 			if(env.response.finished)
-				return result 
+				return result
 		}*/
+		if(!env.request.uri)
+			env.request.uri= Url.parse(env.request.url)
 
-
-		
-		
-		var route= this.find(env.request.method, env.request.url)
+		route= this.find(env.request.method, env.request.uri.pathname, false)
 		if(route &&  route !== true){
 
-			if(!env.request.uri)
-				env.request.uri= Url.parse(env.request.url)
 			if(env.request.uri.search && !env.request.query)
 				env.request.query= QueryString.parse(env.request.uri.search.substring(1))
 
 
-			env.params = Object.assign({}, env.params || {}, route.params )
-			result=await route.handler(env)
+			if(route.params)
+				env.params = Object.assign({}, env.params || {}, route.params )
+			else if(!env.params)
+				env.params= {}
+
+			await route.handler(env)
+
 		}
 		else{
-			result=await this._default(env)
+			def= this._routes["$NOTFOUND"]
+
+			if(def && def.length){
+				for(var i=0;i<def.length;i++){
+					await def[i](env)
+					if(env.response.finished)
+						return
+				}
+			}
+
 		}
-		return result 
+
 	}
 }
 
@@ -284,7 +285,7 @@ var methods = [
 var createMethod = function (method) {
 	return function (path, callback, store) {
 
-		
+
 		return this.METHOD(method, path, callback, store)
 	}
 }

@@ -3,39 +3,39 @@ class Reply{
     constructor(env){
         Object.defineProperty(this, "env",{
             enumerable: false,
-            value: env 
+            value: env
         })
         this._h={}
-        
+
     }
 
     get res(){
-        return this.env.response 
+        return this.env.response
     }
 
     get store(){
         return this.env.store
     }
-  
+
 
     get serializer(){
         if(!this._serializer){
             if(this.store && this.store.schema){
-                // compile an schema 
-                
+                // compile an schema
+
                 if(!this.store.schema._compiled){
                     this.store.schemaSerializer= Serializer.fastJSON(this.store.schema)
                     Object.defineProperty(this.store.schema,"_compiled",{
                         enumerable: false,
                         value: true
                     })
-                } 
+                }
             }
             if(this.store && this.store.schemaSerializer){
                 this._serializer= this.store.schemaSerializer
             }
             else{
-                this._serializer= Serializer.defaultJSON
+                this._serializer= Serializer.default
             }
         }
         return this._serializer
@@ -47,11 +47,11 @@ class Reply{
     }
 
     code(status){
-        this.res.statusCode= status 
+        this.res.statusCode= status
         return this
     }
     header(name, value){
-        this._h[name]= value 
+        this._h[name]= value
         this.res.setHeader(name,value)
         return this
     }
@@ -75,21 +75,36 @@ class Reply{
     }
     serialize(payload){
         if(typeof payload == "function"){
-            this._serializer= payload 
-            return this 
+            this._serializer= payload
+            return this
         }
         return this.serializer(payload, this)
     }
 
-    send(payload){
-        var str= this.serialize(payload)
-        if(str.pipe){
+    deferred(){
+        var def={}
+        def.promise= new Promise(function(a,b){
+            def.resolve= a
+            def.reject = b
+        })
+        return def
+    }
+
+    async send(payload){
+        var str= this.serialize(payload), def
+        if(str && typeof str.pipe == "function"){
+
             str.pipe(this.res)
+            def= this.deferred()
+            str.on("error", def.reject)
+            this.res.on("finish", def.resolve)
+            return def.promise
+
         }else{
             this.res.end(str)
         }
-        this.sent= true 
-        return this 
+        this.sent= true
+        return this
     }
 
 
