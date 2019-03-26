@@ -383,6 +383,8 @@ class Registry
 		moduledesc= await @resolve module, version
 		return require(moduledesc.folder)
 
+	_getProposedFolder: (module, version)->
+
 
 	resolve: (module, version, ignorecache)->
 
@@ -408,9 +410,19 @@ class Registry
 					break
 
 		if ignorecache and moduledesc
-			if not Path.dirname(moduledesc.folder).endsWith("npm-inst")
-				moduledesc= null
+			# only use cache for explicit requested modules
+			# but rewrite for dependencies
+			moduledesc= null
 
+
+			#if Path.basename(moduledesc.folder) isnt module
+			# reinstall in options?.parent?.folder
+			# make a symlink
+
+			###
+			else if module.indexOf("request") >= 0
+				console.info(moduledesc.folder, @options?.parent?.folder)
+			###
 
 
 
