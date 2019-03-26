@@ -1,12 +1,12 @@
-database: 
-	
-	# core library 
-	"core": 
+database:
+
+	# core library
+	"core":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/core"
 		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/core/${file}"
-	
+
 	# dhs library
-	"dhs": 
+	"dhs":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/dhs"
 		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/dhs/${file}"
 		# find the best suitable extension
@@ -19,13 +19,18 @@ database:
 		]
 
 	# standar library
-	"std": 
+	"std":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/std"
 		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/std/${file}"
 
+	# kivi template library
+	"kivi":
+		"repo": "https://github.com/voxsoftware/kawix/tree/master/kivi"
+		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/kivi/${file}"
+
 
 	# gix library
-	"gix": 
+	"gix":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/gix"
 		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/gix/${file}"
 		# find the best suitable extension
