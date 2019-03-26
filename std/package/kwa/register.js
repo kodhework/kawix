@@ -1,7 +1,7 @@
 // Copyright 2019 Kodhe @kawix/std
 
 // kwa es básicamente un .tar.gz
-
+Id0  = 0
 import Url from 'url'
 import Exception from '../../../util/exception'
 import Path from 'path'
@@ -49,10 +49,13 @@ var loader1 = async function (filename, uri, options, helper) {
 
 	// decompress
 	// .kwa is a compressed format
-	var folder= cachedata.file + ".v." + stat.mtimeMs.toString(36)
-	if(! await _checkFileExists(folder)){
-		await fs.mkdirAsync(folder)
+	var folder= cachedata.file + ".folder"
+	if(await _checkFileExists(folder)){
+		await fs.renameAsync(folder, folder + "." + Date.now().toString(32) + Id0)
+		Id0++
 	}
+	await fs.mkdirAsync(folder)
+
 
 	if(!options.fromremote){
 		await tar.x({
@@ -69,7 +72,15 @@ var loader1 = async function (filename, uri, options, helper) {
 	var source= {
 		"code": `
 		exports.kawixPreload= async function(){
-			module.exports= await KModule.import("${Path.join(folder,'mod.js')}")
+			try{
+				module.exports= await KModule.import("${Path.join(folder,'mod.js')}")
+			}catch(e){
+				if(e.message.indexOf("cannot resolve") < 0) throw e
+			}
+			module.exports["kawix.app"]= {
+				original: ${JSON.stringify(filename)},
+				resolved: ${JSON.stringify(folder)}
+			}
 		}
 		`
 	}
