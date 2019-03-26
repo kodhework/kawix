@@ -733,7 +733,7 @@ class Service
 							await func.handler(env)
 						return if env.response.finished
 
-					else if not site._arouter and site.routes
+					else if not site._arouter and site.routes and site._urouter
 						await site._urouter.handle(env)
 						return if env.response.finished
 

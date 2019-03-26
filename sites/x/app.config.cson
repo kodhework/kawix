@@ -1,4 +1,4 @@
-site: 
+site:
 	name: '@kawix.x'
 	description: 'This is the webserver based on dhs for the https://kwx.kodhe.com/x/ service.'
 	# purpose
@@ -15,10 +15,17 @@ site:
 
 	routes: [
 		{
+			path: "/v/:version/:lib/*"
+			method: "get"
+			file: "./src/web.service"
+		}
+
+
+		{
 			path: "/:lib/*"
 			method: "get"
 			file: "./src/web.service"
 		}
 
-		
+
 	]
