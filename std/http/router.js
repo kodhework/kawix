@@ -205,7 +205,7 @@ class Router {
 		return route
 	}
 
-	async handle(env) {
+	async handle(env, route) {
 		var route, def
 		/*
 		if(this._router2){
@@ -216,7 +216,8 @@ class Router {
 		if(!env.request.uri)
 			env.request.uri= Url.parse(env.request.url)
 
-		route= this.find(env.request.method, env.request.uri.pathname, false)
+		if(!route)
+			route= this.find(env.request.method, env.request.uri.pathname, false)
 		if(route &&  route !== true){
 
 			if(env.request.uri.search && !env.request.query)
