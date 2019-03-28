@@ -6,6 +6,15 @@
 
 **@kawix/core** allows requiring modules in async and more elegant way, and use last features of EcmaScript (for example async/await) without requiring a lot of dependencies, packagers or build scripts
 
+## What is new in 0.3.5
+
+* Fix bug ```asynchelper not defined```
+* Fix bug ```module $1 not found``` when importing from npm
+* You can now require modules that dependes on **native** using ```npmi``` protocol. Example: 
+
+```javascript
+import dmg from 'npmi://appdmg@^0.5.2'
+```
 
 ## What is new in 0.3.0 [IMPORTANT FIXED BUGS]
 
