@@ -468,8 +468,9 @@ class Service
 					site._hrouter= new KawixHttp.router()
 					site._urouter= new KawixHttp.router()
 
-					if site.hostnames
-						for host in site.hostnames
+					if site.hostnames ? site.hosts
+						hostnames = site.hostnames ? site.hosts
+						for host in hostnames
 							@_addHost host, site
 
 
@@ -728,9 +729,11 @@ class Service
 
 				for site in config.sites
 					if site._hrouter?.handle
+						
 						func= site._hrouter.find("GET", "/" + host)
 						if typeof func?.handler == "function"
-							await func.handler(env)
+							await site._hrouter.handle(env, func)
+						
 						return if env.response.finished
 
 					else if not site._arouter and site.routes and site._urouter

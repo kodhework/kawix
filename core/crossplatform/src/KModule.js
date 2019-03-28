@@ -450,8 +450,12 @@ var builtinModules = _module.builtinModules;
 			return url + "/" + name
 		}
 	}
-	readNpm = function (url) {
+	readNpm = function (url, options, npmi) {
 
+		var npmtext= 'npm'
+		if(npmi){
+			npmtext= 'npmi'
+		}
 		//var uri= Url.parse(url)
 		var module = url.substring(url.indexOf("://") + 3)
 
@@ -484,13 +488,13 @@ var builtinModules = _module.builtinModules;
 					return {
 						redirect: Path.join(moduledesc.folder, subpath),
 						from: 'npm',
-						mask: "npm://" + moduledesc.name + "$v$" + moduledesc.version + "/" + subpath
+						mask: npmtext + "://" + moduledesc.name + "$v$" + moduledesc.version + "/" + subpath
 					}
 				} else {
 					return {
 						redirect: moduledesc.main,
 						from: 'npm',
-						mask: "npm://" + moduledesc.name + "$v$" + moduledesc.version + "/" + (Path.relative(moduledesc.folder, moduledesc.main))
+						mask: npmtext + "://" + moduledesc.name + "$v$" + moduledesc.version + "/" + (Path.relative(moduledesc.folder, moduledesc.main))
 					}
 				}
 			}
@@ -511,7 +515,9 @@ var builtinModules = _module.builtinModules;
 				if (!process.env.DISABLE_COMPILATION_INFO) {
 					console.info("Caching npm module: " + url + " ...")
 				}
-				Mod._npmImport.resolve(module).then(continue2).catch(reject)
+				Mod._npmImport.resolve(module, {
+					nativeEnabled: npmi 
+				}).then(continue2).catch(reject)
 			}
 
 			if (!Mod._npmImport) {
@@ -1643,6 +1649,9 @@ var helper= {
 			return promise
 		}
 		else if(uri.protocol == "npmi:"){
+			promise= readNpm(file, options, true)
+			return promise
+
 			throw new Error("Not implemented")
 		}
 		else if(uri.protocol == "file:" || !uri.protocol){
