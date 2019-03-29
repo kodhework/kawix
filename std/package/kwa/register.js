@@ -3,10 +3,10 @@
 // kwa es básicamente un .tar.gz
 Id0  = 0
 import Url from 'url'
-import Exception from '../../../util/exception'
+import Exception from '../../util/exception'
 import Path from 'path'
-import tar from '../../../compression/tar.js'
-import fs from '../../../fs/mod.js'
+import tar from '../../compression/tar.js'
+import fs from '../../fs/mod.js'
 
 
 if (typeof kwcore != "object" || !kwcore) {
