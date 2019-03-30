@@ -34,7 +34,7 @@ class IPC extends ipc
 
 	_getListenPath: ()->
 
-		if process.env.KAWIX_CHANNEL_PATH
+		if process.env.KAWIX_CHANNEL_PATH and not @id
 			path1= process.env.KAWIX_CHANNEL_PATH
 		else
 			path1= Path.join(Os.homedir(),".kawi")
