@@ -75,7 +75,7 @@ var loader1 = async function (filename, uri, options, helper) {
 			try{
 				module.exports= await KModule.import("${Path.join(folder,'mod.js')}")
 			}catch(e){
-				if(e.message.indexOf("cannot resolve") < 0) throw e
+				if(e.message.indexOf("Cannot resolve") < 0) throw e
 			}
 			module.exports["kawix.app"]= {
 				original: ${JSON.stringify(filename)},
