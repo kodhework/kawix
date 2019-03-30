@@ -31,7 +31,36 @@ var _checkFileExists= function(file) {
 	return def.promise;
 }
 
+var _sleep= function(timeout){
+	return new Promise(function(a,b){
+		setTimeout(a,timeout)
+	})
+}
 
+var _removedir = async function(path, retry = 0) {
+	var e, file, files, i, len, stat, ufile;
+	try {
+		files = (await fs.readdirAsync(path));
+		for (i = 0, len = files.length; i < len; i++) {
+			file = files[i];
+			ufile = Path.join(path, file);
+			stat = (await fs.statAsync(ufile));
+			if (stat.isDirectory()) {
+				await _removedir(ufile);
+			} else {
+				await fs.unlinkAsync(ufile);
+			}
+		}
+		return (await fs.rmdirAsync(path));
+	} catch (error) {
+		e = error;
+		if (retry > 15) {
+			throw e;
+		}
+		await _sleep(20);
+		return (await _removedir(path, retry + 1));
+	}
+};
 
 
 var loader1 = async function (filename, uri, options, helper) {
@@ -51,7 +80,12 @@ var loader1 = async function (filename, uri, options, helper) {
 	// .kwa is a compressed format
 	var folder= cachedata.file + ".folder"
 	if(await _checkFileExists(folder)){
-		await fs.renameAsync(folder, folder + "." + Date.now().toString(32) + Id0)
+		try {
+			await _removedir(folder)
+		}
+		catch(e){
+			await fs.renameAsync(folder, folder + "." + Date.now().toString(32) + Id0)
+		}
 		Id0++
 	}
 	await fs.mkdirAsync(folder)
