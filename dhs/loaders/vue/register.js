@@ -1,10 +1,10 @@
 
 
 import {parse as parsex} from 'npm://@vue/component-compiler-utils@^2.6.0'
-import Registry from '../../registry.js'
+import Registry from '../../../std/package/registry.js'
 import Path from 'path'
-import Exception from '../../../util/exception'
-import uniqid from '../../../util/uniqid.js'
+import Exception from '../../../std/util/exception'
+import uniqid from '../../../std/util/uniqid.js'
 
 var VueCompiler
 export var kawixPreload= async function(){
@@ -15,7 +15,7 @@ export var kawixPreload= async function(){
 }
 
 var compile_= function(code,filename,id ,language){
-	
+
 	var ext= kwcore.KModule.Module.languages[language]
 	if(!ext){
 		throw Exception.create(`Language ${language} not supported. You need register a loader`).putCode("NOT_SUPPORTED")
@@ -24,17 +24,17 @@ var compile_= function(code,filename,id ,language){
 		language: language
 	})
 
-	return ast 
+	return ast
 }
 
 var parse1= function(code,filename){
-	
+
 	var descriptor= parsex({
 		source:code,
 		filename,
 		compiler: VueCompiler
 	})
-	return descriptor 
+	return descriptor
 }
 
 var compile1= function(code,filename,options){
@@ -47,21 +47,21 @@ var compile1= function(code,filename,options){
 	var descriptor= parse1(code,filename)
 	var code= [], ast, lang, kawixAsync= []
 
-	
+
 	if(descriptor.template){
-		// maybe compile? 
+		// maybe compile?
 		lang=descriptor.template.attrs["lang"]
 		if(lang){
 			ast = compile_(descriptor.template.content, filename, ".template", lang)
 
-			delete ast.options 
+			delete ast.options
 			delete ast.map
 
 
 			kawixAsync.push(`
 			ast= ${JSON.stringify(ast)}
 			mod= await KModule.require(__dirname + "/" + ${JSON.stringify(filename+ ".template")}, {
-				precompiled: ast 
+				precompiled: ast
 			})
 			f= (mod.invoke || mod.default || mod)
 			if(typeof f == "function") obj.template= f({})
@@ -79,20 +79,20 @@ var compile1= function(code,filename,options){
 
 
 	if (descriptor.script) {
-		
+
 		lang = descriptor.script.attrs["lang"]
 		if(!lang) lang= 'javascript'
 		if (lang) {
 			ast = compile_(descriptor.script.content, filename, ".script", lang)
-			
-			delete ast.options 
+
+			delete ast.options
 			delete ast.map
 			console.log("VUe filename:",filename)
 
 			kawixAsync.push(`
 			ast= ${JSON.stringify(ast)}
 			mod= await KModule.require(__dirname + "/" + ${JSON.stringify(filename+ ".script")}, {
-				precompiled: ast 
+				precompiled: ast
 			})
 			f= (mod.invoke || mod.default || mod)
 			obj.script= f
@@ -108,25 +108,25 @@ var compile1= function(code,filename,options){
 		}
 		for(var i=0;i<descriptor.styles.length;i++){
 			let style= descriptor.styles[i]
-		
-			// maybe compile? 
+
+			// maybe compile?
 			lang = style.attrs["lang"]
 			if (lang) {
 				ast = compile_(style.content, filename, ".style", lang)
 
-				delete ast.options 
+				delete ast.options
 				delete ast.map
 
 
 				kawixAsync.push(`
 				ast= ${JSON.stringify(ast)}
 				mod= await KModule.require(__dirname + "/" + ${JSON.stringify(filename+ ".style")}, {
-					precompiled: ast 
+					precompiled: ast
 				})
 				f= (mod.invoke || mod.default || mod)
 
 				if(typeof f == "function") st= f({})
-				else st= mod 
+				else st= mod
 
 				obj.styles.push({
 					style: st ,
@@ -152,7 +152,7 @@ var compile1= function(code,filename,options){
 		code.push("var ModInfo={}")
 		code.push(`ModInfo.cid= ${JSON.stringify(uniqid())}`)
 		code.push(`var rulesFromStyle= function(styleStr){
-			var rule, rules, selectors, x, z, cid 
+			var rule, rules, selectors, x, z, cid
 			cid= ModInfo.cid
 			styleStr=styleStr.trim()
 			x = 0;
@@ -198,7 +198,7 @@ var compile1= function(code,filename,options){
 							us= si + " " + a  + ","
 							content1= a.split(/\\s+/)
 							content2= content1[0].split(">")
-							us += content2[0] + si 
+							us += content2[0] + si
 							if(content2.length > 1){
 								us+= ">" + content2.slice(1).join(">")
 							}
@@ -223,7 +223,7 @@ var compile1= function(code,filename,options){
 		code.push("var _def_=" + `function(env){
 			var c, scoped=false
 			var injectStyles= function(){
-				
+
 				for(var i=0;i<exports.styles.length;i++){
 					let style=exports.styles[i]
 					if(style._good) continue
@@ -236,7 +236,7 @@ var compile1= function(code,filename,options){
 					}
 				}
 			}
-			
+
 			if(ModInfo.script){
 				if(typeof ModInfo.script == "function"){
 					exports= module.exports= ModInfo.script()
@@ -245,9 +245,9 @@ var compile1= function(code,filename,options){
 					exports= module.exports= ModInfo.script
 				}
 			}
-			
+
 			if(ModInfo.styles){
-				exports.styles= ModInfo.styles 
+				exports.styles= ModInfo.styles
 				for(var i=0;i<exports.styles.length;i++){
 					if(exports.styles[i].scoped) scoped= true
 					let n= exports.styles[i].style
@@ -256,13 +256,13 @@ var compile1= function(code,filename,options){
 				}
 				c= exports.created
 				exports.created= function(){
-					// attach styles 
+					// attach styles
 					injectStyles()
 					c && c.apply(this,arguments)
 				}
 			}
 
-			if(ModInfo.template){				
+			if(ModInfo.template){
 				exports.template= ModInfo.template
 
 				if(scoped){
@@ -277,7 +277,7 @@ var compile1= function(code,filename,options){
 					exports.template= temp
 				}
 			}
-			
+
 			return exports
 
 		}`)
@@ -285,7 +285,7 @@ var compile1= function(code,filename,options){
 		code.push("var _def=function(env,body){if(!_def.yet){_def.yet= true; return _def_(env,body)}}")
 
 		code.push("export var kawixPreload= async function(){")
-		
+
 		code.push("var ast,mod,f,st,obj")
 		code.push("obj= ModInfo")
 		code.push(kawixAsync.join("\n"))
@@ -293,7 +293,7 @@ var compile1= function(code,filename,options){
 		code.push("}")
 		code.push("")
 
-		
+
 
 		code.push("export default ModInfo.e")
 		code.push("export var invoke= _def_")

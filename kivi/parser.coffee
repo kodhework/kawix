@@ -117,6 +117,25 @@ class Parser
 
 		rcode.str.push("await $helper.include(#{JSON.stringify(attrs)})")
 
+	_kvAttr: (node,rcode,parent)->
+		attrs= @_array_to_object node.attrs
+		if not attrs.name
+			throw Exception.create("Parsing: line #{rcode.line} - col #{rcode.col}. #{node.nodeName} need an attribute `name`")
+
+		str = rcode.str[rcode.str.length - 1]
+		if not str.startsWith("$helper.openNode")
+			throw Exception.create("Parsing: line #{rcode.line} - col #{rcode.col}. #{node.nodeName} only can be present after a openNode")
+
+
+
+		openNode= rcode.pop()
+		@_kvExpression node, rcode, null, no
+
+		rcode.str.push "$attrs[#{JSON.stringify(attrs.name)}] = #{rcode.pop()}"
+		rcode.str.push(openNode)
+
+
+
 	_kvSection: (node,rcode,parent)->
 		attrs= @_array_to_object node.attrs
 		if not attrs.name
@@ -204,6 +223,7 @@ class Parser
 
 		rcode.str.push("$helper.openNode(#{JSON.stringify(nob)})")
 
+
 		# iterate child nodes
 		if node.tagName != "script"
 			cnodes= @_getChildnodes node
@@ -234,26 +254,18 @@ class Parser
 			for nnode in cnodes
 				@_analyze nnode, rcode, node
 
-	_kvExpression: (node,rcode,parent)->
-		noraw= node.nodeName == "kivi:exp" or node.nodeName == "vw:expression"
+	_kvExpression: (node, rcode, parent, write = true)->
+		raw= node.nodeName == "kivi:raw" or node.nodeName == "vw:rawexpression"
 
 		exp= node.childNodes[0].value
 		rcode.lang= rcode.lang || "javascript"
 
-		###
-		c= rcode.expressions[rcode.lang] ? (rcode.expressions[rcode.lang] = {})
-		if not c[exp]
-			cid= Object.keys(c).length
-			c[exp] = cid
-		else
-			cid= c[exp]
-		###
 
 		cid= @_compileExpression(rcode.lang, exp)
-		if not noraw
-			rcode.str.push("$helper.rawexpression(#{cid}, true)")
+		if raw
+			rcode.str.push("$helper.rawexpression(#{cid}, #{write.toString()})")
 		else
-			rcode.str.push("$helper.expression(#{cid}, true)")
+			rcode.str.push("$helper.expression(#{cid}, #{write.toString()})")
 
 		parent?._last= 'expression'
 
@@ -313,6 +325,10 @@ class Parser
 				node._type= 'repeat'
 				@_kvRepeat(node, rcode, parent)
 
+			else if node.nodeName == "kivi:attr"
+				node._type= 'attr'
+				@_kvAttr(node, rcode, parent)
+
 			else if node.nodeName == "kivi:for" or node.nodeName == "vw:for"
 				node._type= 'for'
 				@_kvRepeat(node, rcode, parent)
@@ -355,6 +371,7 @@ class Parser
 		rcode=
 			str: [
 				"class Exception extends Error{}"
+				"var $attrs={}"
 				"var Invoke= async function(data, options){"
 				"var $helper= _helper()"
 				"if(data && data.$section)"
@@ -481,12 +498,14 @@ class Parser
 		}*/
 		str1 = `<${node.tagName}`;
 		if (node.attrs) {
-		  ref = node.attrs;
+		  ref = Object.assign(node.attrs || {}, $attrs);
+
 		  for (id in ref) {
 			val = ref[id];
 			str1 += ` ${id}='${this.scape(val)}'`;
 		  }
 		}
+		$attrs={}
 		if (node.tagName === "link" || node.tagName === "img") {
 		  str1 += "/>";
 		} else {

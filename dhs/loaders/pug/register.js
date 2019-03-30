@@ -8,7 +8,7 @@ import parser from 'npm://pug-parser@^5.0.0'
 import codegen from 'npm://pug-code-gen@^2.0.1'
 
 
-import Exception from '../../../util/exception'
+import Exception from '../../../std/util/exception'
 import Path from 'path'
 
 if (typeof kwcore != "object" || !kwcore) {
@@ -22,10 +22,10 @@ export var kawixPreload= async function(){
 		codegen = await import('npm://pug-code-gen@^2.0.1')
 		lexer = await import('npm://pug-lexer@^4.0.0')
 		parser = await import('npm://pug-parser@^5.0.0')
-		
+
 	}catch(e){
 		console.error("error loading:",e)
-		throw e 
+		throw e
 	}finally{
 		clearTimeout(int1)
 	}
@@ -34,19 +34,19 @@ export var kawixPreload= async function(){
 var parseAst= function(ast,parent, data){
 	if (ast.type == "Extends")
 		throw Exception.create("Extends is not supported in this async version of pug loader")
-	
+
 	if (ast.type == "RawInclude"){
 		let id = '$$$' + data.imports.length
-		
+
 		data.imports.push({
 			path: ast.file.path,
 			id
 		})
 		ast.type= 'Code'
-		ast.mustEscape= false 
+		ast.mustEscape= false
 		ast.val = `((${id}.invoke || ${id}.default || ${id})(locals))`
-		ast.buffer= true 
-		delete ast.file 
+		ast.buffer= true
+		delete ast.file
 	}
 	else{
 
@@ -59,15 +59,15 @@ var parseAst= function(ast,parent, data){
 }
 
 var parse1= function(code, filename){
-	
+
 	var tokens = lexer(code, { filename })
 	var ast = parser(tokens, { filename, code })
 	var data={
 		imports:[]
 	}
 	parseAst(ast, null, data)
-	
-	data.ast= ast 
+
+	data.ast= ast
 	return data
 }
 
@@ -85,13 +85,13 @@ var compile1 = function (code, file, options) {
 		options = file
 		file = options.filename
 	}
-	
+
 	var data= parse1(code, file)
 
 	// generate code
 	// var wrap = require(Path.normalize('/virtual/pug-runtime_2/wrap.js'))
 
-	
+
 	var funcStr = codegen(data.ast, {
 		compileDebug: true,
 		pretty: true,
@@ -101,13 +101,13 @@ var compile1 = function (code, file, options) {
 
 	var rcode= ''
 	for(var i=0;i<data.imports.length;i++){
-		// use imports 
-		rcode += "\nimport * as " + data.imports[i].id + " from "+ 
+		// use imports
+		rcode += "\nimport * as " + data.imports[i].id + " from "+
 			data.imports[i].path
 	}
-	
+
 	//rcode+= "\nimport pug from \"" + runtimefile + "\""
-	
+
 	rcode += '\nvar _def= (function(){\n\t' + funcStr + "\n;return default$$; })()"
 	rcode+= "\nexport default _def"
 	rcode += `\nexport var invoke = function(env){
@@ -121,7 +121,7 @@ var compile1 = function (code, file, options) {
 		}
 		return content
 	}
-	
+
 	export var kawixDynamic={
 		time: 10000
 	}
@@ -150,4 +150,3 @@ export default register1
 export var register = register1
 export var parse = parse1
 export var compile = compile1
-
