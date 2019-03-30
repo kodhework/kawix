@@ -117,8 +117,13 @@ class Router {
 			if(route.indexOf("/*") >=0 ){
 				throw new Error("Route cannot have /*")
 			}
-
-			this.METHOD("ALL", Path.join(route, "*"), this._use(store, callback))
+			var add1= function(path, path2){
+				if(!path.endsWith("/")){
+					path+= "/"
+				}
+				return path + path2
+			}
+			this.METHOD("ALL", add1(route, "*"), this._use(store, callback))
 			this.METHOD("ALL", route, this._use(store, callback))
 			return this
 		}
