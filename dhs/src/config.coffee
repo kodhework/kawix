@@ -267,6 +267,7 @@ class Config extends EventEmitter
 				@sleep 100
 				config= await `import(this.file)`
 
+			config= config.default ? config
 			if not config.kawixDynamic
 				Object.defineProperty config, "kawixDynamic",
 					enumerable: no
