@@ -235,6 +235,8 @@ class Service
 		w.info= cluster
 		w.purpose= cluster.purpose
 		w.pid= w.process.pid
+		w.on "error", (e)->
+			console.error(" > [kawix/dhs] Error in worker: ", w.pid, e)
 		w.once "exit", ()->
 			i= self.workers.indexOf(w)
 			self.workers.splice(i,1)
@@ -731,11 +733,11 @@ class Service
 
 				for site in config.sites
 					if site._hrouter?.handle
-						
+
 						func= site._hrouter.find("GET", "/" + host)
 						if typeof func?.handler == "function"
 							await site._hrouter.handle(env, func)
-						
+
 						return if env.response.finished
 
 					else if not site._arouter and site.routes and site._urouter
