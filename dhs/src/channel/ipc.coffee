@@ -47,11 +47,12 @@ class IPC extends ipc
 				config= @server.config.readCached()
 				path1= Path.join(path1, config.name ? ("dhs.#{Date.now().toString(32)}"))
 			if Os.platform() is "win32"
-				###
+
 				if(path1[1]==":")
 					path1= path1.substring(2).replace(/\\/g,'/')
-				###
-				return "//./pipe/" + Path.basename(path1)
+				if @id
+					path1 += "." + @id
+				return "//./pipe/" + path1
 
 		path1+= "."+ @id if @id
 		path1
