@@ -577,7 +577,9 @@ class Service
 				await h(env,ctx)
 				await site._urouter.handle(env,ctx) if not env.response.finished
 
-
+		path= prefix.path ? prefix
+		if not path.startsWith("/")
+			throw Exception.create("Prefix #{path} is not valid").putCode("INVALID_PREFIX")
 		site._arouter.use (prefix.path ? prefix), c ? site._urouter
 
 
