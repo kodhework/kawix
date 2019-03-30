@@ -101,9 +101,22 @@ class Registry
 
 	_getPackageCacheConfig: (pack, version)->
 
-		securename= pack.replace /\//g, '%2F'
+		securename= pack
+		transform=
+			"<" : "_lt"
+			">" : "_gt"
+			"|" : "_b"
+			"/" : "%2F"
+			"?" : "_q"
+
+		securename= securename.replace /\>|\<|\||\/|\?/g, (a,b)->
+			return transform[a]
+
+
+
+		pack1= securename
 		securename += "@#{version}"
-		pack1= pack.replace(/\//g, "%2F")
+		#pack1= pack.replace(/\//g, "%2F")
 
 
 		kawi= Path.join Os.homedir(), ".kawi"
@@ -447,7 +460,7 @@ class Registry
 			if @options.nativeEnabled
 				binding= Path.join moduledesc.folder, "binding.gyp"
 				binding_check= Path.join moduledesc.folder, "binding-installed--.gyp"
-				
+
 				# is a native module?
 				if await @_fileExists(binding) and (not await @_fileExists(binding_check))
 
