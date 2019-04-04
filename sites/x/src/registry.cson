@@ -34,6 +34,14 @@ database:
 	"kivi":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/kivi"
 		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/kivi/${file}"
+		# find the best suitable extension
+		"extensions": [
+			".js"
+			".coffee"
+			".json"
+			".cson"
+			".ts"
+		]
 
 
 	# gix library
