@@ -67,7 +67,7 @@ class Registry
 		if @options.output
 			folder= @options.output
 		else
-			kawi= Path.join Os.homedir(), ".kawi"
+			kawi= process.env.KAWIX_CACHE_DIR or (Path.join Os.homedir(), ".kawi")
 			if not await @_fileExists(kawi)
 				await fs.mkdirAsync(kawi)
 
@@ -121,7 +121,7 @@ class Registry
 		#pack1= pack.replace(/\//g, "%2F")
 
 
-		kawi= Path.join Os.homedir(), ".kawi"
+		kawi= process.env.KAWIX_CACHE_DIR or (Path.join Os.homedir(), ".kawi")
 		if not await @_fileExists(kawi)
 			await fs.mkdirAsync(kawi)
 
@@ -472,7 +472,7 @@ class Registry
 					npmmodule= await newr.resolve("npm@6.9.0")
 					npmfile= Path.join(npmmodule.folder, "bin", "npm-cli.js")
 					# execute npm install on folder
-					p= Child.spawn process.execPath, [npmfile, "install"],
+					p= Child.spawn process.execPath, [npmfile, "install", "--unsafe-perm"],
 						env: Object.assign {ELECTRON_RUN_AS_NODE: 1}, process.env
 						cwd: moduledesc.folder
 
