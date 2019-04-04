@@ -1,6 +1,6 @@
 // enable coffeescript and cson
 import '../../std/coffeescript/register.js'
-import '../../std/coffeescript/cson/register.js'
+import reg from '../../std/coffeescript/cson/register.js'
 // this is specific of @kawix/core
 if(global.kawix ){
 	kawix.KModule.addVirtualFile("@kawix/dhs", {
@@ -16,5 +16,4 @@ if(global.kawix ){
 		isdirectory: true
 	})
 	//console.info(kawix.KModule._virtualredirect)
-
 }
