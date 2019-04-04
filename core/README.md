@@ -6,6 +6,11 @@
 
 **@kawix/core** allows requiring modules in async and more elegant way, and use last features of EcmaScript (for example async/await) without requiring a lot of dependencies, packagers or build scripts
 
+## What is new in 0.3.13
+
+* Environment variable ```KAWIX_CACHE_DIR```. You can override the cache directory for save compilated files and modules
+
+
 ## What is new in 0.3.12
 
 * Fixed bugs, on importing. Improved async imports
@@ -138,6 +143,11 @@ Kawix.KModule.import("https://kwx.kodhe.com/x/core/example/http.js", {
 * Support Typescript
 * Support spread operators and other EcmaScript 2018 syntax on Node 6+
 
+
+## Runtime options
+
+* Flag ```--force``` allows you to ignore the cache of your remote files and recompile
+* Environment variable ```KAWIX_CACHE_DIR``` allows you to specify the folder when compiled/cached files are saved. Is good for example if you want flexibility in development, but in production want include all dependencies (remote,npm) in the distributable
 
 
 ## Features
