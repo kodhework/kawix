@@ -46,7 +46,7 @@ var compile1= function(code,filename,options){
 
 	var descriptor= parse1(code,filename)
 	var code= [], ast, lang, kawixAsync= []
-
+	var nbasename= Path.basename(filename)
 
 	if(descriptor.template){
 		// maybe compile?
@@ -60,7 +60,7 @@ var compile1= function(code,filename,options){
 
 			kawixAsync.push(`
 			ast= ${JSON.stringify(ast)}
-			mod= await KModule.require(__dirname + "/" + ${JSON.stringify(filename+ ".template")}, {
+			mod= await KModule.require(__dirname + "/" + ${JSON.stringify(nbasename + ".template")}, {
 				precompiled: ast
 			})
 			f= (mod.invoke || mod.default || mod)
@@ -87,11 +87,11 @@ var compile1= function(code,filename,options){
 
 			delete ast.options
 			delete ast.map
-			console.log("VUe filename:",filename)
+			console.log("Vue filename:",filename)
 
 			kawixAsync.push(`
 			ast= ${JSON.stringify(ast)}
-			mod= await KModule.require(__dirname + "/" + ${JSON.stringify(filename+ ".script")}, {
+			mod= await KModule.require(__dirname + "/" + ${JSON.stringify(nbasename+ ".script")}, {
 				precompiled: ast
 			})
 			f= (mod.invoke || mod.default || mod)
@@ -120,7 +120,7 @@ var compile1= function(code,filename,options){
 
 				kawixAsync.push(`
 				ast= ${JSON.stringify(ast)}
-				mod= await KModule.require(__dirname + "/" + ${JSON.stringify(filename+ ".style")}, {
+				mod= await KModule.require(__dirname + "/" + ${JSON.stringify(nbasename+ ".style")}, {
 					precompiled: ast
 				})
 				f= (mod.invoke || mod.default || mod)
@@ -150,7 +150,7 @@ var compile1= function(code,filename,options){
 	if(kawixAsync.length){
 
 		code.push("var ModInfo={}")
-		code.push(`ModInfo.cid= ${JSON.stringify(uniqid())}`)
+		code.push(`ModInfo.cid= ${JSON.stringify("J" + uniqid())}`)
 		code.push(`var rulesFromStyle= function(styleStr){
 			var rule, rules, selectors, x, z, cid
 			cid= ModInfo.cid
