@@ -6,18 +6,19 @@ var deferred= function(){
 		def.resolve= a
 		def.reject = b
 	})
-	return def 
+	return def
 
 }
 var KHStatic= function(path, options){
 	var st= Static(path, options)
-	
+
 	return function(env){
-		
+
 		var def= deferred()
+		env.response.once("finish",def.resolve)
 		st(env.request, env.response, def.resolve)
-		return def.promise 
+		return def.promise
 	}
 }
 
-export default KHStatic 
+export default KHStatic
