@@ -9,11 +9,12 @@ import ConfigIPC from './config.ipc'
 import Os from 'os'
 import IPC from './channel/ipc'
 import fs from './lib/_fs'
+import {EventEmitter} from 'events'
 
-
-class Service
+class Service extends EventEmitter
 
 	constructor: (@config)->
+		super()
 		Service.current= @
 		@_crons={}
 		@_router= new KawixHttp.router()
@@ -235,6 +236,16 @@ class Service
 		w.info= cluster
 		w.purpose= cluster.purpose
 		w.pid= w.process.pid
+		self= @
+		u= (message)->
+			if message.startsWith("Listening:")
+				c= message.substring(10)
+				c= JSON.parse(c)
+				self.emit "listen", c
+			else
+				w.once "message", u
+
+		w.once "message", u
 		w.on "error", (e)->
 			console.error(" > [kawix/dhs] Error in worker: ", w.pid, e)
 		w.once "exit", ()->
@@ -342,8 +353,11 @@ class Service
 		###
 
 		@address= await @http.listen addr
-
-		console.info "Listening on: ", @address
+		console.info " > [kawix/dhs] Listening on: ", @address
+		if Cluster.isMaster
+			@emit "listen", @address
+		else
+			process.send "Listening: " + JSON.stringify(@address)
 
 
 		#@_router.get "/.o./config", @api_config.bind(@)
@@ -692,6 +706,7 @@ class Service
 
 		if uri.pathname == "/.static./js/kawix.core.js"
 			env.request.url= '/main.js'
+			#console.info ">>>>", Path.normalize(Path.join(__dirname, "..", "..", "core", "crossplatform", "dist"))
 			@__ks0 = KawixHttp.staticServe(Path.join(__dirname, "..", "..", "core", "crossplatform", "dist")) if not @__ks0
 			await @__ks0(env)
 		else if uri.pathname == "/.static./js/kawix.async.js" or uri.pathname == "/.static./js/kawix.core.async.js"
@@ -713,8 +728,10 @@ class Service
 			env= null
 			return
 
-
+		
 		@_concurrent++
+		env.response.once "finish", ()=>
+			@_concurrent--
 		try
 
 			if env.request?.url == "/.o./config"
@@ -745,22 +762,23 @@ class Service
 						return if env.response.finished
 
 
-			if env.request?.url.startsWith("/.static")
+			if env.request?.url.startsWith("/.static.")
 				await @api_kodhe(env) if not env.response.finished
 
 			env.reply.code(404).send("NOT FOUND") if not env.response.finished
 			env= null
 
 		catch e
+
 			if env.response?.finished
 				env.error = e
 				@api_500(env)
 			else
 				console.error(" > [kawix/dhs] Error in server handle: #{e.stack}")
-
 			env= null
 		finally
-			@_concurrent--
+			env= null
+
 
 
 
