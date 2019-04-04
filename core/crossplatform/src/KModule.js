@@ -2,6 +2,10 @@ var Next, fs, Os, Path, Module, Url, browser, _require, Mod, nd, npmResolver, _m
 Os= require("os")
 Mod = function () { }
 
+
+
+
+
 var deferred= function(){
 	var def={}
 	def.promise= new Promise(function(a,b){
@@ -83,6 +87,11 @@ var httpr={}
 
 
 
+if(Os.platform()!="browser"){
+	if(process.env.KAWIX_CACHE_DIR){
+		process.env.KAWIX_CACHE_DIR= Path.resolve(process.env.KAWIX_CACHE_DIR)
+	}
+}
 
 
 // Inline functions
@@ -130,7 +139,7 @@ var builtinModules = _module.builtinModules;
 			if(file.startsWith(data.resolvedpath)){
 
 				name= Path.relative(data.resolvedpath, file)
-				redir= data.redirect + "/default"
+				redir= data.redirect + (data.redirect.endsWith("/") ? "": "/") + "default"
 				//console.info("File:", realResolve(redir, name), redir, name, file)
 				return realResolve(redir, name)
 
@@ -158,7 +167,8 @@ var builtinModules = _module.builtinModules;
 			extensionLoaders: Mod.extensionLoaders,
 			languages: Mod.languages,
 			replaceSyncRequire : Mod.replaceSyncRequire,
-			removeCached : Mod.removeCached
+			removeCached : Mod.removeCached,
+			_local: []
 		}
 		return nmod
 	}
@@ -182,7 +192,7 @@ var builtinModules = _module.builtinModules;
 		}
 
 		var full= parts.join(Path.sep)
-		var kawi_dir= Path.join(Os.homedir(), ".kawi")
+		var kawi_dir= process.env.KAWIX_CACHE_DIR || Path.join(Os.homedir(), ".kawi")
 		var file_dir= Path.join(kawi_dir, full)
 		var cache_dir= Path.dirname(file_dir)
 		return {
@@ -345,7 +355,7 @@ var builtinModules = _module.builtinModules;
 							if (builtinModules.indexOf(c) < 0) {
 								mod = c
 								z++
-								return a.replace(b, b.replace(c, "___kawi__internal__" + num + "MOD_" + c.replace(/\./g, '') + "_" + z))
+								return a.replace(b, b.replace(c, z))
 							}
 						} catch (e) {
 						}
@@ -370,25 +380,25 @@ var builtinModules = _module.builtinModules;
 
 			// create a preloader function
 			json = JSON.stringify(required)
-			code = "function(KModule){\n"
+			code = "function (KModule, require){\n"
 
 			code += "	var resolve, reject\n"
 			code += "	var required= " + json + "\n"
 			code += "	var num=" + num + "\n"
 			code += "	var i=-1\n"
-			code += "	var __load= " + "function () {\n" +
+			code += "	var __load= " + "function (value) {\n" +
+			'	if(arguments.length > 0) KModule._local.push(value);\n'+
 			'	i++\n' +
 			'	var mod = required[i]\n' +
 			'	if (!mod) return resolve()\n' +
-			'	var unq = "___kawi__internal__" + num + "MOD_" + mod.replace(/\\./g, "") + "_" + i\n'+
+
 			'	var promise = KModule.import(mod, {\n'+
-			'		uid: unq,\n'+
 			'		parent: module\n'+
 			'	})\n'+
 			'	if (promise && typeof promise.then == "function")\n'+
 			'		promise.then(__load).catch(reject)\n'+
 			'	else\n'+
-			'		__load()\n'+
+			'		__load(promise)\n'+
 			'}\n'
 
 			code += "	var promise= new Promise(function(a,b){ resolve=a; reject=b; })\n"
@@ -667,7 +677,7 @@ var builtinModules = _module.builtinModules;
 })()
 
 
-
+Mod._Module= Module
 Mod._cache = {}
 Mod._cacherequire = {}
 Mod._cacheresolve= {}
@@ -713,6 +723,7 @@ Mod.disableInjectImport = function () {
 
 Module._originalResolveFilename = Module._resolveFilename
 Mod._resolveFilename = function(name,parent, resolve){
+
 	if(name.startsWith("___kawi__internal__")){
 		return name
 	}
@@ -756,6 +767,10 @@ Mod.resolveVirtual= function(name, parent, resolve){
 	var possibles=[], nname
 	var path,dirname, path1, normalize=function(a){return a}
 
+	// again fix bug on windows, why windows always need be different ?
+	if(Os.platform() == "win32" && !name.startsWith("./") && !name.startsWith("../"))
+		name= Path.normalize(name)
+
 	if(!resolve){
 		resolve= Mod.resolveFilename
 	}
@@ -770,6 +785,7 @@ Mod.resolveVirtual= function(name, parent, resolve){
 		dirname= Path.dirname(parent.filename)
 		if(name.startsWith("./") || name.startsWith("../")){
 			path= normalize(Path.normalize(Path.join(dirname, name)))
+
 			if(isVirtualFile(path)){
 				nname= virtualRedirection(path)
 				if(nname) return resolve(nname, null, resolve) || nname
@@ -871,8 +887,15 @@ Mod.resolveVirtual= function(name, parent, resolve){
 }
 
 
-Mod.replaceSyncRequire= function(originalrequire, parent){
+Mod.replaceSyncRequire= function(originalrequire, parent, KModule){
+
 	var nrequire= function(name){
+
+
+		if(nrequire._local[name]){
+			return nrequire._local[name]
+		}
+
 		if(builtinModules.indexOf(name) >= 0)
 			return originalrequire(name)
 
@@ -894,6 +917,9 @@ Mod.replaceSyncRequire= function(originalrequire, parent){
 		return originalrequire(name,parent)
 
 	}
+	// local requires
+	nrequire._local=  KModule._local
+
 	for(var id in require){
 		nrequire[id]= require[id]
 	}
@@ -907,8 +933,12 @@ Mod.replaceSyncRequire= function(originalrequire, parent){
 
 Mod.generateModule= function(file){
 	if(!file && Os.platform() == "browser"){
-		file= location.url + "/" + Mod._names + ".js"
-		Mod._names++
+		file= location.href
+		if(!file.endsWith("/")){
+			file+= "/"
+		}
+		file += Mod._namesid  + ".js"
+		Mod._namesid ++
 	}
 
 	var nmod = getKModule(file)
@@ -935,8 +965,8 @@ Mod.requireVirtualSync= function(file,parent){
 	Module._cache[file] = module
 
 
-	var code= "exports.__kawi= function(KModule){\n" +
-	"\trequire= KModule.replaceSyncRequire(require,module);\n"
+	var code= "exports.__kawi= function(KModule){ " +
+	"\trequire= KModule.replaceSyncRequire(require,module, KModule); "
 	+ ast.code + "\n}"
 
 	module._compile(code, file)
@@ -1021,15 +1051,29 @@ Mod.compileSync= function(file, options){
 
 var importing={}
 Mod.import= function(file,options){
-	var id= this.filename, def, c
+	var id= this.filename, def, c, def2, self
 	if(!id && options && options.parent){
 		id= options.parent.filename
 		if(!id) id= "/default.js"
 	}
 	id+= "-" + file
+
 	if(importing[id]){
 		def= deferred()
 		importing[id].push(def)
+
+		if(options && options.uid){
+
+			// save in _local
+			self= this
+			def2= deferred()
+			def.promise.then(function(v){
+				self._local && (self._local[options.uid]= v)
+				return def2.resolve(v)
+			}).catch(def2.reject)
+			return def2.promise
+
+		}
 		return def.promise
 	}
 
@@ -1050,7 +1094,25 @@ Mod.import= function(file,options){
 			}
 			delete importing[id]
 		})
+
+		if(options && options.uid){
+
+			// save in _local
+			self= this
+			def2= deferred()
+			def.promise.then(function(v){
+				self._local && (self._local[options.uid]= v)
+				return def2.resolve(v)
+			}).catch(def2.reject)
+			return def2.promise
+
+		}
+
 		return def.promise
+	}
+
+	if(options && options.uid){
+		this._local && (this._local[options.uid]= result)
 	}
 	return result
 }
@@ -1103,6 +1165,9 @@ Mod._import= function(file, options){
 		if(isVirtualFile(resolved))
 			return Mod.require(resolved)
 
+		if(resolved.startsWith("https:") || resolved.startsWith("http:")
+			|| resolved.startsWith("npm:") || resolved.startsWith("npmi:"))
+			return Mod.require(resolved, options)
 		return getBetter(resolved)
 	}
 
@@ -1126,9 +1191,9 @@ Mod._import= function(file, options){
 				this.filename= "/default.js"
 		}
 
-		if (file.startsWith("./") || file.startsWith("../") || !file.startsWith("/")) {
+		if (file.startsWith("./") || file.startsWith("../") || !Path.isAbsolute(file)) {
 			uri2 = Url.parse(this.filename)
-			if (uri2.protocol) {
+			if (uri2.protocol && !Path.isAbsolute(this.filename)) {
 				if(file.startsWith("./"))
 					file= file.substring(2)
 
@@ -1194,8 +1259,13 @@ Mod.addVirtualFile= function(file, data){
 
 /** require a module (file or url) */
 requiring= {}
+
+
+
+
 Mod.require = function(file, options){
 	var def, result, c
+
 	if(requiring[file]){
 		def= deferred()
 		requiring[file].def.push(def)
@@ -1246,8 +1316,8 @@ Mod._require= function(file, options){
 
 
 			//console.info("exports.__kawi= function(KModule){" + ast.code + "}")
-			module._compile("exports.__kawi= function(KModule){\n" +
-				"\trequire= KModule.replaceSyncRequire(require,module);\n"
+			module._compile("exports.__kawi= function(KModule){" +
+				"\trequire= KModule.replaceSyncRequire(require,module,KModule);"
 				+ ast.code + "\n}", file)
 
 			module.__kawi_uid = {}
@@ -1455,6 +1525,8 @@ var helper= {
 			}
 
 			fs.mkdir(file, function(err){
+				if(err && err.code =='EEXISTS')
+					err= null
 				if(err){
 					fs.stat(file, function(err, stat){
 						if(!err){
@@ -1676,8 +1748,11 @@ var helper= {
 				return fs.createReadStream(file)
 			}
 			if(vfile){
+				if(vfile.transpiled){
+					options.transpile= false
+				}
 				return {
-					code: vfile.content
+					code: vfile.content.toString()
 				}
 			}
 
@@ -1811,7 +1886,7 @@ Mod.compile= function(file, options){
 		file= Url.fileURLToPath(Url.format(uri))
 		file= Path.normalize(file)
 	}
-	var basename= uri.pathname
+	var basename= uri.pathname || file
 	if (uri.protocol && uri.protocol != "file:") {
 		options.fromremote= true
 	}
