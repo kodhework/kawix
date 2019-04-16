@@ -1,6 +1,6 @@
 // Copyright 2019 Kodhe @kawix/kivi
 import '../std/coffeescript/register'
-import Parser from './parser.coffee'
+import Parser from './parser'
 
 var compile= function(code, file, options){
     if(typeof file == "object"){
