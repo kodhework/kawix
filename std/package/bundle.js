@@ -73,6 +73,13 @@ class Bundle{
 		return this.options.disableTranspile= value
 	}
 
+	get translation() {
+		return this.options.translation
+	}
+	set translation(value) {
+		return this.options.translation = value
+	}
+
 	get ignoreIrrelevantFiles() {
 		return this.options.ignoreIrrelevantFiles
 	}
@@ -235,10 +242,11 @@ class Bundle{
 
 
 		var stat= await fs.statAsync(path)
-		var rep, files, str, fullfile, continue1, rev, comp, ast, comp1, transoptions
+		var rep, files, str, fullfile, continue1, rev, comp, ast, comp1, transoptions, translated
 
 		continue1= true
 		rev= Path.relative(this._path, path)
+
 		if(this.ignoreIrrelevantFiles && path != this._path){
 			comp= rev.split(Path.sep)
 			comp= comp[comp.length-1]
@@ -283,44 +291,48 @@ class Bundle{
 
 
 				// maybe binary? because what about opening binary files
-
-				rep.content= await fs.readFileAsync(path)
-
-				if(this.options.disableTranspile){
-					rep.transpiled= true
+				if(this.translation){
+					translated= this.translation[rev] || this.translation["./"+ rev]
+					if(translated){
+						rep.translated= "./" + Path.join(Path.relative(Path.dirname(rev), Path.dirname(translated)), Path.basename(translated))
+						rep.content= "module.exports= require("+JSON.stringify(rep.translated)+")"
+						rep.transpiled= true
+					}
 				}
-				else if(this.options.transpile !== false){
-					if(!rep.filename.endsWith(".json")){
-						transoptions = {
-							comments: false
-						}
 
-						/*
-						if(this.profile == "browser"){
-							transoptions.sourceMaps= "inline"
-						}*/
+				if(!rep.transpiled){
+					rep.content= await fs.readFileAsync(path)
+					if(this.options.disableTranspile){
+						rep.transpiled= true
+					}
+					else if(this.options.transpile !== false){
+						if(!rep.filename.endsWith(".json")){
+							transoptions = {
+								comments: false
+							}
 
-						for( var ext in kawix.KModule.Module.extensions){
-							if(rep.filename.endsWith(ext)){
-								ast= await kawix.KModule.Module.compile(path, {
-									source: rep.content.toString(),
-									force: 1,
-									mtime: Date.now(),
-									transpilerOptions: transoptions
-								})
-								rep.content= ast.code
-								this._extensions[ext]= true
-								break
+							/*
+							if(this.profile == "browser"){
+								transoptions.sourceMaps= "inline"
+							}*/
+
+							for( var ext in kawix.KModule.Module.extensions){
+								if(rep.filename.endsWith(ext)){
+									ast= await kawix.KModule.Module.compile(path, {
+										source: rep.content.toString(),
+										force: 1,
+										mtime: Date.now(),
+										transpilerOptions: transoptions
+									})
+									rep.content= ast.code
+									this._extensions[ext]= true
+									break
+								}
 							}
 						}
+						rep.transpiled= true
 					}
-					rep.transpiled= true
 				}
-
-
-
-
-
 				if(Buffer.isBuffer(rep.content)){
 					rep.content= rep.content.toString('binary')
 					str= JSON.stringify(rep, null, '\t')
