@@ -31,19 +31,19 @@ class GuiServer
 		def= {}
 		def.promise= new Promise (a,b)->
 			def.resolve= a
-			def.reject = b 
-		return def 
+			def.reject = b
+		return def
 
-		
+
 	electron: ()->
 		if not @_electron
-			@_electron= require("electron")		
-		return @_electron 
+			@_electron= require("electron")
+		return @_electron
 
 	test:()->
 		electron= @electron()
 		create= ()->
-			BrowserWindow= electron.BrowserWindow 
+			BrowserWindow= electron.BrowserWindow
 			mainWindow = new BrowserWindow({width: 800, height: 600})
 			mainWindow.loadURL("file://#{Path.join(__dirname,"..","html","hello.world.html")}")
 			mainWindow.show()
@@ -51,52 +51,52 @@ class GuiServer
 
 
 	registerFunction: (name, str)->
-		func= @_eval str 
-		@_f[name]= func 
-	
+		func= @_eval str
+		@_f[name]= func
+
 
 	callFunction: (name, params)->
 		func= @_f[name]
-		if not func 
+		if not func
 			throw Exception.create("Function #{name} not registered").putCode("NOT_FOUND")
-		
-		
+
+
 		return func(@electron(), @, params)
 
 	emit: (event, ...args)->
-		@_evs.push 
-			event: event 
-			args: args 
+		@_evs.push
+			event: event
+			args: args
 		if @_evdef
 			evs= @_evs
-			@_evs=[] 
+			@_evs=[]
 			@_evdef.resolve(evs)
 
 
 	_readEvents: ()->
-		if @_evs.length 
+		if @_evs.length
 			evs= @_evs
-			@_evs=[] 
-			return evs 
-		else 
+			@_evs=[]
+			return evs
+		else
 			@_evdef= @deferred()
-			return @_evdef.promise 
+			return @_evdef.promise
 
 
 
 class Gui extends EventEmitter
 	constructor:(@id)->
 		super()
-		@ipc= new IPC(@id) 
+		@ipc= new IPC(@id)
 		@api= {}
-	
+
 
 	deferred: ()->
 		def= {}
 		def.promise= new Promise (a,b)->
 			def.resolve= a
-			def.reject = b 
-		return def 
+			def.reject = b
+		return def
 
 
 	_checkFileExists: (file)->
@@ -107,62 +107,62 @@ class Gui extends EventEmitter
 
 
 	test: ()->
-		return @ipc.send 
+		return @ipc.send
 			"action": "call"
 			"args": []
 			"method": "test"
-	
 
-	
+
+
 	register: (id, func)->
-		str= func.toString() 
-		await @ipc.send 
+		str= func.toString()
+		await @ipc.send
 			"action": "call"
 			"args": [id, str]
 			"method": "registerFunction"
 		ipc= @ipc
 		@api[id]= (params)->
-			return ipc.send 
+			return ipc.send
 				"action" : "call"
 				"args": [id, params]
 				"method": "callFunction"
-		
+
 		return @api[id]
 
 
 	sleep: (timeout)->
 		def= @deferred()
 		setTimeout def.resolve,timeout
-		return def.promise 
+		return def.promise
 
 	_start_read_events: ()->
 		while @ipc.connected
-			try 
-				evs= await @ipc.send 
+			try
+				evs= await @ipc.send
 					"action": "call"
 					"args": []
 					"method": "_readEvents"
-				for ev in evs 
-					this.emit ev.event, ...ev.args 
-			catch e 
+				for ev in evs
+					this.emit ev.event, ...ev.args
+			catch e
 				console.error("Error reading events:", e)
 				await @sleep(200)
 
 
 	_check_secondinstance: ()->
-		# check if is second instance 
+		# check if is second instance
 		try
 			await @ipc.connect()
-		catch e 
+		catch e
 			return yes
-		
-		await @ipc.send 
-			"action": "import" 
+
+		await @ipc.send
+			"action": "import"
 			"args": [__filename]
 			"params": {}
 
-		
-		await @ipc.send 
+
+		await @ipc.send
 			"action": "call"
 			"method": "emit"
 			"args": ["second-instance", process.argv, process.cwd()]
@@ -170,18 +170,18 @@ class Gui extends EventEmitter
 		return no
 
 
-	
+
 	hasSingleInstanceLock: ()->
 		return @_locked ? no
 
 	requestSingleInstanceLock:(noretry)->
 		try
 			val= await @_check_secondinstance()
-			if val 			
+			if val
 				@ipc= new IPC(@id)
 				await @connect()
-				@_locked= yes 
-				return yes 
+				@_locked= yes
+				return yes
 		catch er
 
 			if not noretry
@@ -190,49 +190,49 @@ class Gui extends EventEmitter
 
 
 			Exception.create("Failed getting single instance lock. Message: #{er.message}", er).putCode(er.code).raise()
-		
-		no 
+
+		no
 
 	connect: ()->
 
 		if process.env.GIX_ELECTRON_PATH
 			dist= process.env.GIX_ELECTRON_PATH
 		# require electron
-		else if not @electron 
+		else if not @electron
 			reg= new Registry()
-			mod= await reg.resolve "electron@^4.0.8"
+			mod= await reg.resolve "electron@4.0.8"
 			install= Path.join(mod.folder,"install.js")
 			dist= Path.join(mod.folder,"dist", "electron")
 			if Os.platform() is "win32"
 				dist += ".exe"
 			else if Os.platform() is "darwin"
 				dist = Path.join(mod.folder,"dist", "Electron.app","Contents","MacOS","Electron")
-			
+
 			if not await @_checkFileExists(dist)
 				#install electron
 				def= @deferred()
 				console.log(" > Installing electron: ", install)
 				p= Child.spawn(process.execPath, [install])
-				p.on "error", def.reject 
+				p.on "error", def.reject
 				p.stderr.on "data", (er)->
 					console.error er.toString()
-				
+
 				p.stdout.on "data", (d)->
-					process.stdout.write d 
-				p.on "exit", def.resolve 
-				await def.promise 
-			
+					process.stdout.write d
+				p.on "exit", def.resolve
+				await def.promise
+
 				if not await @_checkFileExists(dist)
 					throw Exception.create("Failed to install electron").putCode("LOAD_FAILED")
 
-			@electron= 
-				folder: mod.folder 
-				install: install 
-				dist: dist 
-		else 
+			@electron=
+				folder: mod.folder
+				install: install
+				dist: dist
+		else
 			dist= @electron.dist
-			
-		
+
+
 		# open electron
 		file1= Path.join(__dirname, "_electron_boot.js")
 		file3= Path.join(__dirname,"start")
@@ -242,11 +242,12 @@ class Gui extends EventEmitter
 		file2= kawix.__file
 		id= @id
 		def= @deferred()
-		
+
 		env= Object.assign({}, process.env)
 		delete env.ELECTRON_RUN_AS_NODE
+		env.GIX_START=1
 		@_p= Child.spawn dist, [file1,file2,id,file3], {env: env}
-		@_p.on "error", def.reject 
+		@_p.on "error", def.reject
 
 		@_p.on "exit", ()=>
 			this.emit("close")
@@ -254,24 +255,28 @@ class Gui extends EventEmitter
 			def.reject(Exception.create("Failed start electron")) if not def.good
 
 		@_p.stdout.on "data", (d)->
-			try 
+			try
 				process.stdout.write(" [GIX Electron]: ")
 				process.stdout.write(d)
-				if not def.good and d.toString().indexOf("ELECTRON PROCESS LISTENING") >=0 
-					def.good= yes 
-					def.resolve() 
-			
-			catch e 
+				if not def.good and d.toString().indexOf("ELECTRON PROCESS LISTENING") >=0
+					def.good= yes
+					def.resolve()
+
+			catch e
 				console.error("error here?",e)
 		await def.promise
-		await @ipc.connect() 
+		return await @attach()
+
+
+	attach: ()->
+		await @ipc.connect()
 		this.connected= yes
-		await @ipc.send 
-			"action": "import" 
+		await @ipc.send
+			"action": "import"
 			"args": [__filename]
 			"params": {}
 		@_start_read_events()
-		return 
+		return
 
 	_createBootFile: ()->
 		path= Path.join(Os.homedir(), ".kawi")
@@ -282,19 +287,20 @@ class Gui extends EventEmitter
 		await fs.writeFileAsync(file, """
 
 var arg, kawix, n, id, start
-var Path= require("path")
-for(var i=0;i<process.argv.length;i++){
-	arg= process.argv[i]
-	if(n==0){
-		id= arg 
-		n= 1
+var Path = require("path")
+
+
+for (var i = 0; i < process.argv.length; i++) {
+	arg = process.argv[i]
+	if (n == 0) {
+		id = arg
+		n = 1
 	}
 	else if (n == 1) {
 		start = arg
-		break 
+		break
 	}
 	else if (arg.indexOf("core"+Path.sep+"main.js") >= 0) {
-
 		// require kawix core
 		kawix = require(arg)
 		n = 0
@@ -305,21 +311,22 @@ for(var i=0;i<process.argv.length;i++){
 var init1= function(){
 	if(kawix){
 		kawix.KModule.injectImport()
-		if (!start) start = __dirname + "/start.js"
+		if (!start) start = __dirname + Path.sep + "start.js"
+
 		kawix.KModule.import(start).then(function(response){
 			response.default(id).then(function(){
-
 			}).catch(function(e){
 				console.error("Failed execute: ", e)
-				process.exit(10)	
+				process.exit(10)
 			})
 		}).catch(function(e){
 			console.error("Failed execute: ", e)
-			process.exit(10)	
+			process.exit(10)
 		})
 	}
 }
 require("electron").app.once("ready", init1)
+
 		""")
 		return file
 
@@ -327,11 +334,9 @@ require("electron").app.once("ready", init1)
 
 
 export ipcCreate= ()->
-	if not Gui.s 
+	if not Gui.s
 		Gui.s= new GuiServer()
 		global.Gix= Gui.s
 	return Gui.s
 
 export default Gui
-
-
