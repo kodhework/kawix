@@ -13,14 +13,15 @@
     "kawi",
     "kodhe"
   ],
-  "version": "0.3.13",
+  "version": "0.3.14",
   "main": "main.js",
   "directories": {
     "example": "example",
     "test": "test"
   },
   "bin":{
-    "kwcore": "./bin/cli.js"
+    "kwcore": "./bin/cli.js",
+    "kawix": "./bin/cli.js"
   },
   "scripts": {
     "test": "node ./example/example"
