@@ -2,7 +2,7 @@
 import {EventEmitter} from 'events'
 import Path from 'path'
 import Os from 'os'
-import Watcher from './watcher.coffee'
+import Watcher from './watcher'
 import Url from 'url'
 import Cluster from 'cluster'
 
@@ -22,7 +22,7 @@ class Config extends EventEmitter
 			@_readFromParent= yes
 			return
 
-		@_read= setInterval @_read1.bind(@), 30000
+		@_read= setInterval @_read1.bind(@), 10000
 		@_read.unref()
 		@_read1()
 
