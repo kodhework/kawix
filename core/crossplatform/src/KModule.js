@@ -85,6 +85,119 @@ var Path= require("path")
 var Url= require('url')
 var httpr={}
 
+void (function(){
+
+	var percentRegEx = /%/g
+	var backslashRegEx = /\\/g
+	var newlineRegEx = /\n/g
+	var carriageReturnRegEx = /\r/g
+	var tabRegEx = /\t/g
+	var isWindows= Os.platform() == "win32"
+
+	var CHAR_FORWARD_SLASH= 47
+  	var CHAR_BACKWARD_SLASH= 92
+	var CHAR_UPPERCASE_A= 65
+	var CHAR_LOWERCASE_A= 97
+	var CHAR_UPPERCASE_Z= 90
+	var CHAR_LOWERCASE_Z= 122
+
+	if(typeof Url.pathToFileURL != "function")
+		Url.pathToFileURL= pathToFileURL
+	if(typeof Url.fileURLToPath != "function")
+		Url.fileURLToPath= fileURLToPath
+
+	function fileURLToPath(path) {
+	  if (typeof path === 'string')
+	    path = new Url.URL(path);
+	  else if (path == null || !path[searchParams] ||
+	           !path[searchParams][searchParams])
+	    throw new Error('Argument path is invalid', path);
+	  if (path.protocol !== 'file:')
+	    throw new Error('Schema not valid');
+	  return isWindows ? getPathFromURLWin32(path) : getPathFromURLPosix(path);
+	}
+
+	var forwardSlashRegEx = /\//g;
+
+	function getPathFromURLWin32(url) {
+	  var hostname = url.hostname;
+	  var pathname = url.pathname;
+	  for (var n = 0; n < pathname.length; n++) {
+	    if (pathname[n] === '%') {
+	      var third = pathname.codePointAt(n + 2) | 0x20;
+	      if ((pathname[n + 1] === '2' && third === 102) || // 2f 2F /
+	          (pathname[n + 1] === '5' && third === 99)) {  // 5c 5C \
+	        throw new Error(
+	          'must not include encoded \\ or / characters'
+	        );
+	      }
+	    }
+	  }
+	  pathname = pathname.replace(forwardSlashRegEx, '\\');
+	  pathname = decodeURIComponent(pathname);
+	  if (hostname !== '') {
+	    // If hostname is set, then we have a UNC path
+	    // Pass the hostname through domainToUnicode just in case
+	    // it is an IDN using punycode encoding. We do not need to worry
+	    // about percent encoding because the URL parser will have
+	    // already taken care of that for us. Note that this only
+	    // causes IDNs with an appropriate `xn--` prefix to be decoded.
+	    return "\\\\"+ (hostname) + pathname;
+	  } else {
+	    // Otherwise, it's a local path that requires a drive letter
+	    var letter = pathname.codePointAt(1) | 0x20;
+	    var sep = pathname[2];
+	    if (letter < CHAR_LOWERCASE_A || letter > CHAR_LOWERCASE_Z ||   // a..z A..Z
+	        (sep !== ':')) {
+	      throw new Error('must be absolute');
+	    }
+	    return pathname.slice(1);
+	  }
+	}
+
+	function getPathFromURLPosix(url) {
+	  if (url.hostname !== '') {
+	    throw new Error(platform);
+	  }
+	  var pathname = url.pathname;
+	  for (var n = 0; n < pathname.length; n++) {
+	    if (pathname[n] === '%') {
+	      var third = pathname.codePointAt(n + 2) | 0x20;
+	      if (pathname[n + 1] === '2' && third === 102) {
+	        throw new Error(
+	          'must not include encoded / characters'
+	        );
+	      }
+	    }
+	  }
+	  return decodeURIComponent(pathname);
+	}
+
+	function pathToFileURL(filepath) {
+	  var resolved = Path.resolve(filepath);
+	  // path.resolve strips trailing slashes so we must add them back
+	  var filePathLast = filepath.charCodeAt(filepath.length - 1);
+	  if ((filePathLast === CHAR_FORWARD_SLASH ||
+	       isWindows && filePathLast === CHAR_BACKWARD_SLASH) &&
+	      resolved[resolved.length - 1] !== Path.sep)
+	    resolved += '/';
+	  var outURL = new Url.URL('file://');
+	  if (resolved.includes('%'))
+	    resolved = resolved.replace(percentRegEx, '%25');
+	  // In posix, "/" is a valid character in paths
+	  if (!isWindows && resolved.includes('\\'))
+	    resolved = resolved.replace(backslashRegEx, '%5C');
+	  if (resolved.includes('\n'))
+	    resolved = resolved.replace(newlineRegEx, '%0A');
+	  if (resolved.includes('\r'))
+	    resolved = resolved.replace(carriageReturnRegEx, '%0D');
+	  if (resolved.includes('\t'))
+	    resolved = resolved.replace(tabRegEx, '%09');
+	  outURL.pathname = resolved;
+	  return outURL;
+	}
+})()
+
 
 
 if(Os.platform()!="browser"){
@@ -303,6 +416,20 @@ var builtinModules = _module.builtinModules;
 		return uri
 	}
 	changeSource = function (source) {
+		//console.info(source)
+		var import1= {
+			code: source
+		}
+		// detect if is injected
+		loadInjectImportFunc(import1)
+		if(import1.inject){
+			import1.inject= import1.injectCode
+			import1.source= import1.code
+			delete import1.injectCode
+			delete import1.code
+			return import1
+		}
+
 		// this method works with transpiled code
 		// that is known the generated style, can determine the modules imported with `import`
 
@@ -422,7 +549,11 @@ var builtinModules = _module.builtinModules;
 		var code, injectCode, ucode
 		if (!ast.injectCode) {
 			var i = ast.code.indexOf("var ___kawi__async = \n")
+			if(i < 0 ){
+				i = ast.code.indexOf("var ___kawi__async =\n")
+			}
 			if (i >= 0) {
+
 				code = ast.code.substring(0, i)
 				injectCode = ast.code.substring(i + 20)
 				ast.code = code
@@ -433,6 +564,7 @@ var builtinModules = _module.builtinModules;
 		}
 
 		if (ast.injectCode && !ast.inject) {
+			//console.info("acá: ", ast.injectCode)
 			if (ast.injectCode.indexOf("regeneratorRuntime") >= 0) {
 				ucode = "(function(){" + asynchelper + "\n\nreturn " + ast.injectCode + ";\n})()"
 				ast.inject = eval(ucode)
@@ -441,8 +573,8 @@ var builtinModules = _module.builtinModules;
 				ucode = "(" + ast.injectCode + ")"
 				try {
 					ast.inject = eval(ucode)
-				} catch (e) {
 
+				} catch (e) {
 					throw e
 				}
 			}
@@ -593,7 +725,7 @@ var builtinModules = _module.builtinModules;
 	transpile= function(file, basename, source, options) {
 		var transpilerOptions, json, imports
 
-
+		//console.log("transpiling: ", file, options)
 		if(options.injectImport === undefined && Mod.__injected){
 			options.injectImport= true
 		}
@@ -625,11 +757,17 @@ var builtinModules = _module.builtinModules;
 			options.transpile = false
 		}
 
+		if(basename.endsWith(".kwsh") || (source && source.startsWith("#!/usr/bin/env kwcore --kwsh\n#kwsh.0\n"))){
+			options.transpile= false
+		}
+
+
 		if (options.transpile !== false) {
 			if (json && json.transpilerOptions) {
 				transpilerOptions = json.transpilerOptions
 			}
 			else {
+
 				transpilerOptions = {
 					presets: ['es2015', 'es2016', 'es2017', ['stage-2', {
 						decoratorsBeforeExport: false
@@ -655,18 +793,34 @@ var builtinModules = _module.builtinModules;
 			json = Next().transpile(source, transpilerOptions)
 			delete json.options
 			if (options.injectImport) {
+
 				imports = changeSource(json.code)
+
 				json.code = imports.source
 				json.injectCode = imports.inject
+
 				loadInjectImportFunc(json)
 			}
 
 		}
 		else {
-			json = {
-				code: source
+			if(source.startsWith("#!/usr/bin/env kwcore --kwsh\n#kwsh.0\n")){
+				source= source.substring(37)
+				json= JSON.parse(source)
+			}
+			else if(basename.endsWith(".kwsh")){
+				json= JSON.parse(source)
+			}
+			else{
+				json = {
+					code: source
+				}
 			}
 			if (options.injectImport) {
+
+				//imports = changeSource(json.code)
+				//json.code = imports.source
+				//json.injectCode = imports.inject
 				loadInjectImportFunc(json)
 			}
 		}
@@ -691,7 +845,9 @@ Mod._namesid = 0
 Mod.extensions= {
 	".json": null,
 	".js": null,
-	".es6": null
+	".es6": null,
+	".ts": null,
+	".kwsh": null // compiled file
 }
 
 Mod.extensionLoaders= {
@@ -702,7 +858,8 @@ Mod.languages = {
 	"json": ".json",
 	"javascript": ".js",
 	"ecmascript": ".js",
-	"typescript": ".ts"
+	"typescript": ".ts",
+	"kwshide": ".kwsh"
 }
 if(Module.isBrowser){
 	Module.extensions= Mod.extensions
@@ -1353,7 +1510,6 @@ Mod._require= function(file, options){
 		}
 
 		if (ast.injectCode && !ast.inject) {
-			// inject the code
 			loadInjectImportFunc(ast)
 		}
 		if (ast.inject) {
@@ -1774,7 +1930,7 @@ var helper= {
 		if(source.name){
 			basename= source.name
 		}
-
+		//console.log("compiling: ", filename)
 		if(basename.endsWith(".json")){
 			data= {
 				code: 'module.exports=' + source.code
@@ -1793,6 +1949,10 @@ var helper= {
 		str= JSON.stringify(data, null,'\t')
 		if(options.sync){
 			fs.writeFileSync(cachedata.file, str)
+			if(cachedata && cachedata.stats && cachedata.stats[1] && cachedata.stats[1].mtimeMs > Date.now()){
+				// COMPUTADORES CON FECHAS ERRADAS
+				fs.utimesSync(cachedata.file, new Date(cachedata.stats[1].mtimeMs + 1000), new Date(cachedata.stats[1].mtimeMs + 1000))
+			}
 			return data
 		}
 
@@ -1801,9 +1961,20 @@ var helper= {
 			if(err) def.reject(err)
 
 			data.time= Date.now()
-			Mod._cache[filename]= data
 
-			def.resolve(data)
+			if(cachedata && cachedata.stats && cachedata.stats[1] && cachedata.stats[1].mtimeMs > Date.now()){
+				data.time= cachedata.stats[1].mtimeMs + 1000
+
+				// COMPUTADORES CON FECHAS ERRADAS
+				fs.utimes(cachedata.file, new Date(cachedata.stats[1].mtimeMs + 1000), new Date(cachedata.stats[1].mtimeMs + 1000), function(){
+					Mod._cache[filename]= data
+					def.resolve(data)
+				})
+			}
+			else{
+				Mod._cache[filename]= data
+				def.resolve(data)
+			}
 		})
 		return def.promise
 	},
@@ -1840,7 +2011,6 @@ var helper= {
 				}
 				resolve(e)
 			}
-
 
 			if(cachedata.unchanged){
 				return def.resolve(null)

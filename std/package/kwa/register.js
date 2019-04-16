@@ -105,6 +105,9 @@ var loader1 = async function (filename, uri, options, helper) {
 	// tar uncompressed ...
 	var source= {
 		"code": `
+		exports.kawixDynamic={
+			time: 15000
+		}
 		exports.kawixPreload= async function(){
 			try{
 				module.exports= await KModule.import(${JSON.stringify(Path.join(folder,'mod.js'))})

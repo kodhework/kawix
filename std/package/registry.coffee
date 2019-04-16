@@ -67,10 +67,11 @@ class Registry
 		if @options.output
 			folder= @options.output
 		else
+
 			kawi= process.env.KAWIX_CACHE_DIR or (Path.join Os.homedir(), ".kawi")
 			if not await @_fileExists(kawi)
 				await fs.mkdirAsync(kawi)
-
+			#console.info("heeeee ...")
 			folder= Path.join kawi, 'npm-inst'
 
 		if not await @_fileExists(folder)
