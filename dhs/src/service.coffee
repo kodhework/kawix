@@ -1,6 +1,6 @@
-import Exception from './exception.coffee'
+import Exception from './exception'
 
-import KawixHttp from '../../std/http/mod.js'
+import KawixHttp from '../../std/http/mod'
 import Url from 'url'
 import Path from 'path'
 import Cluster from 'cluster'
@@ -696,9 +696,36 @@ class Service extends EventEmitter
 		if not @__ks2
 			@__ks2 = new KawixHttp.router()
 			bund= @_bundle.bind(@)
-			@__ks2.get "/.static./local/bundle/:site/*", bund
+
+			# deprecated #
+			@__ks2.get "/.static./bundle/cached/:sitecache/:module", bund
+			@__ks2.get "/.static./bundle/complete/cached/:sitecache/:module", bund
+			@__ks2.get "/.static./bundle/cached/:sitecache/:module/*", bund
+			@__ks2.get "/.static./bundle/complete/cached/:sitecache/:module/*", bund
 			@__ks2.get "/.static./bundle/:module", bund
 			@__ks2.get "/.static./bundle/:module/*", bund
+			# deprecated #
+
+			
+
+			@__ks2.get "/.static./generate/cached/:sitecache/:module", bund
+			@__ks2.get "/.static./generate/complete/cached/:sitecache/:module", bund
+			@__ks2.get "/.static./generate/cached/:sitecache/:module/*", bund
+			@__ks2.get "/.static./generate/complete/cached/:sitecache/:module/*", bund
+			@__ks2.get "/.static./generate/:module", bund
+			@__ks2.get "/.static./generate/:module/*", bund
+
+			@__ks2.get "/.static./generate/:type/cached/:sitecache/:module", bund
+			@__ks2.get "/.static./generate/:type/complete/cached/:sitecache/:module", bund
+			@__ks2.get "/.static./generate/:type/cached/:sitecache/:module/*", bund
+			@__ks2.get "/.static./generate/:type/complete/cached/:sitecache/:module/*", bund
+			@__ks2.get "/.static./generate/:type/:module", bund
+			@__ks2.get "/.static./generate/:type/:module/*", bund
+
+
+
+			@__ks2.get "/.static./local/bundle/:site/*", bund
+
 
 		uri= env.request.uri
 		if not uri
@@ -728,7 +755,7 @@ class Service extends EventEmitter
 			env= null
 			return
 
-		
+
 		@_concurrent++
 		env.response.once "finish", ()=>
 			@_concurrent--
@@ -794,7 +821,7 @@ export create= (state, socket, params)->
 				break
 			w= null
 
-	if w
+	if w and (not w.IPC)
 		w.IPC= IPC.fromClientSocket(socket, server)
 
 	return Service.current
