@@ -354,6 +354,11 @@ export create = generate1
 # generate a bundle dynamic
 export invoke= (env,ctx)->
 	try
+
+		if env.request.query?.id == "now"
+			env.request.query.id= Date.now()
+
+
 		uri= env.request.uri
 		if not uri
 			uri= Url.parse env.request.url
@@ -402,6 +407,13 @@ export invoke= (env,ctx)->
 
 
 		if res.static
+
+			if env.request.query?.dev is "1"
+				# server direct 
+				env.reply.header("content-type","application/javascript;charset=utf8").send(await fs.readFileAsync(res.path))
+				return 
+
+
 			env.request.url= "/" + Path.basename(res.path)
 			stati= KawixHttp.staticServe(Path.dirname(res.path))
 			return await stati(env)

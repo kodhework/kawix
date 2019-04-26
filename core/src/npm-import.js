@@ -7,7 +7,7 @@ var load= async function(){
         Registry= await KModule.import('/virtual/@kawix/std/package/registry.js')
         Registry= Registry.default || Registry
     }catch(e){
-        Registry= await KModule.import('https://kwx.kodhe.com/x/v/0.3.13/std/package/registry.js')
+        Registry= await KModule.import('https://kwx.kodhe.com/x/v/0.3.17/std/package/registry.js')
         Registry= Registry.default || Registry
     }
 }

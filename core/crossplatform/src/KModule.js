@@ -1518,7 +1518,7 @@ Mod._require= function(file, options){
 			loadInjectImportFunc(ast)
 		}
 		if (ast.inject) {
-			p=ast.inject(nmod,require,options.parent)
+			p=ast.inject(nmod)
 			if(p && typeof p.then == "function"){
 				p.then(function () {
 					continue1()
