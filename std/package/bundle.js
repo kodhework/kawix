@@ -296,7 +296,8 @@ class Bundle{
 					if(translated){
 						rep.translated= "./" + Path.join(Path.relative(Path.dirname(rev), Path.dirname(translated)), Path.basename(translated))
 
-						if(this.profile == "browser"){
+						
+						if(this.disableTranspile){
 							rep.content= "module.exports= require("+JSON.stringify(rep.translated)+")"
 						}else{
 							rep.content = "exports.kawixPreload= function(){return module.exports=  KModule.import(" + JSON.stringify(rep.translated) + ",{parent:KModule})}"
