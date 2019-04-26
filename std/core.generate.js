@@ -62,14 +62,18 @@ var Zlib= require('zlib')
 var home= Os.homedir()
 var corefolder= ${JSON.stringify(this.corefolder)}
 var verification= Path.join(home,"Kawix",corefolder, "verification.file")
-
+var out
 
 if(fs.existsSync(verification)){
-	module.exports= require(Path.join(home,"Kawix",corefolder))
-	return 
+	out= Path.join(home,"Kawix",corefolder)
+	if(process.env.KWCORE_EXECUTE == 1){
+		out= Path.join(out,"bin", "cli.js")
+	}
+	module.exports= require(out)
+	return
 }
 
-var out= Path.join(home, "Kawix")
+out= Path.join(home, "Kawix")
 if(!fs.existsSync(out)){
 	fs.mkdirSync(out)
 }
