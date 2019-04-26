@@ -109,15 +109,16 @@ class Registry
 			"|" : "_b"
 			"/" : "%2F"
 			"?" : "_q"
+			"*" : "_all_"
 
-		securename= securename.replace /\>|\<|\||\/|\?/g, (a,b)->
+		securename= securename.replace /\*|\>|\<|\||\/|\?/g, (a,b)->
 			return transform[a]
 
 
 
 		pack1= securename
 		securename += "@#{version}"
-		securename= securename.replace /\>|\<|\||\/|\?/g, (a,b)->
+		securename= securename.replace /\*|\>|\<|\||\/|\?/g, (a,b)->
 			return transform[a]
 		#pack1= pack.replace(/\//g, "%2F")
 
