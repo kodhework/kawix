@@ -186,11 +186,13 @@ var compile1= function(code,filename,options){
 
 		code.push(`var generateCode= function(style){
 
-			var str= '<style>', rule , si, rulec
-			si= "[" + ModInfo.cid + "]"
+			var str= '<style>', rule , si, rulec, rulec2
+			
 			for(var i=0;i<style.rules.length;i++){
 				rule=style.rules[i]
 				if(style.scoped){
+
+					si= "[" + ModInfo.cid + "]"
 					rulec= rule.selectors.map(function(a){
 
 						var us= ''
@@ -208,6 +210,26 @@ var compile1= function(code,filename,options){
 						}
 						return us
 					}).join(",")
+
+					si= "." + ModInfo.cid 
+					rulec2= rule.selectors.map(function(a){
+
+						var us= ''
+						if(a){
+							us= si + " " + a  + ","
+							content1= a.split(/\\s+/)
+							content2= content1[0].split(">")
+							us += content2[0] + si
+							if(content2.length > 1){
+								us+= ">" + content2.slice(1).join(">")
+							}
+							if(content1.length > 1){
+								us+= " " + content1.slice(1).join("")
+							}
+						}
+						return us
+					}).join(",")
+					rulec += "," + rulec2
 				}
 				else{
 					rulec= rule.selectors.join(",")
