@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var arg
+var Path= require("path")
 var Kawix= require("../main")
 var offset= 0
 var args= [].concat(process.argv)
@@ -24,6 +25,7 @@ for(var i=2;i<args.length;i++){
 
         // require file using KModule
         Kawix.KModule.injectImport()
+        Kawix.mainFilename = Path.resolve(arg)
         Kawix.KModule.import(arg,{
             parent: {
                 filename: process.cwd() + "/cli.js"

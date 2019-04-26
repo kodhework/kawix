@@ -108,12 +108,12 @@ void (function(){
 
 	function fileURLToPath(path) {
 	  if (typeof path === 'string')
-	    path = new Url.URL(path);
+		path = new Url.URL(path);
 	  else if (path == null || !path[searchParams] ||
-	           !path[searchParams][searchParams])
-	    throw new Error('Argument path is invalid', path);
+			   !path[searchParams][searchParams])
+		throw new Error('Argument path is invalid', path);
 	  if (path.protocol !== 'file:')
-	    throw new Error('Schema not valid');
+		throw new Error('Schema not valid');
 	  return isWindows ? getPathFromURLWin32(path) : getPathFromURLPosix(path);
 	}
 
@@ -123,52 +123,52 @@ void (function(){
 	  var hostname = url.hostname;
 	  var pathname = url.pathname;
 	  for (var n = 0; n < pathname.length; n++) {
-	    if (pathname[n] === '%') {
-	      var third = pathname.codePointAt(n + 2) | 0x20;
-	      if ((pathname[n + 1] === '2' && third === 102) || // 2f 2F /
-	          (pathname[n + 1] === '5' && third === 99)) {  // 5c 5C \
-	        throw new Error(
-	          'must not include encoded \\ or / characters'
-	        );
-	      }
-	    }
+		if (pathname[n] === '%') {
+		  var third = pathname.codePointAt(n + 2) | 0x20;
+		  if ((pathname[n + 1] === '2' && third === 102) || // 2f 2F /
+			  (pathname[n + 1] === '5' && third === 99)) {  // 5c 5C \
+			throw new Error(
+			  'must not include encoded \\ or / characters'
+			);
+		  }
+		}
 	  }
 	  pathname = pathname.replace(forwardSlashRegEx, '\\');
 	  pathname = decodeURIComponent(pathname);
 	  if (hostname !== '') {
-	    // If hostname is set, then we have a UNC path
-	    // Pass the hostname through domainToUnicode just in case
-	    // it is an IDN using punycode encoding. We do not need to worry
-	    // about percent encoding because the URL parser will have
-	    // already taken care of that for us. Note that this only
-	    // causes IDNs with an appropriate `xn--` prefix to be decoded.
-	    return "\\\\"+ (hostname) + pathname;
+		// If hostname is set, then we have a UNC path
+		// Pass the hostname through domainToUnicode just in case
+		// it is an IDN using punycode encoding. We do not need to worry
+		// about percent encoding because the URL parser will have
+		// already taken care of that for us. Note that this only
+		// causes IDNs with an appropriate `xn--` prefix to be decoded.
+		return "\\\\"+ (hostname) + pathname;
 	  } else {
-	    // Otherwise, it's a local path that requires a drive letter
-	    var letter = pathname.codePointAt(1) | 0x20;
-	    var sep = pathname[2];
-	    if (letter < CHAR_LOWERCASE_A || letter > CHAR_LOWERCASE_Z ||   // a..z A..Z
-	        (sep !== ':')) {
-	      throw new Error('must be absolute');
-	    }
-	    return pathname.slice(1);
+		// Otherwise, it's a local path that requires a drive letter
+		var letter = pathname.codePointAt(1) | 0x20;
+		var sep = pathname[2];
+		if (letter < CHAR_LOWERCASE_A || letter > CHAR_LOWERCASE_Z ||   // a..z A..Z
+			(sep !== ':')) {
+		  throw new Error('must be absolute');
+		}
+		return pathname.slice(1);
 	  }
 	}
 
 	function getPathFromURLPosix(url) {
 	  if (url.hostname !== '') {
-	    throw new Error(platform);
+		throw new Error(platform);
 	  }
 	  var pathname = url.pathname;
 	  for (var n = 0; n < pathname.length; n++) {
-	    if (pathname[n] === '%') {
-	      var third = pathname.codePointAt(n + 2) | 0x20;
-	      if (pathname[n + 1] === '2' && third === 102) {
-	        throw new Error(
-	          'must not include encoded / characters'
-	        );
-	      }
-	    }
+		if (pathname[n] === '%') {
+		  var third = pathname.codePointAt(n + 2) | 0x20;
+		  if (pathname[n + 1] === '2' && third === 102) {
+			throw new Error(
+			  'must not include encoded / characters'
+			);
+		  }
+		}
 	  }
 	  return decodeURIComponent(pathname);
 	}
@@ -178,21 +178,21 @@ void (function(){
 	  // path.resolve strips trailing slashes so we must add them back
 	  var filePathLast = filepath.charCodeAt(filepath.length - 1);
 	  if ((filePathLast === CHAR_FORWARD_SLASH ||
-	       isWindows && filePathLast === CHAR_BACKWARD_SLASH) &&
-	      resolved[resolved.length - 1] !== Path.sep)
-	    resolved += '/';
+		   isWindows && filePathLast === CHAR_BACKWARD_SLASH) &&
+		  resolved[resolved.length - 1] !== Path.sep)
+		resolved += '/';
 	  var outURL = new Url.URL('file://');
 	  if (resolved.includes('%'))
-	    resolved = resolved.replace(percentRegEx, '%25');
+		resolved = resolved.replace(percentRegEx, '%25');
 	  // In posix, "/" is a valid character in paths
 	  if (!isWindows && resolved.includes('\\'))
-	    resolved = resolved.replace(backslashRegEx, '%5C');
+		resolved = resolved.replace(backslashRegEx, '%5C');
 	  if (resolved.includes('\n'))
-	    resolved = resolved.replace(newlineRegEx, '%0A');
+		resolved = resolved.replace(newlineRegEx, '%0A');
 	  if (resolved.includes('\r'))
-	    resolved = resolved.replace(carriageReturnRegEx, '%0D');
+		resolved = resolved.replace(carriageReturnRegEx, '%0D');
 	  if (resolved.includes('\t'))
-	    resolved = resolved.replace(tabRegEx, '%09');
+		resolved = resolved.replace(tabRegEx, '%09');
 	  outURL.pathname = resolved;
 	  return outURL;
 	}
@@ -507,7 +507,7 @@ var builtinModules = _module.builtinModules;
 
 			// create a preloader function
 			json = JSON.stringify(required)
-			code = "function (KModule, require){\n"
+			code = "function (KModule, require, module){\n"
 
 			code += "	var resolve, reject\n"
 			code += "	var required= " + json + "\n"
@@ -520,7 +520,7 @@ var builtinModules = _module.builtinModules;
 			'	if (!mod) return resolve()\n' +
 
 			'	var promise = KModule.import(mod, {\n'+
-			'		parent: module\n'+
+			'		parent: KModule\n'+
 			'	})\n'+
 			'	if (promise && typeof promise.then == "function")\n'+
 			'		promise.then(__load).catch(reject)\n'+
@@ -881,6 +881,7 @@ Mod.disableInjectImport = function () {
 Module._originalResolveFilename = Module._resolveFilename
 Mod._resolveFilename = function(name,parent, resolve){
 
+	
 	if(name.startsWith("___kawi__internal__")){
 		return name
 	}
@@ -898,9 +899,10 @@ Mod._resolveFilename = function(name,parent, resolve){
 			if (name) return name
 		}
 	}
-
+	
 	if(parent && parent.filename && isVirtualFile(parent.filename)){
 		// Allow resolve
+		
 		result= Mod.resolveVirtual(name,parent)
 		if(!result){
 			return null
@@ -1114,7 +1116,7 @@ Mod.requireVirtualSync= function(file,parent){
 	}
 	var ast= Mod.compileSync(file)
 	var nmod= getKModule(file)
-
+	
 	module = new Module(file, parent)
 	module.filename= file
 	module.dirname= Path.dirname(file)
@@ -1315,10 +1317,10 @@ Mod._import= function(file, options){
 		})
 		return promise
 	}
-
+	
 	resolved= Mod._resolveFilename(file, options.parent, Mod._resolveFilename)
 	if(resolved){
-		//console.info("solved: ",resolved)
+		
 		if(isVirtualFile(resolved))
 			return Mod.require(resolved)
 
@@ -1344,6 +1346,7 @@ Mod._import= function(file, options){
 
 		if(!this.filename){
 			this.filename= options.parent && options.parent.filename
+			
 			if(!this.filename)
 				this.filename= "/default.js"
 		}
@@ -1361,6 +1364,7 @@ Mod._import= function(file, options){
 				if(!file.startsWith(".")){
 					parts = file.split(/\/|\\/)
 					parts = Path.normalize("/virtual/" + parts[0])
+					
 					if (Mod._virtualfile[parts]) {
 						file = Mod.resolveVirtual(Path.normalize("/virtual/" + file), parent)
 						if (file) return Mod.require(file, options)
@@ -1459,6 +1463,7 @@ Mod._require= function(file, options){
 	var generate= function(ast, resolve, reject){
 
 		module = new Module(file, options.parent)
+		
 		module.filename= file
 		module.__kawi_time= Date.now()
 		var nmod = getKModule(file)
@@ -1513,7 +1518,7 @@ Mod._require= function(file, options){
 			loadInjectImportFunc(ast)
 		}
 		if (ast.inject) {
-			p=ast.inject(nmod)
+			p=ast.inject(nmod,require,options.parent)
 			if(p && typeof p.then == "function"){
 				p.then(function () {
 					continue1()
@@ -1861,7 +1866,13 @@ var helper= {
 				else if(action == 7){
 					if(result) return def.reject(result)
 					updatetime= true
-					return def.resolve(beautyResponse(JSON.parse(result2)))
+					try{
+						var data= JSON.parse(result2)
+						return def.resolve(beautyResponse(JSON.parse(result2)))
+					}catch(e){
+						fs.unlinkSync(cache_file)
+						return def.resolve(this.getCachedData(file, uri, options, autounlock))
+					}
 				}
 			}catch(e){
 				def.reject(e)
