@@ -295,7 +295,12 @@ class Bundle{
 					translated= this.translation[rev] || this.translation["./"+ rev]
 					if(translated){
 						rep.translated= "./" + Path.join(Path.relative(Path.dirname(rev), Path.dirname(translated)), Path.basename(translated))
-						rep.content= "module.exports= require("+JSON.stringify(rep.translated)+")"
+
+						if(this.profile == "browser"){
+							rep.content= "module.exports= require("+JSON.stringify(rep.translated)+")"
+						}else{
+							rep.content = "exports.kawixPreload= function(){return module.exports=  KModule.import(" + JSON.stringify(rep.translated) + ",{parent:KModule})}"
+						}
 						rep.transpiled= true
 					}
 				}
