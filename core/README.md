@@ -7,7 +7,7 @@
 **@kawix/core** allows requiring modules in async and more elegant way, and use last features of EcmaScript (for example async/await) without requiring a lot of dependencies, packagers or build scripts
 
 
-> Installers for version 0.3.17 for Windows. Please go to [https://github.com/voxsoftware/kawix/releases/tag/0.3.17](https://github.com/voxsoftware/kawix/releases/tag/0.3.17)
+> Installers for version 0.3.20 available for Windows. Please go to [https://github.com/voxsoftware/kawix/releases/tag/v0.3.20](https://github.com/voxsoftware/kawix/releases/tag/v0.3.20)
 
 
 ## Changes 0.3.17
