@@ -31,8 +31,15 @@ chmod +x node
 "$_HOME/node" "$_HOME/kwcore.app.js"
 
 # now symLink 
-chmod +x "$_HOME/core/bin/kwcore"
-ln -sf ./core/bin/kwcore .
+rm -r "$_HOME/kwcore"
+wget "https://kwx.kodhe.com/x/std/install/kwcore" -O "$_HOME/kwcore"
+chmod +x "$_HOME/kwcore"
+
+if [ "$EUID" -eq 0 ]
+then
+	ln -sf "$_HOME/kwcore" /usr/bin/kwcore
+fi
+
 
 # download icons 
 mkdir icons
