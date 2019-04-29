@@ -42,7 +42,7 @@ if(Os.platform() == "linux"){
 		paths.mimeo = Path.join(Os.homedir(), ".local/share/mime")
 	}
 
-	if(!fs.existsSync(path.apps)){
+	if(!fs.existsSync(paths.apps)){
 		console.info(" > Was detected an installation without UI interfaz, installation completed")
 		process.exit()
 	}
