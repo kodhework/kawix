@@ -43,7 +43,8 @@ if(Os.platform() == "linux"){
 	}
 
 	if(!fs.existsSync(path.apps)){
-		return console.info(" > Was detected an installation without UI interfaz, installation completed")
+		console.info(" > Was detected an installation without UI interfaz, installation completed")
+		process.exit()
 	}
 
 	iconpaths = [

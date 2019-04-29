@@ -15,7 +15,7 @@ cp kwcore.install.js "$_HOME/kwcore.install.js"
 cd $_HOME
 
 # download kwcore.install.js
-wget "https://" -O "$_HOME/kwcore.install.js"
+wget "https://kwx.kodhe.com/x/std/install/kwcore.install.js" -O "$_HOME/kwcore.install.js"
 
 # download nodejs 
 wget "https://raw.githubusercontent.com/voxsoftware/node-binaries/master/linux/x64/10.15.3/node.gz" -O "$_HOME/node.gz"
