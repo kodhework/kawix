@@ -41,6 +41,11 @@ if(Os.platform() == "linux"){
 		paths.mime = Path.join(Os.homedir(), ".local/share/mime/packages")
 		paths.mimeo = Path.join(Os.homedir(), ".local/share/mime")
 	}
+
+	if(!fs.existsSync(path.apps)){
+		return console.info(" > Was detected an installation without UI interfaz, installation completed")
+	}
+
 	iconpaths = [
 		paths.icon + "/16x16",
 		paths.icon + "/24x24",
@@ -104,16 +109,24 @@ Comment= `;
 	p.on("error", function(e){
 		console.error("ERROR updating icon cache: ", e)
 	})
-
-	var p1 = Child.spawn("update-desktop-database", [paths.apps])
-	p1.on("error", function (e) {
+	var er,c=0, d
+	var p = Child.spawn("update-desktop-database", [paths.apps])
+	p.on("error", function (e) {
+		er= true
 		console.error("ERROR updating apps cache: ", e)
 	})
-
+	p.on("exit", function(){c++; d()})
 	var p1 = Child.spawn("update-mime-database", [paths.mime])
 	p1.on("error", function (e) {
+		er= true
 		console.error("ERROR updating mime cache: ", e)
 	})
-
+	p.on("exit", function () { c++; d()})
+	d= function(){
+		if(er) return 
+		console.info("")
+		console.info("")
+		return console.info(" > Was detected an installation with UI interfaz, installation and desktop app was installed")
+	}
 
 }
