@@ -10,6 +10,11 @@
 > Installers for version 0.3.20 available for Windows. Please go to [https://github.com/voxsoftware/kawix/releases/tag/v0.3.20](https://github.com/voxsoftware/kawix/releases/tag/v0.3.20)
 
 
+## Changes 0.3.20 
+
+* Preparing releases for Linux, Mac via ```bash```
+* Added beta ```--ui``` and ```--force-ui``` options for cli, available for Linux and Mac to open a **GUI Terminal app**
+
 ## Changes 0.3.17
 
 * Added app installers for windows
