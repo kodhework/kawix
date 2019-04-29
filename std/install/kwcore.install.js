@@ -36,6 +36,8 @@ var init= async function(){
 	try{
 		if(Os.platform() == "darwin"){
 
+			
+			/*
 			// add extension handler 
 			var cmd= "defaults"
 			var args=[
@@ -43,24 +45,21 @@ var init= async function(){
 					"write",
 					"com.apple.LaunchServices",
 					"LSHandlers",
-					"-array",
-					"-add",
+					"-array-add",
 					"<dict><key>LSHandlerContentTag</key><string>kwe</string><key>LSHandlerContentTagClass</key><string>public.filename-extension</string><key>LSHandlerRoleAll</key><string>org.kodhe.kawix</string></dict>"
 				],
 				[
 					"write",
 					"com.apple.LaunchServices",
 					"LSHandlers",
-					"-array",
-					"-add",
+					"-array-add",
 					"<dict><key>LSHandlerContentTag</key><string>kwsh</string><key>LSHandlerContentTagClass</key><string>public.filename-extension</string><key>LSHandlerRoleAll</key><string>org.kodhe.kawix</string></dict>"
 				],
 				[
 					"write",
 					"com.apple.LaunchServices",
 					"LSHandlers",
-					"-array",
-					"-add",
+					"-array-add",
 					"<dict><key>LSHandlerContentTag</key><string>kwo</string><key>LSHandlerContentTagClass</key><string>public.filename-extension</string><key>LSHandlerRoleAll</key><string>org.kodhe.kawix</string></dict>"
 				]
 			]
@@ -85,7 +84,7 @@ var init= async function(){
 			})
 			
 			
-			p1= Child.spawn("/System/Library/Frameworks/CoreServices.framework/Versions/A/Framework/LaunchServices.framework/Versions/A/Support/lsregister", [
+			p1= Child.spawn("/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister", [
 				"-kill",
 				"-domain",
 				"local",
@@ -96,7 +95,7 @@ var init= async function(){
 			])
 
 			p1.on("error", def.reject)
-			p1.on("exit", def.resolve)
+			p1.on("exit", def.resolve)*/
 
 		}
 		else if(Os.platform() == "linux"){
