@@ -13,7 +13,7 @@
     "kawi",
     "kodhe"
   ],
-  "version": "0.3.21",
+  "version": "0.3.25",
   "main": "main.js",
   "directories": {
     "example": "example",
@@ -28,12 +28,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/voxsoftware/kawix-core.git"
+    "url": "git+https://github.com/voxsoftware/kawix.git"
   },
   "author": "Kodhe <contacto@kodhe.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/voxsoftware/kawix-core/issues"
+    "url": "https://github.com/voxsoftware/kawix/issues"
   },
-  "homepage": "https://github.com/voxsoftware/kawix-core#readme"
+  "homepage": "https://github.com/voxsoftware/kawix#readme"
 }
