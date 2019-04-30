@@ -9,7 +9,7 @@
 
 ## More info
 
-Please go to [https://raw.githubusercontent.com/voxsoftware/kawix](https://raw.githubusercontent.com/voxsoftware/kawix) for see the full **kawix** project
+Please go to [https://github.com/voxsoftware/kawix](https://github.com/voxsoftware/kawix) for see the full **kawix** project
 
 
 ## Instalation and Documentation
