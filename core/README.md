@@ -14,8 +14,9 @@ Please go to [https://raw.githubusercontent.com/voxsoftware/kawix](https://raw.g
 
 ## Instalation and Documentation
 
-* [INSTALL.md](./INSTALL.md)
-* [DOCS.md](./DOCS.md)
+* [INSTALL.md](https://github.com/voxsoftware/kawix/blob/master/core/INSTALL.md)
+* [DOCS.md](https://github.com/voxsoftware/kawix/blob/master/core/DOCS.md)
+* [CHANGES.md](https://github.com/voxsoftware/kawix/blob/master/core/CHANGES.md)
 
 
 ## Do you want contribute?
