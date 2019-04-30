@@ -23,7 +23,7 @@ if(content.indexOf(newline) < 0){
 			content = fs.readFileSync(file, 'utf8')
 		}
 		if (content.indexOf(newline) < 0) {
-			fs.writeFileSync(file, content + newline + "\n")
+			fs.writeFileSync(file, content + newline + "\"\n")
 		}
 		
 	}
