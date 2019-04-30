@@ -21,7 +21,7 @@ if(fs.existsSync(corevdefault)){
 			out= Path.join(out,"bin", "cli.js")
 		}
 		module.exports= require(out)
-		return
+		process.exit()
 	}
 }
 
@@ -33,7 +33,7 @@ if(fs.existsSync(verification)){
 		out= Path.join(out,"bin", "cli.js")
 	}
 	module.exports= require(out)
-	return
+	process.exit()
 }
 
 out= Path.join(home, "Kawix")
