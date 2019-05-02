@@ -104,7 +104,11 @@ class Installer
 					fname2= Path.join(modules, @module+".kwa")
 					if fs.existsSync(fname2)
 						await fs.unlinkAsync(fname2)
-					await fs.symlinkAsync(fname, fname2)
+					if Os.platform() == "win32"
+						# windows es problemático con los enlaces simbólicos
+						await fs.copyFileAsync(fname, fname2)
+					else 
+						await fs.symlinkAsync(fname, fname2)
 					fileinfo.version= info0.version 
 
 				fileinfo.versions= fileinfo.versions ? {}
