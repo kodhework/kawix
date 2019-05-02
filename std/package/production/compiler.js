@@ -123,7 +123,6 @@ class Compiler{
 			await fs.mkdirAsync(this._dir)
 		}
 		this._path = path || this._path
-
 		await this._generate(this._path, this._dir)
 		return this
 	}
@@ -156,8 +155,10 @@ class Compiler{
 			stat= await fs.statAsync(ufile)
 			if(stat.isDirectory()){
 				destu= Path.join(dest, file)
-				if(! ( await this._fileExists(destu) ) )
+				if(! ( await this._fileExists(destu) ) ){
 					await fs.mkdirAsync(destu)
+					await fs.utimesAsync(destu, stat.atime, stat.mtime)
+				}
 
 				await this._generate(ufile, destu)
 			}
@@ -196,13 +197,35 @@ class Compiler{
 							}
 						}
 					}
+
 				}
 				if(content){
+					
 					await fs.writeFileAsync(destu, content)
+					if(stat.mtimeMs > Date.now()){
+						
+						
+						stat.mtime = new Date()
+						stat.atime = new Date()
+						await fs.utimesAsync(ufile, stat.atime, stat.mtime)
+
+					}
+					await fs.utimesAsync(destu, stat.atime, stat.mtime)
 
 				}else{
+
 					destu= Path.join(dest, file)
 					await fs.copyFileAsync(ufile, destu)
+					if (stat.mtimeMs > Date.now()){
+						
+						
+						stat.mtime= new Date()
+						stat.atime= new Date()
+						await fs.utimesAsync(ufile, stat.atime, stat.mtime)
+						
+					}
+					await fs.utimesAsync(destu, stat.atime, stat.mtime)
+
 				}
 			}
 		}

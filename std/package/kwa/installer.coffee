@@ -4,12 +4,14 @@ import axios from 'npm://axios@0.18.0'
 import Url from 'url'
 import Path from 'path'
 import Os from 'os'
+import qs from 'querystring'
 
 class Installer 
-	constructor: ({module, version, url, key})->
+	constructor: ({module, version, url, key, machineid})->
 		@url = url ? './'
 		@module = module 
 		@key = key
+		@machineid= machineid
 		@version = version 
 		@_locks = {}
 	
@@ -17,13 +19,10 @@ class Installer
 		return new Promise (resolve)-> setTimeout resolve, timeout
 
 	install: (dir)->
-
-
 		await @_lock()
 		try 
 			info0= await @get()
 			data= info0.data
-
 			# create a imodules if not found 
 			if not dir 
 				dir= Path.join(Os.homedir(),"Kawix")
@@ -38,7 +37,6 @@ class Installer
 			
 			if not fs.existsSync(modules)
 				fs.mkdirAsync(modules)
-
 			fileinfo= {}
 			try
 				fileinfo= await import(Path.join(imodules, @module + ".info.json"))
@@ -49,8 +47,19 @@ class Installer
 					a= module.realPathResolve(@module) 
 				else 
 					a= Url.resolve(@url, @module) 
-				u= Url.resolve a + "/", data.filename ? data.url
-				console.info("URL: #{u}")
+				a= Url.resolve a + "/", data.filename 
+				u= data.url ? a 
+				args= {}
+
+				if @key 
+					args.key= @key 
+				if @machineid 
+					args.machineid= @machineid 
+					
+				if a isnt u 
+					args.original= a 
+				u+= "?" + qs.stringify(args)
+				
 				response= await axios 
 					method: 'GET'
 					url: u
@@ -61,13 +70,28 @@ class Installer
 					def.resolve= a 
 					def.reject = b 
 				
-				fname= Path.join imodules, @module + "." + info0.version  + ".kwa"
-				st= fs.createWriteStream(fname)
-				st.on "error", def.reject 
-				response.data.on "error", def.reject 
-				st.on "finish", def.resolve 
-				response.data.pipe st 
-				await def.promise 
+				try 
+					fname1= Path.join imodules, @module + "." + info0.version  + ".kwa.0"
+					fname = Path.join imodules, @module + "." + info0.version  + ".kwa"
+					st= fs.createWriteStream(fname1)
+					st.on "error", def.reject 
+					response.data.on "error", def.reject 
+					st.on "finish", def.resolve 
+					response.data.pipe st 
+					await def.promise 
+
+					
+					if fs.existsSync(fname)
+						await fs.unlinkAsync(fname)
+					await fs.renameAsync(fname1, fname)
+
+				catch e 
+					if fs.existsSync(fname1)
+						await fs.unlinkAsync(fname1)
+					throw e 
+				
+				
+
 
 				try
 					fileinfo= await KModule.import(Path.join(imodules, @module + ".info.json"), {
