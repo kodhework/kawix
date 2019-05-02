@@ -301,7 +301,7 @@ for (var i = 0; i < process.argv.length; i++) {
 		start = arg
 		break
 	}
-	else if (arg.indexOf("core"+Path.sep+"main.js") >= 0) {
+	else if (arg == process.argv[2]) {
 		// require kawix core
 		kawix = require(arg)
 		n = 0

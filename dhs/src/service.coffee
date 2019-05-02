@@ -734,11 +734,11 @@ class Service extends EventEmitter
 		if uri.pathname == "/.static./js/kawix.core.js"
 			env.request.url= '/main.js'
 			#console.info ">>>>", Path.normalize(Path.join(__dirname, "..", "..", "core", "crossplatform", "dist"))
-			@__ks0 = KawixHttp.staticServe(Path.join(__dirname, "..", "..", "core", "crossplatform", "dist")) if not @__ks0
+			@__ks0 = KawixHttp.staticServe(Path.join(Path.dirname(kawix.__file), "crossplatform", "dist")) if not @__ks0
 			await @__ks0(env)
 		else if uri.pathname == "/.static./js/kawix.async.js" or uri.pathname == "/.static./js/kawix.core.async.js"
 			env.request.url= '/main.js'
-			@__ks1 = KawixHttp.staticServe(Path.join(__dirname, "..", "..", "core", "crossplatform", "async", "dist")) if not @__ks1
+			@__ks1 = KawixHttp.staticServe(Path.join(Path.dirname(kawix.__file), "crossplatform", "async", "dist")) if not @__ks1
 			await @__ks1(env)
 		else
 			await @__ks2.handle(env)
