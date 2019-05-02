@@ -1,5 +1,5 @@
-import semver from 'https://kwx.kodhe.com/x/v/0.3.20/std/package/semver.js'
-import fs from 'https://kwx.kodhe.com/x/v/0.3.20/std/fs/mod.js'
+import semver from '../semver.js'
+import fs from '../../fs/mod.js'
 import axios from 'npm://axios@0.18.0'
 import Url from 'url'
 import Path from 'path'
@@ -18,7 +18,13 @@ class Installer
 	_sleep: (timeout = 100)->
 		return new Promise (resolve)-> setTimeout resolve, timeout
 
+	installInfo: (dir)->
+		return @_install(dir, yes)
+	
 	install: (dir)->
+		return @_install(dir, no)
+	
+	_install: (dir, _getinfo)->
 		await @_lock()
 		try 
 			info0= await @get()
@@ -60,6 +66,13 @@ class Installer
 					args.original= a 
 				u+= "?" + qs.stringify(args)
 				
+				if _getinfo 
+					return 
+						version: info0.version 
+						id: data.uploadid
+						url: u
+						needupdate: yes
+				
 				response= await axios 
 					method: 'GET'
 					url: u
@@ -97,13 +110,18 @@ class Installer
 					fileinfo= await KModule.import(Path.join(imodules, @module + ".info.json"), {
 						force: true 
 					})
-
-				if not fileinfo.version or (semver.gt(info0.version, fileinfo.version))
-					# make a symlink 
+				
+				fname2= Path.join(modules, @module+".kwa")
+				if fs.existsSync(fname2)
+					await fs.unlinkAsync(fname2)
 					
-					fname2= Path.join(modules, @module+".kwa")
-					if fs.existsSync(fname2)
-						await fs.unlinkAsync(fname2)
+				if Os.platform() == "win32"
+					# windows es problemático con los enlaces simbólicos
+					await fs.copyFileAsync(fname, fname2)
+					fileinfo.version= info0.version 
+					
+				else if not fileinfo.version or (semver.gt(info0.version, fileinfo.version))
+					# make a symlink 
 					await fs.symlinkAsync(fname, fname2)
 					fileinfo.version= info0.version 
 
@@ -130,7 +148,8 @@ class Installer
 		# get the best version available 
 		try 
 			u= @url
-			info= await KModule.import("#{u}#{@module}/info.json")
+			info= await KModule.import "#{u}#{@module}/info.json", 
+				force: yes
 			versions= Object.keys(info.versions)
 		catch e 
 			throw new Error("Module #{@module} not found")

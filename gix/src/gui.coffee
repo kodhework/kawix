@@ -212,7 +212,8 @@ class Gui extends EventEmitter
 				#install electron
 				def= @deferred()
 				console.log(" > Installing electron: ", install)
-				p= Child.spawn(process.execPath, [install])
+				p= Child.spawn process.execPath, [install]
+					env: Object.assign({}, process.env, {NODE_REQUIRE: '1'})
 				p.on "error", def.reject
 				p.stderr.on "data", (er)->
 					console.error er.toString()
