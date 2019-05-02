@@ -18,7 +18,13 @@ class Installer
 	_sleep: (timeout = 100)->
 		return new Promise (resolve)-> setTimeout resolve, timeout
 
+	installInfo: (dir)->
+		return @_install(dir, yes)
+	
 	install: (dir)->
+		return @_install(dir, no)
+	
+	_install: (dir, _getinfo)->
 		await @_lock()
 		try 
 			info0= await @get()
@@ -59,6 +65,13 @@ class Installer
 				if a isnt u 
 					args.original= a 
 				u+= "?" + qs.stringify(args)
+				
+				if _getinfo 
+					return 
+						version: info0.version 
+						id: data.uploadid
+						url: u
+						needupdate: yes
 				
 				response= await axios 
 					method: 'GET'
