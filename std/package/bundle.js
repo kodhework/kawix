@@ -104,8 +104,8 @@ class Bundle {
 
 		if (!this._header) {
 			this._stream.write("(function(global, context){\n\t")
-			this._stream.write("var fileData=[]")
-			this._stream.write("var cacheData=[]")
+			this._stream.write("var fileData=[]\n")
+			this._stream.write("var cacheData=[]\n")
 			this._header = true
 		}
 		await this._create(path)

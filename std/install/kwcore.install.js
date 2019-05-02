@@ -9,13 +9,13 @@ var file= Path.join(Os.homedir(),".profile")
 if(process.getuid() == 0){
 	file= "/etc/profile"
 }
-var newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir
+var newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir 
 var content= ''
 if(fs.existsSync(file)){
 	fs.readFileSync(file,'utf8')
 }
 if(content.indexOf(newline) < 0){
-	fs.writeFileSync(file, content + newline + "\n")
+	fs.writeFileSync(file, content + newline + "\"\n")
 	if (process.getuid() == 0) {
 		file = Path.join(Os.homedir(), ".bashrc")
 		content= ''
@@ -23,7 +23,7 @@ if(content.indexOf(newline) < 0){
 			content = fs.readFileSync(file, 'utf8')
 		}
 		if (content.indexOf(newline) < 0) {
-			fs.writeFileSync(file, content + newline + "\n")
+			fs.writeFileSync(file, content + newline + "\"\n")
 		}
 		
 	}

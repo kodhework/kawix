@@ -17,6 +17,19 @@ database:
 			".cson"
 			".ts"
 		]
+	
+	# more modules
+	"modules":
+		"repo": "https://github.com/voxsoftware/kawix-modules"
+		"url": "https://raw.githubusercontent.com/voxsoftware/kawix-modules/${version}/${file}"
+		# find the best suitable extension
+		"extensions": [
+			".js"
+			".coffee"
+			".json"
+			".cson"
+			".ts"
+		]
 
 	# standar library
 	"std":
