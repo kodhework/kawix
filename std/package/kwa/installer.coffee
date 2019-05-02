@@ -134,7 +134,8 @@ class Installer
 		# get the best version available 
 		try 
 			u= @url
-			info= await KModule.import("#{u}#{@module}/info.json")
+			info= await KModule.import "#{u}#{@module}/info.json", 
+				force: yes
 			versions= Object.keys(info.versions)
 		catch e 
 			throw new Error("Module #{@module} not found")
