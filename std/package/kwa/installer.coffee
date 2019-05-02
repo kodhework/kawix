@@ -1,5 +1,5 @@
-import semver from 'https://kwx.kodhe.com/x/v/0.3.20/std/package/semver.js'
-import fs from 'https://kwx.kodhe.com/x/v/0.3.20/std/fs/mod.js'
+import semver from '../semver.js'
+import fs from '../../fs/mod.js'
 import axios from 'npm://axios@0.18.0'
 import Url from 'url'
 import Path from 'path'
