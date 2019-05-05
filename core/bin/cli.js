@@ -122,16 +122,21 @@ for (var i = 2; i < args.length; i++) {
 
 
         var execute = function () {
-            // require file using KModule
-            Kawix.KModule.injectImport()
-            Kawix.mainFilename = Path.resolve(arg)
-            Kawix.KModule.import(arg, {
-                parent: {
-                    filename: process.cwd() + "/cli.js"
-                }
-            }).then(function () { }).catch(function (e) {
-                console.error("Failed executing: ", e)
-            })
+            if(process.env.NODE_REQUIRE== 1){
+                require(arg)
+            }
+            else{
+                // require file using KModule
+                Kawix.KModule.injectImport()
+                Kawix.mainFilename = Path.resolve(arg)
+                Kawix.KModule.import(arg, {
+                    parent: {
+                        filename: process.cwd() + "/cli.js"
+                    }
+                }).then(function () { }).catch(function (e) {
+                    console.error("Failed executing: ", e)
+                })
+            }
         }
 
         if (forceui) {
