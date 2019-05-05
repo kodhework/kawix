@@ -212,7 +212,8 @@ class Gui extends EventEmitter
 				#install electron
 				def= @deferred()
 				console.log(" > Installing electron: ", install)
-				p= Child.spawn(process.execPath, [install])
+				p= Child.spawn process.execPath, [install],
+					env: Object.assign({}, process.env, {NODE_REQUIRE: '1'})
 				p.on "error", def.reject
 				p.stderr.on "data", (er)->
 					console.error er.toString()
@@ -300,7 +301,7 @@ for (var i = 0; i < process.argv.length; i++) {
 		start = arg
 		break
 	}
-	else if (arg.indexOf("core"+Path.sep+"main.js") >= 0) {
+	else if (arg == process.argv[2]) {
 		// require kawix core
 		kawix = require(arg)
 		n = 0
