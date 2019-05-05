@@ -16,6 +16,16 @@ var fs = function(Mod){
 				return callback(er)
 			}
 		},
+
+		existsSync: function (file) {
+			file = Path.normalize(file)
+			var vfile = Mod._virtualfile[file]
+			if (!vfile) {
+				return false
+			}
+			return true
+		},
+
 		accessSync: function(file){
 			file = Path.normalize(file)
 			var vfile = Mod._virtualfile[file]
