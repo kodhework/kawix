@@ -68,78 +68,82 @@ var corevdefault= Path.join(home, "Kawix", "core", "verification.file")
 var verification= Path.join(home, "Kawix",corefolder, "verification.file")
 var out, installed
 
-if(fs.existsSync(corevdefault)){
-	installed= fs.readFileSync(corevdefault,'utf8')
-	if(installed >= ${JSON.stringify(this.version)}){
-		out= Path.join(home,"Kawix", "core")
+main()
+
+function main(){
+	if(fs.existsSync(corevdefault)){
+		installed= fs.readFileSync(corevdefault,'utf8')
+		if(installed >= ${JSON.stringify(this.version)}){
+			out= Path.join(home,"Kawix", "core")
+			if(process.env.KWCORE_EXECUTE == 1){
+				delete process.env.KWCORE_EXECUTE
+				out= Path.join(out,"bin", "cli.js")
+			}
+			module.exports= require(out)
+			return 
+		}
+	}
+
+
+	if(fs.existsSync(verification)){
+		out= Path.join(home,"Kawix", corefolder)
 		if(process.env.KWCORE_EXECUTE == 1){
 			delete process.env.KWCORE_EXECUTE
 			out= Path.join(out,"bin", "cli.js")
 		}
 		module.exports= require(out)
-		process.exit()
+		return 
 	}
-}
+
+	out= Path.join(home, "Kawix")
+	if(!fs.existsSync(out)){
+		fs.mkdirSync(out)
+	}
+
+	out= Path.join(out, corefolder)
+	if(!fs.existsSync(out)){
+		fs.mkdirSync(out)
+	}
 
 
-if(fs.existsSync(verification)){
-	out= Path.join(home,"Kawix", corefolder)
+	${this.commands.join("\n")}
+
+	var files= ${JSON.stringify(this.files)}
+	var contents= contentData()
+
+	var file, content
+	for(var i=0;i<files.length;i++){
+		file= files[i]
+		content= contents[i]
+		content= Buffer.from(content,'base64')
+		content= Zlib.gunzipSync(content)
+		fs.writeFileSync(Path.join(out, file), content)
+	}
+
+	if(process.env.INSTALL_KWCORE){
+		//XXX
+	}
+
+	fs.writeFileSync(verification, ${JSON.stringify(this.version)})
+
+	// make a junction or symlink 
+	if(fs.existsSync(coredefault)){
+		fs.unlinkSync(coredefault)
+	}
+	if(Os.platform() == "win32")
+		fs.symlinkSync(out, coredefault,"junction")
+	else 
+		fs.symlinkSync(out, coredefault)
+
+
+
+
 	if(process.env.KWCORE_EXECUTE == 1){
 		delete process.env.KWCORE_EXECUTE
 		out= Path.join(out,"bin", "cli.js")
 	}
 	module.exports= require(out)
-	process.exit()
 }
-
-out= Path.join(home, "Kawix")
-if(!fs.existsSync(out)){
-	fs.mkdirSync(out)
-}
-
-out= Path.join(out, corefolder)
-if(!fs.existsSync(out)){
-	fs.mkdirSync(out)
-}
-
-
-${this.commands.join("\n")}
-
-var files= ${JSON.stringify(this.files)}
-var contents= contentData()
-
-var file, content
-for(var i=0;i<files.length;i++){
-	file= files[i]
-	content= contents[i]
-	content= Buffer.from(content,'base64')
-	content= Zlib.gunzipSync(content)
-	fs.writeFileSync(Path.join(out, file), content)
-}
-
-if(process.env.INSTALL_KWCORE){
-	//XXX
-}
-
-fs.writeFileSync(verification, ${JSON.stringify(this.version)})
-
-// make a junction or symlink 
-if(fs.existsSync(coredefault)){
-	fs.unlinkSync(coredefault)
-}
-if(Os.platform() == "win32")
-	fs.symlinkSync(out, coredefault,"junction")
-else 
-	fs.symlinkSync(out, coredefault)
-
-
-
-
-if(process.env.KWCORE_EXECUTE == 1){
-	delete process.env.KWCORE_EXECUTE
-	out= Path.join(out,"bin", "cli.js")
-}
-module.exports= require(out)
 
 function contentData(){
 	return ${JSON.stringify(this.content)}
