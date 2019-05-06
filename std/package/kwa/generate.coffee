@@ -42,8 +42,7 @@ export createTarball= (body={})->
 	if body?.getmodified
 		return max
 
-	name= body?.name ? "stdlibrary.kwa"
-	
+	name= body.name	
 	if not fs.existsSync(dist)
 		await fs.mkdirAsync dist
 
@@ -74,11 +73,13 @@ export createTarball= (body={})->
 		
 	
 	kw = body.distfolder 
-	pack= await import(body.package ? "../../../package.json")
+	pack= await import(body.package)
 	if not fs.existsSync(kw)
 		await fs.mkdirAsync(kw)
-	f= Path.join(f, "info.json")
-	json= {}
+	f= Path.join(kw, "info.json")
+	json= 
+		name: pack.name
+
 	if fs.existsSync(f)
 		json= await import(f)	
 	json.versions= json.versions || {}
@@ -91,7 +92,7 @@ export createTarball= (body={})->
 	version.size= stat.size 
 	version.filename= "./" + Path.basename(out)
 	version.uploadid = Path.basename(out,".kwa")
-	dest= Path.join(__dirname, "..", "..", kw, Path.basename(out))
+	dest= Path.join(kw, Path.basename(out))
 	if body?.after
 		await body?.after(out, dest, version)
 	else 
