@@ -66,7 +66,9 @@ class Installer
 				if @url is "./"
 					a= module.realPathResolve(@module) 
 				else if @module 
-					a= Url.resolve(@url, @module) 
+					a= Url.resolve(@url, @module)
+				else 
+					a= @url  
 
 
 				a= Url.resolve a + "/", data.filename 
