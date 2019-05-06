@@ -87,6 +87,10 @@ export createTarball= (body={})->
 	if not version 
 		version= json.versions[pack.version] = {}
 		version.created= Date.now() 
+	else 
+		udest= Path.join(kw, version.filename)
+		if fs.existsSync(udest)
+			await fs.unlinkAsync(udest)
 	
 	stat = await fs.statAsync(out)
 	version.size= stat.size 
@@ -98,9 +102,6 @@ export createTarball= (body={})->
 	else 
 		await fs.copyFileAsync(out, dest)
 	await fs.writeFileAsync(f, JSON.stringify(json,null,'\t'))
-
-
-
 	
 	console.info 
 		modified: max
