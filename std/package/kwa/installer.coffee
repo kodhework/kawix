@@ -56,17 +56,19 @@ class Installer
 					depInstaller= new Installer(arg1)
 					deps.push(await depInstaller._install(dir, _getinfo))
 
-
+			modname= info0.name || data.name
 			fileinfo= {}
 			try
-				fileinfo= await import(Path.join(imodules, @module + ".info.json"))
+				fileinfo= await import(Path.join(imodules, modname + ".info.json"))
 
 			if fileinfo.versions?[info0.version]?.uploadid isnt data.uploadid
 				# download 
 				if @url is "./"
 					a= module.realPathResolve(@module) 
-				else 
+				else if @module 
 					a= Url.resolve(@url, @module) 
+
+
 				a= Url.resolve a + "/", data.filename 
 				u= data.url ? a 
 				args= {}
@@ -100,8 +102,8 @@ class Installer
 					def.reject = b 
 				
 				try 
-					fname1= Path.join imodules, @module + "." + info0.version  + ".kwa.0"
-					fname = Path.join imodules, @module + "." + info0.version  + ".kwa"
+					fname1= Path.join imodules, modname + "." + info0.version  + ".kwa.0"
+					fname = Path.join imodules, modname + "." + info0.version  + ".kwa"
 					st= fs.createWriteStream(fname1)
 					st.on "error", def.reject 
 					response.data.on "error", def.reject 
@@ -126,11 +128,11 @@ class Installer
 
 
 				try
-					fileinfo= await KModule.import(Path.join(imodules, @module + ".info.json"), {
+					fileinfo= await KModule.import(Path.join(imodules, modname + ".info.json"), {
 						force: true 
 					})
 				
-				fname2= Path.join(modules, @module+".kwa")
+				fname2= Path.join(modules, modname + ".kwa")
 				if fs.existsSync(fname2)
 					await fs.unlinkAsync(fname2)
 					
@@ -148,7 +150,7 @@ class Installer
 				fileinfo.versions[info0.version] = data 
 
 				# write the file 
-				await fs.writeFileAsync(Path.join(imodules, @module + ".info.json"), JSON.stringify(fileinfo, null, '\t'))
+				await fs.writeFileAsync(Path.join(imodules, modname + ".info.json"), JSON.stringify(fileinfo, null, '\t'))
 
 				return 
 					deps: deps 
