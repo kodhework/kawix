@@ -24,11 +24,14 @@ class Installer
 	install: (dir)->
 		return @_install(dir, no)
 	
+
+	
 	_install: (dir, _getinfo)->
 		await @_lock()
 		try 
 			info0= await @get()
 			data= info0.data
+			deps= []
 			# create a imodules if not found 
 			if not dir 
 				dir= Path.join(Os.homedir(),"Kawix")
@@ -37,16 +40,27 @@ class Installer
 		
 			imodules= Path.join(dir,"imodules")
 			modules = Path.join(dir,"modules")
-
 			if not fs.existsSync(imodules)
 				fs.mkdirAsync(imodules)
 			
 			if not fs.existsSync(modules)
 				fs.mkdirAsync(modules)
+
+
+			
+			if data.dependencies 
+				for dep in data.dependencies
+					arg1 = Object.assign {}, dep, 
+						key: @key 
+						machineid: @machineid 
+					depInstaller= new Installer(arg1)
+					deps.push await depInstaller._install(dir, _getinfo)
+
+
 			fileinfo= {}
 			try
 				fileinfo= await import(Path.join(imodules, @module + ".info.json"))
-			
+
 			if fileinfo.versions?[info0.version]?.uploadid isnt data.uploadid
 				# download 
 				if @url is "./"
@@ -72,6 +86,8 @@ class Installer
 						id: data.uploadid
 						url: u
 						needupdate: yes
+						name: info0.name || data.name
+
 				
 				response= await axios 
 					method: 'GET'
@@ -97,6 +113,9 @@ class Installer
 					if fs.existsSync(fname)
 						await fs.unlinkAsync(fname)
 					await fs.renameAsync(fname1, fname)
+
+					
+
 
 				catch e 
 					if fs.existsSync(fname1)
@@ -132,12 +151,21 @@ class Installer
 				await fs.writeFileAsync(Path.join(imodules, @module + ".info.json"), JSON.stringify(fileinfo, null, '\t'))
 
 				return 
+					deps: deps 
 					installed: fname 
+					name: info0.name || data.name
 					version: info0.version 
-			else 
+			else
+				needupdate= no  
+				if deps?.length
+					needupdate= deps.filter (a)-> a.needupdate  
+					needupdate= needupdate.length > 0 
+
 				return 
+					needupdate: needupdate
 					installed: null 
 					version: info0.version 
+					name: info0.name || data.name
 					localversion: fileinfo.version  
 		catch e
 			throw e 
@@ -170,6 +198,7 @@ class Installer
 		return 
 			version: resolved
 			data: info.versions[resolved]
+			name: info.name
 	
 
 	_lock: (timeout = 30000)->
