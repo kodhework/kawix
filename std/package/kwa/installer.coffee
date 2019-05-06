@@ -32,8 +32,9 @@ class Installer
 	
 
 	
-	_install: (dir, _getinfo)->
-		await @_lock()
+	_install: (dir, _getinfo, _nolock)->
+		if not _nolock
+			await @_lock()
 		try 
 			info0= await @get()
 			data= info0.data
@@ -60,7 +61,7 @@ class Installer
 						key: @key 
 						machineid: @machineid 
 					depInstaller= new Installer(arg1)
-					deps.push(await depInstaller._install(dir, _getinfo))
+					deps.push(await depInstaller._install(dir, _getinfo, yes))
 
 			modname= info0.name || data.name
 			fileinfo= {}
@@ -273,7 +274,8 @@ class Installer
 		catch e
 			throw e 
 		finally 
-			await @_unlock()
+			if not _nolock
+				await @_unlock()
 
 	get: ()->
 		# get the best version available 
