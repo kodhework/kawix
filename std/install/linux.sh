@@ -6,8 +6,8 @@ else
 	export _HOME="$HOME/Kawix"
 fi
 
-if [[ ! -e $dir ]]; then
-    mkdir $dir
+if [[ ! -e "$_HOME" ]]; then
+    mkdir "$_HOME"
 fi
 
 rm -f "$_HOME/kwcore.install.js"
@@ -17,7 +17,7 @@ cd $_HOME
 # download kwcore.install.js
 curl -L "https://kwx.kodhe.com/x/std/install/kwcore.install.js" -O "$_HOME/kwcore.install.js"
 
-# download nodejs 
+# download nodejs
 curl -L "https://raw.githubusercontent.com/voxsoftware/node-binaries/master/linux/x64/10.15.3/node.gz" -o "$_HOME/node.gz"
 curl -L "https://kwx.kodhe.com/x/core/dist/kwcore.app.js" -o "$_HOME/kwcore.app.js"
 
@@ -25,12 +25,12 @@ curl -L "https://kwx.kodhe.com/x/core/dist/kwcore.app.js" -o "$_HOME/kwcore.app.
 
 rm node 2> /dev/null
 
-gunzip node.gz 
+gunzip node.gz
 chmod +x node
 
 "$_HOME/node" "$_HOME/kwcore.app.js"
 
-# now symLink 
+# now symLink
 rm -r "$_HOME/kwcore"
 curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/kwcore"
 chmod +x "$_HOME/kwcore"
@@ -41,7 +41,7 @@ then
 fi
 
 
-# download icons 
+# download icons
 mkdir icons
 curl "https://raw.githubusercontent.com/voxsoftware/kawix/master/icons/16x16.png" -o icons/16x16.png
 curl "https://raw.githubusercontent.com/voxsoftware/kawix/master/icons/24x24.png" -o icons/24x24.png
