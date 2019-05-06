@@ -9,7 +9,7 @@ import qs from 'querystring'
 class Installer 
 	constructor: ({module, version, url, key, machineid})->
 		@url = url ? './'
-		@module = module 
+		@module = module ? ''
 		@key = key
 		@machineid= machineid
 		@version = version 
@@ -152,7 +152,7 @@ class Installer
 				force: yes
 			versions= Object.keys(info.versions)
 		catch e 
-			throw new Error("Module #{@module} not found")
+			throw new Error("Module #{u}#{@module} not found")
 
 		versions.sort (a,b)-> 
 			if a > b then -1 else (if a < b then 1 else 0)
