@@ -16,7 +16,7 @@ class Installer
 		@machineid= machineid
 		@version = version 
 		@_locks = {}
-		@projectName= projectName
+		@projectName= projectName ? "default"
 
 
 		@options= arguments[0]
