@@ -54,7 +54,7 @@ class Installer
 						key: @key 
 						machineid: @machineid 
 					depInstaller= new Installer(arg1)
-					deps.push await depInstaller._install(dir, _getinfo)
+					deps.push(await depInstaller._install(dir, _getinfo))
 
 
 			fileinfo= {}
