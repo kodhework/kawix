@@ -9,5 +9,5 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
 export KWCORE_EXECUTE=1
-"$DIR/node" "$DIR/kwcore.app.js" $@
+"$DIR/node" "$DIR/kwcore.start.js" $@
 exit $?
