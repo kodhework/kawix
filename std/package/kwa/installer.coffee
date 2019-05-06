@@ -5,9 +5,11 @@ import Url from 'url'
 import Path from 'path'
 import Os from 'os'
 import qs from 'querystring'
+import Exception from '../../util/exception'
+import Crypto from '../../util/crypto/mod.js'
 
 class Installer 
-	constructor: ({module, version, url, key, machineid, projectName})->
+	constructor: ({module, version, url, key, password, machineid, projectName})->
 		@url = url ? './'
 		@module = module ? ''
 		@key = key
@@ -15,6 +17,9 @@ class Installer
 		@version = version 
 		@_locks = {}
 		@projectName= projectName
+
+
+		@options= arguments[0]
 	
 	_sleep: (timeout = 100)->
 		return new Promise (resolve)-> setTimeout resolve, timeout
@@ -90,10 +95,13 @@ class Installer
 									name: info0.name || data.name
 							
 
-							# Clone					
+							# Clone		
 							await Git.clone 
 								dir: fname
 								url: data.url 
+								username: data.credentials?.username 
+								password: data.credentials?.password
+
 							
 						else 
 							try 
@@ -117,6 +125,8 @@ class Installer
 							# git pull 
 							await Git.pull 
 								dir: fname 
+								username: data.credentials?.username 
+								password: data.credentials?.password
 							
 						if data.ref 
 							await Git.checkout
@@ -168,6 +178,7 @@ class Installer
 						
 						try 
 							fname1= Path.join imodules, modname + "." + info0.version  + ".kwa.0"
+							fnamex= Path.join imodules, modname + "." + info0.version  + ".kwa.1"
 							fname = Path.join imodules, modname + "." + info0.version  + ".kwa"
 							st= fs.createWriteStream(fname1)
 							st.on "error", def.reject 
@@ -179,10 +190,22 @@ class Installer
 							
 							if fs.existsSync(fname)
 								await fs.unlinkAsync(fname)
-							await fs.renameAsync(fname1, fname)
-
 							
+							if data.crypt
+								password= data.crypt?.password ? @options?.password
+								if not password
+									throw Exception.create("Content is encrypted. You need provide a password").putCode("CONTENT_ENCRYPTED")
+								
+								Crypto.decrypt	
+									file: fname1
+									outfile: fnamex
+									password: password 
 
+								await fs.unlinkAsync(fname1)
+								await fs.renameAsync(fnamex, fname)
+
+							else 
+								await fs.renameAsync(fname1, fname)
 
 						catch e 
 							if fs.existsSync(fname1)
@@ -190,7 +213,6 @@ class Installer
 							throw e 
 					
 					
-
 
 					try
 						fileinfo= await KModule.import(Path.join(imodules, modname + ".info.json"), {
