@@ -38,8 +38,8 @@ class Installer
 				if not fs.existsSync(dir)
 					await fs.mkdirAsync(dir)
 		
-			imodules= Path.join(dir,"imodules")
-			modules = Path.join(dir,"modules")
+			imodules= Path.join(dir,"modules")
+			modules = Path.join(dir,"default")
 			if not fs.existsSync(imodules)
 				fs.mkdirAsync(imodules)
 			
