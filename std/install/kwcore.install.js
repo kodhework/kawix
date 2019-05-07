@@ -193,21 +193,21 @@ var init= async function(){
 			var er, c = 0, d
 			var p=Child.spawn("update-icon-caches", [paths.icon])
 			p.on("error", function(e){
-				console.error("ERROR updating icon cache: ", e)
+				console.error("[Warning] Cannot execute update-icon-cache. You can ignore if your have a server distro", e)
 			})
 			p.on("exit", function () { c++; d() })
 			
 			p = Child.spawn("update-desktop-database", [paths.apps])
 			p.on("error", function (e) {
 				er= true
-				console.error("ERROR updating apps cache: ", e)
+				console.error("[Warning] Cannot execute update-desktop-database. You can ignore if your have a server distro")
 			})
 			p.on("exit", function(){c++; d()})
 			
 			var p1 = Child.spawn("update-mime-database", [paths.mimeo])
 			p1.on("error", function (e) {
 				er= true
-				console.error("ERROR updating mime cache: ", e)
+				console.error("[Warning] Cannot execute update-mime-database. You can ignore if your have a server distro")
 			})
 			p1.on("exit", function () { c++; d()})
 			d= function(){
