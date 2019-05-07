@@ -16,18 +16,19 @@ if(fs.existsSync(file)){
 }
 if(content.indexOf(newline) < 0){
 	fs.writeFileSync(file, content + newline + "\"\n")
-	if (process.getuid() == 0) {
-		file = Path.join(Os.homedir(), ".bashrc")
-		content= ''
-		if(fs.existsSync(file)){
-			content = fs.readFileSync(file, 'utf8')
-		}
-		if (content.indexOf(newline) < 0) {
-			fs.writeFileSync(file, content + newline + "\"\n")
-		}
-		
+}
+
+if (process.getuid() == 0) {
+	file = Path.join(Os.homedir(), ".bashrc")
+	content = ''
+	if (fs.existsSync(file)) {
+		content = fs.readFileSync(file, 'utf8')
+	}
+	if (content.indexOf(newline) < 0) {
+		fs.writeFileSync(file, content + newline + "\"\n")
 	}
 }
+
 
 
 // install the icons 
@@ -112,10 +113,22 @@ var init= async function(){
 				paths.mime = Path.join(Os.homedir(), ".local/share/mime/packages")
 				paths.mimeo = Path.join(Os.homedir(), ".local/share/mime")
 			}
-
+			
+			
 			if(!fs.existsSync(paths.apps)){
-				console.info(" > Was detected an installation without UI interfaz, installation completed")
-				process.exit()
+				fs.mkdirSync(paths.apps)
+			}
+			if (!fs.existsSync(paths.icon)) {
+				if (!fs.existsSync(Path.dirname(paths.icon)) ){
+					fs.mkdirSync(Path.dirname(paths.icon))
+				}
+				fs.mkdirSync(paths.icon)
+			}
+			if (!fs.existsSync(paths.mimeo)) {
+				fs.mkdirSync(paths.mimeo)
+			}
+			if (!fs.existsSync(paths.mime)) {
+				fs.mkdirSync(paths.mime)
 			}
 
 			iconpaths = [
@@ -177,28 +190,33 @@ var init= async function(){
 		</mime-info>
 			`)
 
+			var er, c = 0, d
 			var p=Child.spawn("update-icon-caches", [paths.icon])
 			p.on("error", function(e){
 				console.error("ERROR updating icon cache: ", e)
 			})
-			var er,c=0, d
-			var p = Child.spawn("update-desktop-database", [paths.apps])
+			p.on("exit", function () { c++; d() })
+			
+			p = Child.spawn("update-desktop-database", [paths.apps])
 			p.on("error", function (e) {
 				er= true
 				console.error("ERROR updating apps cache: ", e)
 			})
 			p.on("exit", function(){c++; d()})
-			var p1 = Child.spawn("update-mime-database", [paths.mime])
+			
+			var p1 = Child.spawn("update-mime-database", [paths.mimeo])
 			p1.on("error", function (e) {
 				er= true
 				console.error("ERROR updating mime cache: ", e)
 			})
-			p.on("exit", function () { c++; d()})
+			p1.on("exit", function () { c++; d()})
 			d= function(){
 				if(er) return 
-				console.info("")
-				console.info("")
-				return console.info(" > Was detected an installation with UI interfaz, installation and desktop app was installed")
+				if(c==3){
+					console.info("")
+					console.info("")
+					return console.info(" > Was detected an installation with UI interfaz, installation and desktop app was installed")
+				}
 			}
 
 		}
