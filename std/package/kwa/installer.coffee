@@ -167,11 +167,14 @@ class Installer
 								name: info0.name || data.name
 
 						
-						response= await axios 
-							method: 'GET'
-							url: u
-							responseType: 'stream'
-
+						try 
+							response= await axios 
+								method: 'GET'
+								url: u
+								responseType: 'stream'
+						catch e 
+							throw e
+							#throw Exception.create(e.message + ": " + JSON.stringify(e.response?.data)).putCode("FAILED")
 						def= {}
 						def.promise= new Promise (a,b)->
 							def.resolve= a 
@@ -233,16 +236,19 @@ class Installer
 
 					else 
 						fname2= Path.join(modules, modname + ".kwa")
-						if fs.existsSync(fname2)
-							await fs.unlinkAsync(fname2)
+						
 							
 						if Os.platform() == "win32"
 							# windows es problemático con los enlaces simbólicos
+							if fs.existsSync(fname2)
+								await fs.unlinkAsync(fname2)
 							await fs.copyFileAsync(fname, fname2)
 							fileinfo.version= info0.version 
 							
 						else if not fileinfo.version or (semver.gt(info0.version, fileinfo.version))
 							# make a symlink 
+							if fs.existsSync(fname2)
+								await fs.unlinkAsync(fname2)
 							await fs.symlinkAsync(fname, fname2)
 							fileinfo.version= info0.version 
 
