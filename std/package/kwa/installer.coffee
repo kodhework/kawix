@@ -5,15 +5,21 @@ import Url from 'url'
 import Path from 'path'
 import Os from 'os'
 import qs from 'querystring'
+import Exception from '../../util/exception'
+import Crypto from '../../util/crypto/mod.js'
 
 class Installer 
-	constructor: ({module, version, url, key, machineid})->
+	constructor: ({module, version, url, key, password, machineid, projectName})->
 		@url = url ? './'
 		@module = module ? ''
 		@key = key
 		@machineid= machineid
 		@version = version 
 		@_locks = {}
+		@projectName= projectName ? "default"
+
+
+		@options= arguments[0]
 	
 	_sleep: (timeout = 100)->
 		return new Promise (resolve)-> setTimeout resolve, timeout
@@ -26,8 +32,9 @@ class Installer
 	
 
 	
-	_install: (dir, _getinfo)->
-		await @_lock()
+	_install: (dir, _getinfo, _nolock)->
+		if not _nolock
+			await @_lock()
 		try 
 			info0= await @get()
 			data= info0.data
@@ -38,8 +45,8 @@ class Installer
 				if not fs.existsSync(dir)
 					await fs.mkdirAsync(dir)
 		
-			imodules= Path.join(dir,"imodules")
-			modules = Path.join(dir,"modules")
+			imodules= Path.join(dir, "modules")
+			modules = Path.join(dir, @projectName)
 			if not fs.existsSync(imodules)
 				fs.mkdirAsync(imodules)
 			
@@ -54,104 +61,206 @@ class Installer
 						key: @key 
 						machineid: @machineid 
 					depInstaller= new Installer(arg1)
-					deps.push(await depInstaller._install(dir, _getinfo))
+					deps.push(await depInstaller._install(dir, _getinfo, yes))
 
-
+			modname= info0.name || data.name
 			fileinfo= {}
 			try
-				fileinfo= await import(Path.join(imodules, @module + ".info.json"))
+				fileinfo= await import(Path.join(imodules, modname + ".info.json"))
 
-			if fileinfo.versions?[info0.version]?.uploadid isnt data.uploadid
-				# download 
-				if @url is "./"
-					a= module.realPathResolve(@module) 
-				else 
-					a= Url.resolve(@url, @module) 
-				a= Url.resolve a + "/", data.filename 
-				u= data.url ? a 
-				args= {}
+			if (fileinfo.versions?[info0.version]?.uploadid isnt data.uploadid) or (not data.ref and (data.type is "git"))
+				if data.url or data.filename
+					if data.type is "git"
 
-				if @key 
-					args.key= @key 
-				if @machineid 
-					args.machineid= @machineid 
+						Git = await import("npm://isomorphic-git@0.54.2")
+						Git.plugins.set('fs', fs)
+						fname = Path.join imodules, modname + "." + info0.version 
+						
+						branches= null 
+						clone= no
+						try 
+							branches= await Git.listBranches({ dir: fname, remote: 'origin' })
+							if branches.length is 0 
+								clone = yes
+						catch 
+							clone = yes 
+
+						if clone 
+							if _getinfo
+								return 
+									version: info0.version 
+									id: data.uploadid
+									url: data.url 
+									type: data.type 
+									needupdate: yes
+									name: info0.name || data.name
+							
+
+							# Clone		
+							await Git.clone 
+								dir: fname
+								url: data.url 
+								username: data.credentials?.username 
+								password: data.credentials?.password
+
+							
+						else 
+							try 
+
+								if data.ref 
+									await Git.checkout
+										ref: data.ref 
+										dir: fname 
+								else 
+									throw 1
+							catch 
+								if _getinfo
+									return 
+										version: info0.version 
+										id: data.uploadid
+										url: data.url 
+										type: data.type 
+										needupdate: yes
+										name: info0.name || data.name
+
+							# git pull 
+							await Git.pull 
+								dir: fname 
+								username: data.credentials?.username 
+								password: data.credentials?.password
+							
+						if data.ref 
+							await Git.checkout
+								dir: fname 
+								ref: data.ref
+
+					else 
+						if not @url.startsWith("http")
+							if @module 
+								a= Path.join @url, @module 
+							else 
+								a= @url
+						else
+							a= Url.resolve(@url, @module)
+
+
+						a= Url.resolve a + "/", data.filename 
+						u= data.url ? a 
+						args= {}
+
+						if @key 
+							args.key= @key 
+						if @machineid 
+							args.machineid= @machineid 
+							
+						if a isnt u 
+							args.original= a 
+						u+= "?" + qs.stringify(args)
+						
+						if _getinfo 
+							return 
+								version: info0.version 
+								id: data.uploadid
+								url: u
+								type: data.type 
+								needupdate: yes
+								name: info0.name || data.name
+
+						
+						try 
+							response= await axios 
+								method: 'GET'
+								url: u
+								responseType: 'stream'
+						catch e 
+							throw e
+							#throw Exception.create(e.message + ": " + JSON.stringify(e.response?.data)).putCode("FAILED")
+						def= {}
+						def.promise= new Promise (a,b)->
+							def.resolve= a 
+							def.reject = b 
+						
+						try 
+							fname1= Path.join imodules, modname + "." + info0.version  + ".kwa.0"
+							fnamex= Path.join imodules, modname + "." + info0.version  + ".kwa.1"
+							fname = Path.join imodules, modname + "." + info0.version  + ".kwa"
+							st= fs.createWriteStream(fname1)
+							st.on "error", def.reject 
+							response.data.on "error", def.reject 
+							st.on "finish", def.resolve 
+							response.data.pipe st 
+							await def.promise 
+
+							
+							if fs.existsSync(fname)
+								await fs.unlinkAsync(fname)
+							
+							if data.crypt
+								password= data.crypt?.password ? @options?.password
+								if not password
+									throw Exception.create("Content is encrypted. You need provide a password").putCode("CONTENT_ENCRYPTED")
+								
+								Crypto.decrypt	
+									file: fname1
+									outfile: fnamex
+									password: password 
+
+								await fs.unlinkAsync(fname1)
+								await fs.renameAsync(fnamex, fname)
+
+							else 
+								await fs.renameAsync(fname1, fname)
+
+						catch e 
+							if fs.existsSync(fname1)
+								await fs.unlinkAsync(fname1)
+							throw e 
 					
-				if a isnt u 
-					args.original= a 
-				u+= "?" + qs.stringify(args)
-				
-				if _getinfo 
-					return 
-						version: info0.version 
-						id: data.uploadid
-						url: u
-						needupdate: yes
-						name: info0.name || data.name
-
-				
-				response= await axios 
-					method: 'GET'
-					url: u
-					responseType: 'stream'
-
-				def= {}
-				def.promise= new Promise (a,b)->
-					def.resolve= a 
-					def.reject = b 
-				
-				try 
-					fname1= Path.join imodules, @module + "." + info0.version  + ".kwa.0"
-					fname = Path.join imodules, @module + "." + info0.version  + ".kwa"
-					st= fs.createWriteStream(fname1)
-					st.on "error", def.reject 
-					response.data.on "error", def.reject 
-					st.on "finish", def.resolve 
-					response.data.pipe st 
-					await def.promise 
-
-					
-					if fs.existsSync(fname)
-						await fs.unlinkAsync(fname)
-					await fs.renameAsync(fname1, fname)
-
 					
 
-
-				catch e 
-					if fs.existsSync(fname1)
-						await fs.unlinkAsync(fname1)
-					throw e 
-				
-				
-
-
-				try
-					fileinfo= await KModule.import(Path.join(imodules, @module + ".info.json"), {
-						force: true 
-					})
-				
-				fname2= Path.join(modules, @module+".kwa")
-				if fs.existsSync(fname2)
-					await fs.unlinkAsync(fname2)
+					try
+						fileinfo= await KModule.import(Path.join(imodules, modname + ".info.json"), {
+							force: true 
+						})
 					
-				if Os.platform() == "win32"
-					# windows es problemático con los enlaces simbólicos
-					await fs.copyFileAsync(fname, fname2)
-					fileinfo.version= info0.version 
-					
-				else if not fileinfo.version or (semver.gt(info0.version, fileinfo.version))
-					# make a symlink 
-					await fs.symlinkAsync(fname, fname2)
-					fileinfo.version= info0.version 
+					if data.type is "git"
+						fname2= Path.join(modules, modname)
+						if fs.existsSync(fname2)
+							await fs.unlinkAsync(fname2)
+						
+						if Os.platform() == "win32"
+							await fs.symlinkAsync(fname, fname2, "junction")
+						else 
+							await fs.symlinkAsync(fname, fname2)
+						fileinfo.version= info0.version 
 
-				fileinfo.versions= fileinfo.versions ? {}
-				fileinfo.versions[info0.version] = data 
+					else 
+						fname2= Path.join(modules, modname + ".kwa")
+						
+							
+						if Os.platform() == "win32"
+							# windows es problemático con los enlaces simbólicos
+							if fs.existsSync(fname2)
+								await fs.unlinkAsync(fname2)
+							await fs.copyFileAsync(fname, fname2)
+							fileinfo.version= info0.version 
+							
+						else if not fileinfo.version or (semver.gt(info0.version, fileinfo.version))
+							# make a symlink 
+							if fs.existsSync(fname2)
+								await fs.unlinkAsync(fname2)
+							await fs.symlinkAsync(fname, fname2)
+							fileinfo.version= info0.version 
 
-				# write the file 
-				await fs.writeFileAsync(Path.join(imodules, @module + ".info.json"), JSON.stringify(fileinfo, null, '\t'))
+					fileinfo.versions= fileinfo.versions ? {}
+					fileinfo.versions[info0.version] = data 
+
+					# write the file 
+					await fs.writeFileAsync(Path.join(imodules, modname + ".info.json"), JSON.stringify(fileinfo, null, '\t'))
 
 				return 
 					deps: deps 
+					type: data.type 
 					installed: fname 
 					name: info0.name || data.name
 					version: info0.version 
@@ -163,6 +272,7 @@ class Installer
 
 				return 
 					needupdate: needupdate
+					type: data.type 
 					installed: null 
 					version: info0.version 
 					name: info0.name || data.name
@@ -170,24 +280,26 @@ class Installer
 		catch e
 			throw e 
 		finally 
-			await @_unlock()
+			if not _nolock
+				await @_unlock()
 
 	get: ()->
 		# get the best version available 
 		try 
 			u= @url
-			info= await KModule.import "#{u}#{@module}/info.json", 
+			m= "#{u}#{@module}/info.json"
+			info= await KModule.import m, 
 				force: yes
 			versions= Object.keys(info.versions)
 		catch e 
-			throw new Error("Module #{u}#{@module} not found")
+			throw new Error("Module #{u}#{@module} not found: #{e.message}")
 
 		versions.sort (a,b)-> 
 			if a > b then -1 else (if a < b then 1 else 0)
 
 		resolved= ''
 		for version in versions 
-			if @version is "latest"
+			if @version is "latest" or (@version is "*")
 				resolved= version
 				break 
 			
