@@ -108,7 +108,7 @@ generate1= (params)->
 				options.ignoredependencies= yes
 			if params.cachedir and params.complete
 				options.output= params.cachedir
-				console.log "output:",options.output
+				
 			reg= new Registry options
 
 
@@ -314,6 +314,7 @@ generate1= (params)->
 					bundler.disableTranspile = true
 				bundler.profile= params.profile or "browser"
 				bundler.packageJsonSupport = true
+
 				ktypings= ktypings ? {}
 				if params.allowdist isnt "1"
 					bundler.filter= (file)->
@@ -368,6 +369,7 @@ export invoke= (env,ctx)->
 		params=
 			site: site
 			file: file
+			allowdist: env.request.query.allowdist
 			module: env.params.module
 			transpile: env.request.query.transpile
 			name: env.request.query.name
