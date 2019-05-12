@@ -112,11 +112,14 @@ class Bundle {
 		await this._create(path)
 
 		// load virtual paths into KModule
-		var str = null
+		var str = null, fnames, id2
 		if(Os.platform() == "win32"){
-			this._filenames= this._filenames.map(function(a){
-				return a.replace(/\\/g,'/')
-			})
+			fnames= {}
+			for(var id in this._filenames){
+				id2 = id.replace(/\\/g, '/')
+				fnames[id2]= this._filenames[id]
+			}
+			this._filenames= fnames 
 		}
 		
 		str = JSON.stringify(this._filenames, null, '\t')
