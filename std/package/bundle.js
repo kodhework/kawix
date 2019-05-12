@@ -1,6 +1,7 @@
 // Copyright Kodhe 2019
 import fs from '../fs/mod.js'
 import Path from 'path'
+import Os from 'os'
 
 var names = ["isBlockDevice", "isCharacterDevice", "isDirectory", "isFIFO", ""]
 class Bundle {
@@ -111,7 +112,14 @@ class Bundle {
 		await this._create(path)
 
 		// load virtual paths into KModule
-		var str = JSON.stringify(this._filenames, null, '\t')
+		var str = null
+		if(Os.platform() == "win32"){
+			this._filenames= this._filenames.map(function(a){
+				return a.replace(/\\/g,'/')
+			})
+		}
+		
+		str = JSON.stringify(this._filenames, null, '\t')
 		this._stream.write("\n\tvar filenames=" + str)
 
 		var packageJson = this.packageJsonSupport
