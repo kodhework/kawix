@@ -910,8 +910,8 @@ Mod._resolveFilename = function (name, parent, resolve) {
 		parts = name.split(/\/|\\/)
 		parts = Path.normalize("/virtual/" + parts[0])
 		if (Mod._virtualfile[parts]) {
-			name = Mod.resolveVirtual(Path.normalize("/virtual/" + name), parent, resolve)
-			if (name) return name
+			var uname = Mod.resolveVirtual(Path.normalize("/virtual/" + name), parent, resolve)
+			if (uname) return uname
 		}
 	}
 
@@ -1084,8 +1084,8 @@ Mod.replaceSyncRequire = function (originalrequire, parent, KModule) {
 			parts = Path.normalize("/virtual/" + parts[0])
 
 			if (Mod._virtualfile[parts]) {
-				file = Mod.resolveVirtual(Path.normalize("/virtual/" + file), parent)
-				if (file) return Mod.requireVirtualSync(file, parent)
+				var ufile = Mod.resolveVirtual(Path.normalize("/virtual/" + ufile), parent)
+				if (ufile) return Mod.requireVirtualSync(ufile, parent)
 			}
 		}
 		return originalrequire(name, parent)
@@ -1442,8 +1442,8 @@ Mod._import = function (file, options) {
 					parts = Path.normalize("/virtual/" + parts[0])
 
 					if (Mod._virtualfile[parts]) {
-						file = Mod.resolveVirtual(Path.normalize("/virtual/" + file), parent)
-						if (file) return Mod.require(file, options)
+						var ufile = Mod.resolveVirtual(Path.normalize("/virtual/" + ufile), parent)
+						if (ufile) return Mod.require(ufile, options)
 					}
 				}
 				// find this or with extensions
