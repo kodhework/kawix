@@ -53,7 +53,8 @@ class Installer
 			if not fs.existsSync(modules)
 				fs.mkdirAsync(modules)
 
-
+			if not data 
+				throw Exception.create("Version #{@version} not found").putCode("VERSION_NOT_FOUND")
 			
 			if data.dependencies 
 				for dep in data.dependencies
@@ -200,10 +201,21 @@ class Installer
 								if not password
 									throw Exception.create("Content is encrypted. You need provide a password").putCode("CONTENT_ENCRYPTED")
 								
-								Crypto.decrypt	
+								res = Crypto.decrypt	
 									file: fname1
 									outfile: fnamex
 									password: password 
+
+								def= {}
+								def.promise= new Promise (a,b)->
+									def.resolve=a
+									def.reject= b 
+
+								res.readStream.on "error", def.reject 
+								res.unzip.on "error", def.reject
+								res.writeStream.on "error", def.reject 
+								res.writeStream.on "finish", def.resolve 
+								await def.promise 
 
 								await fs.unlinkAsync(fname1)
 								await fs.renameAsync(fnamex, fname)

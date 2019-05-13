@@ -764,6 +764,8 @@ class Service extends EventEmitter
 			if env.request?.url == "/.o./config"
 				return env.reply.code(200).send(config)
 
+			if env.request?.url.startsWith("/.static.")
+				await @api_kodhe(env) if not env.response.finished
 
 
 			if config.sites
@@ -789,8 +791,7 @@ class Service extends EventEmitter
 						return if env.response.finished
 
 
-			if env.request?.url.startsWith("/.static.")
-				await @api_kodhe(env) if not env.response.finished
+			
 
 			env.reply.code(404).send("NOT FOUND") if not env.response.finished
 			env= null
