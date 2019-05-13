@@ -18,32 +18,33 @@ class Program
 	@main: ()->
 
 		# init node-pty 
-		if Os.platform() is "linux"
+		try 
+			if Os.platform() is "linux"
 
-			#pty= await import('npm://node-pty@0.8.1')
-			registry= new Registry()
-			moduledesc= await registry.resolve('node-pty@0.8.1')
-			path= Path.join(moduledesc.folder, "build")
-			if not fs.existsSync(path)
-				fs.mkdirSync(path)
-			
-			path= Path.join(path, "Release")
-			if not fs.existsSync(path)
-				fs.mkdirSync(path)
-			
-			path= Path.join(path, "pty.node")
-			if not fs.existsSync(path)
-				content= await import("./pty.node")
-				content= content.default ? content 
-				fs.writeFileSync(path, content)
-			
-			# require 
-			pty= require(moduledesc.folder)
-			
+				#pty= await import('npm://node-pty@0.8.1')
+				registry= new Registry()
+				moduledesc= await registry.resolve('node-pty@0.8.1')
+				path= Path.join(moduledesc.folder, "build")
+				if not fs.existsSync(path)
+					fs.mkdirSync(path)
+				
+				path= Path.join(path, "Release")
+				if not fs.existsSync(path)
+					fs.mkdirSync(path)
+				
+				path= Path.join(path, "pty.node")
+				if not fs.existsSync(path)
+					content= await import("./pty.node")
+					content= content.default ? content 
+					fs.writeFileSync(path, content)
+				
+				# require 
+				pty= require(moduledesc.folder)
+				
 
 
-		else 
-			pty= await import('npmi://node-pty-prebuilt@0.7.6')
+			else 
+				pty= await import('npmi://node-pty-prebuilt@0.7.6')
 
 		prg= new Program()
 		prg.main()
@@ -153,36 +154,41 @@ class Program
 
 		###
 
-		###
-		p= Child.spawn args[0], args.slice(1),
-			#shell: yes
-			env: Object.assign {}, process.env,
-				FORCE_COLOR : '4'
-			stdio: ['pipe','pipe','pipe']
-		###
+		if not pty 
+			p= Child.spawn args[0], args.slice(1),
+				#shell: yes
+				env: Object.assign {}, process.env,
+					FORCE_COLOR : '4'
+				stdio: ['pipe','pipe','pipe']
+		else 		
+			p= pty.spawn args[0], args.slice(1),
+				name: 'xterm-color',
+				cols: process.stdout.cols,
+				rows: process.stdout.rows,
+				env: process.env
 
-		p= pty.spawn args[0], args.slice(1),
-			name: 'xterm-color',
-			cols: process.stdout.cols,
-			rows: process.stdout.rows,
-			env: process.env
-
-		process.stdout.on "resize", ()->
-			pty.resize(process.stdout.cols, process.stdout.rows)
+			process.stdout.on "resize", ()->
+				pty.resize(process.stdout.cols, process.stdout.rows)
 
 
 		cache= @cache
 		mb= @mb
-		p.on "data", (d)->
+		std1= (std, d)->
 			d= Buffer.from(d)
 			cache.data.push
-				std: "stdout"
+				std: std
 				data: d
 			cache.len+= d.length
 			if cache.len > mb
 				d1= cache.data.shift()
 				cache.len -= (d1.length  ? 0)
-			self.write "stdout", d
+			self.write std, d
+
+		if pty 
+			p.on "data", std1.bind(null, "stdout")
+		else 
+			p.stdout.on "data", std1.bind(null, "stdout")
+			p.stderr.on "data", std1.bind(null, "stderr")
 
 		###
 		p.stderr.on "data", (d)->
