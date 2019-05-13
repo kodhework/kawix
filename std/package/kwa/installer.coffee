@@ -211,10 +211,10 @@ class Installer
 									def.resolve=a
 									def.reject= b 
 
-								result.readStream.on "error", def.reject 
-								result.unzip.on "error", def.reject
-								result.writeStream.on "error", def.reject 
-								result.writeStream.on "finish", def.resolve 
+								res.readStream.on "error", def.reject 
+								res.unzip.on "error", def.reject
+								res.writeStream.on "error", def.reject 
+								res.writeStream.on "finish", def.resolve 
 								await def.promise 
 
 								await fs.unlinkAsync(fname1)
