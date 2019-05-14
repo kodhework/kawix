@@ -34,7 +34,7 @@ class IPC extends ipc
 			if Os.platform() is "win32"				
 				if(path1[1]==":")
 					path1= path1.substring(2).replace(/\\/g,'/')
-				return "//./pipe/" + path1
+				return "//./pipe/" + path1 + @id
 		
 		path1+= "."+ @id if @id 
 		path1 
