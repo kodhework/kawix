@@ -159,7 +159,6 @@ class Program
 				#shell: yes
 				env: Object.assign {}, process.env,
 					FORCE_COLOR : '4'
-				stdio: ['pipe','pipe','pipe']
 		else 		
 			p= pty.spawn args[0], args.slice(1),
 				name: 'xterm-color',
@@ -187,6 +186,7 @@ class Program
 		if pty 
 			p.on "data", std1.bind(null, "stdout")
 		else 
+			
 			p.stdout.on "data", std1.bind(null, "stdout")
 			p.stderr.on "data", std1.bind(null, "stderr")
 

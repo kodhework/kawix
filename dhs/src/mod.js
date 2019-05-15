@@ -3,17 +3,31 @@ import '../../std/coffeescript/register.js'
 import reg from '../../std/coffeescript/cson/register.js'
 // this is specific of @kawix/core
 if(global.kawix ){
-	kawix.KModule.addVirtualFile("@kawix/dhs", {
-		redirect:module.realPathResolve(".."),
-		isdirectory: true
+	var redirs= kawix.KModule._virtualredirect
+	var a 
+	a= redirs.filter(function(a){
+		return a.isdirectory && a.resolvedpath == "/virtual/@kawix/dhs"
 	})
-	kawix.KModule.addVirtualFile("@kawix/std", {
-		redirect:module.realPathResolve("../../std"),
-		isdirectory: true
+	if(!a.length){
+		kawix.KModule.addVirtualFile("@kawix/dhs", {
+			redirect:module.realPathResolve(".."),
+			isdirectory: true
+		})
+	}
+
+	a = redirs.filter(function (a) {
+		return a.isdirectory && a.resolvedpath == "/virtual/@kawix/std"
 	})
+	if(!a.length){
+		kawix.KModule.addVirtualFile("@kawix/std", {
+			redirect:module.realPathResolve("../../std"),
+			isdirectory: true
+		})
+	}
+	/*
 	kawix.KModule.addVirtualFile("@kawix/gix", {
 		redirect:module.realPathResolve("../../gix"),
 		isdirectory: true
-	})
+	})*/
 	//console.info(kawix.KModule._virtualredirect)
 }
