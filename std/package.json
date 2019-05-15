@@ -1,8 +1,4 @@
 {
-    "name": "@kawix/base",
-    "dependencies": {
-        "coffeescript": "^2.3.2",
-        "cson-parser": "^4.0.2"
-
-    }
+    "name": "@kawix/std",
+    "version": "0.4.0"
 }
