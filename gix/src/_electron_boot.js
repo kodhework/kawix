@@ -12,7 +12,7 @@ for (var i = 0; i < process.argv.length; i++) {
 		start = arg
 		break
 	}
-	else if (arg.indexOf("core"+Path.sep+"main.js") >= 0) {
+	else if (arg == process.argv[2]) {
 		// require kawix core
 		kawix = require(arg)
 		n = 0
@@ -20,18 +20,18 @@ for (var i = 0; i < process.argv.length; i++) {
 }
 
 
-var init1= function(){
-	if(kawix){
+var init1 = function () {
+	if (kawix) {
 		kawix.KModule.injectImport()
 		if (!start) start = __dirname + Path.sep + "start.js"
 
-		kawix.KModule.import(start).then(function(response){
-			response.default(id).then(function(){
-			}).catch(function(e){
+		kawix.KModule.import(start).then(function (response) {
+			response.default(id).then(function () {
+			}).catch(function (e) {
 				console.error("Failed execute: ", e)
 				process.exit(10)
 			})
-		}).catch(function(e){
+		}).catch(function (e) {
 			console.error("Failed execute: ", e)
 			process.exit(10)
 		})
