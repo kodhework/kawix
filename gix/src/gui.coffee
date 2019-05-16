@@ -64,6 +64,7 @@ class GuiServer
 		return func(@electron(), @, params)
 
 	emit: (event, ...args)->
+
 		@_evs.push
 			event: event
 			args: args
@@ -144,6 +145,7 @@ class Gui extends EventEmitter
 					"method": "_readEvents"
 				for ev in evs
 					this.emit ev.event, ...ev.args
+				await @sleep(1)
 			catch e
 				console.error("Error reading events:", e)
 				await @sleep(200)
@@ -200,7 +202,7 @@ class Gui extends EventEmitter
 		# require electron
 		else if not @electron
 			reg= new Registry()
-			mod= await reg.resolve "electron@4.0.8"
+			mod= await reg.resolve "electron@5.0.1"
 			install= Path.join(mod.folder,"install.js")
 			dist= Path.join(mod.folder,"dist", "electron")
 			if Os.platform() is "win32"
@@ -212,7 +214,7 @@ class Gui extends EventEmitter
 				#install electron
 				def= @deferred()
 				console.log(" > Installing electron: ", install)
-				p= Child.spawn process.execPath, [install],
+				p= Child.spawn process.execPath, ["--no-proxy-resolver", install],
 					env: Object.assign({}, process.env, {NODE_REQUIRE: '1'})
 				p.on "error", def.reject
 				p.stderr.on "data", (er)->
@@ -276,8 +278,11 @@ class Gui extends EventEmitter
 			"action": "import"
 			"args": [__filename]
 			"params": {}
-		@_start_read_events()
+		#@_start_read_events()
 		return
+
+	startReadEvents: ()->
+		@_start_read_events()
 
 	_createBootFile: ()->
 		path= Path.join(Os.homedir(), ".kawi")
@@ -338,6 +343,9 @@ export ipcCreate= ()->
 	if not Gui.s
 		Gui.s= new GuiServer()
 		global.Gix= Gui.s
+
 	return Gui.s
+	#else
+	#	return new GuiServer()
 
 export default Gui
