@@ -299,7 +299,7 @@ class IPC extends EventEmitter
 
 		if @_type is 'client'
 			self.connected= true
-			socket.on "disconnect", ()->
+			socket.on "close", ()->
 				for id, val of self._deferred
 					val.reject Exception.create("IPC Channel disconnected").putCode("DISCONNECTED")
 
@@ -308,6 +308,8 @@ class IPC extends EventEmitter
 				self._deferred={}
 				if not self._stopped
 					self.connect()
-
+		else
+			socket.on "close", ()->
+				console.info("A CLIENT WAS DISCONNECTED")
 
 export default IPC
