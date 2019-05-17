@@ -56,6 +56,16 @@ class Registry
 			fs.access file, fs.constants.F_OK, (err)->
 				resolve(no) if err
 				resolve(yes)
+	
+	_fileExists_2: (file)->
+		return new Promise (resolve, reject)->
+			fs.stat file, (err, stat)->
+				resolve(no) if err
+				if (Date.now() - stat.mtimeMs) < 4000
+					resolve(yes)
+				else 
+					fs.rmdirSync(file)
+					resolve(no)
 
 
 	_getPackageCacheInstall: (module,version)->
@@ -338,7 +348,7 @@ class Registry
 		cache= await @_getPackageCacheInstall(module, resolvedversion)
 		time= Date.now()
 
-		while await @._fileExists(cache.lock)
+		while await @._fileExists_2(cache.lock)
 			if Date.now() - time > 40000
 				throw new Error("Error waiting access")
 			await @_sleep 20
