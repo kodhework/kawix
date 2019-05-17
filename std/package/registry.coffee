@@ -60,7 +60,7 @@ class Registry
 	_fileExists_2: (file)->
 		return new Promise (resolve, reject)->
 			fs.stat file, (err, stat)->
-				resolve(no) if err
+				return resolve(no) if err
 				if (Date.now() - stat.mtimeMs) < 4000
 					resolve(yes)
 				else 
