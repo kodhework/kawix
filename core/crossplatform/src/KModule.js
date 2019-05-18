@@ -1136,7 +1136,9 @@ Mod.requireVirtualSync = function (file, parent) {
 	module.filename = file
 	module.dirname = Path.dirname(file)
 	module.KModule = nmod
+	Mod._cacherequire[file] = module
 	Module._cache[file] = module
+	
 
 
 	var code = "exports.__kawi= function(KModule){ " +

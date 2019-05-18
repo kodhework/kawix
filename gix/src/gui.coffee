@@ -7,7 +7,7 @@ import Path from 'path'
 import Os from 'os'
 import Url from 'url'
 
-import Registry from './lib/_registry'
+#import Registry from './lib/_registry'
 import fs from './lib/_fs'
 import IPC from './ipc'
 import Exception from './exception'
@@ -201,19 +201,31 @@ class Gui extends EventEmitter
 			dist= process.env.GIX_ELECTRON_PATH
 		# require electron
 		else if not @electron
-			reg= new Registry()
-			mod= await reg.resolve "electron@5.0.1"
-			install= Path.join(mod.folder,"install.js")
-			dist= Path.join(mod.folder,"dist", "electron")
-			if Os.platform() is "win32"
-				dist += ".exe"
-			else if Os.platform() is "darwin"
-				dist = Path.join(mod.folder,"dist", "Electron.app","Contents","MacOS","Electron")
+			#reg= new Registry()
+			#mod= await reg.resolve "electron@5.0.1"
+			#install= Path.join(mod.folder,"install.js")
+			dist= Path.join(Os.homedir(), "Kawix", "electron@5.0.1")	
+			
+			
 
+			if Os.platform() is "win32"
+				dist = Path.join(dist, "electron.exe") 
+			else if Os.platform() is "darwin"
+				dist = Path.join(dist, "Electron.app","Contents","MacOS","Electron")
+			else 
+				dist = Path.join(dist, "electron") 
+
+
+			console.info("DIST:", dist)
 			if not await @_checkFileExists(dist)
-				#install electron
+
+				Installer= await import("../electron-install.js")
+				await Installer.install()
+
+				
+				###
 				def= @deferred()
-				console.log(" > Installing electron: ", install)
+				console.log(" > Installing electron")
 				p= Child.spawn process.execPath, ["--no-proxy-resolver", install],
 					env: Object.assign({}, process.env, {NODE_REQUIRE: '1'})
 				p.on "error", def.reject
@@ -224,13 +236,13 @@ class Gui extends EventEmitter
 					process.stdout.write d
 				p.on "exit", def.resolve
 				await def.promise
+				### 
+
 
 				if not await @_checkFileExists(dist)
 					throw Exception.create("Failed to install electron").putCode("LOAD_FAILED")
 
 			@electron=
-				folder: mod.folder
-				install: install
 				dist: dist
 		else
 			dist= @electron.dist
