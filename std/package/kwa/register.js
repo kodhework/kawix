@@ -7,6 +7,8 @@ import Exception from '../../util/exception'
 import Path from 'path'
 import tar from '../../compression/tar.js'
 import fs from '../../fs/mod.js'
+import Os from 'os'
+//import uniqid from '../../util/uniqid'
 
 
 if (typeof kwcore != "object" || !kwcore) {
@@ -79,15 +81,27 @@ var loader1 = async function (filename, uri, options, helper) {
 	// decompress
 	// .kwa is a compressed format
 	var folder= cachedata.file + ".folder"
-	if(await _checkFileExists(folder)){
-		try {
-			await _removedir(folder)
+	var sym = cachedata.file + "-" + Path.basename(filename) + ".sym" 
+	var ifolder = folder
+	var creations =0 
+	while(true){
+		
+		if(await _checkFileExists(ifolder)){
+			try {
+				await _removedir(ifolder)
+				Id0++
+			}
+			catch(e){
+				ifolder = folder + "." + (creations)
+				creations++
+			}
+			
+		}else{
+			break 
 		}
-		catch(e){
-			await fs.renameAsync(folder, folder + "." + Date.now().toString(32) + Id0)
-		}
-		Id0++
 	}
+
+	folder = ifolder 
 	await fs.mkdirAsync(folder)
 
 
@@ -99,6 +113,20 @@ var loader1 = async function (filename, uri, options, helper) {
 	}
 	else{
 		throw Exception.create("Not implemented").putCode("NOT_IMPLEMENTED")
+	}
+
+	try{
+		if(fs.existsSync(sym)){
+			await fs.unlinkAsync(sym)
+		}
+
+		try {
+			await fs.symlinkAsync(folder, sym, Os.platform() == "win32" ? "junction" : "dir")
+			folder = sym
+		} catch (e) {
+
+		}
+	}catch(e){
 	}
 
 
