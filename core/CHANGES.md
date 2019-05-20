@@ -1,3 +1,14 @@
+## Changes 0.4.2
+
+* Fixed installers for Windows and GNU/Linux
+* Fixed some minor bugs on transpiling/caching
+
+## Changes 0.4.0
+
+* Change the way to cache transpiled files, using MD5 instead of fullpath
+* Fixed some minor bugs on transpiling
+
+
 ## Changes 0.3.20 
 
 * Preparing releases for Linux, Mac via ```bash```

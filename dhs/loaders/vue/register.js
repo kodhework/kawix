@@ -1,10 +1,12 @@
 
 
-import {parse as parsex} from 'npm://@vue/component-compiler-utils@^2.6.0'
+
 import Registry from '../../../std/package/registry.js'
 import Path from 'path'
 import Exception from '../../../std/util/exception'
 import uniqid from '../../../std/util/uniqid.js'
+import {parse as parsex} from 'npm://@vue/component-compiler-utils@^2.6.0'
+
 
 var VueCompiler
 export var kawixPreload= async function(){
