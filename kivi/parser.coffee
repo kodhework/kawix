@@ -13,6 +13,14 @@ class Parser
 			for val in arr
 				o[val.name]= val.value
 		return o
+	
+	_object_to_array: (obj, arr=[])->
+		if obj
+			for id, val in obj
+				arr.push 
+					name: id 
+					value: val 
+		return arr
 
 
 	_kvRepeat: (node, rcode, parent)->
@@ -57,17 +65,19 @@ class Parser
 		exp= attrs.expression
 		if not exp
 			throw Exception.create("Parsing: line #{rcode.line} - col #{rcode.col}. #{node.nodeName} need an attribute `expression`")
-		c= rcode.expressions[rcode.lang] ? (rcode.expressions[rcode.lang] = {})
-		if not c[exp]
-			cid= Object.keys(c).length
-			c[exp] = cid
-		else
-			cid= c[exp]
+		
+		#c= rcode.expressions[rcode.lang] ? (rcode.expressions[rcode.lang] = {})
+		#if not c[exp]
+		#	cid= Object.keys(c).length
+		#	c[exp] = cid
+		#else
+		#	cid= c[exp]
+		exp = @_compileExpression(rcode.lang, exp)
 
 		text= ''
 		text= 'else ' if cond is 1
 
-		rcode.str.push("#{text}if($helper.expression(#{cid})){")
+		rcode.str.push("#{text}if(#{exp}){")
 		for nnode in node.childNodes
 			@_analyze(nnode, rcode, node)
 		rcode.str.push("}")
@@ -75,38 +85,40 @@ class Parser
 		parent?._last= 'if'
 
 
-	_kvFor: (node, rcode, parent, cond= 0)->
+	_kvFor: (node, rcode, parent, inner)->
 
 
 		attrs= @_array_to_object node.attrs
-		exp= attrs.expression
+		if inner 
+			exp = attrs["kivi:for"]
+		else 
+			exp= attrs.expression
 		if not exp
 			throw Exception.create("Parsing: line #{rcode.line} - col #{rcode.col}. #{node.nodeName} need an attribute `expression`")
 
-		###
-		c= rcode.expressions[rcode.lang] ? (rcode.expressions[rcode.lang] = {})
-		if not c[exp]
-			cid= Object.keys(c).length
-			c[exp] = cid
-		else
-			cid= c[exp]
-		###
 
 		scode= Object.assign {}, rcode
 		scode.str = []
-		for nnode in node.childNodes
-			@_analyze(nnode, scode, node)
+		if inner 
+			@_normal(node, scode, parent)
+		else 
+			for nnode in node.childNodes
+				@_analyze(nnode, scode, node)
 
-		cid= Object.keys(c).length
-		c= rcode.expressions["coffee"] ? (rcode.expressions["coffee"] = {})
 		exp="""
-()->
-	for #{exp}
-		`scode.join("\n")`
+for #{exp}
+	code()
+return 
 		"""
-		c[exp] = cid
+		#c[exp] = cid
+		
+		cid = await @_compile "coffee", "forexpression", exp, rcode, (source)->
+			source.replace "code();", scode.str.join("\n")
+			
 
-		rcode.str.push("$helper.expression(#{cid})")
+			
+
+		#rcode.str.push("$helper.expression($init#{cid})")
 		parent?._last= 'for'
 
 
@@ -157,7 +169,7 @@ class Parser
 			@_compile lang, @options.filename, node.childNodes[0].value, rcode
 
 
-	_compile:(language, filename, source, rcode)->
+	_compile:(language, filename, source, rcode, after)->
 		#rcode.scripts.push source
 		#return
 		ext= kwcore.KModule.Module.languages[language]
@@ -173,18 +185,37 @@ class Parser
 				inlineMap: no
 				sourceMap: no
 
-
-			rcode.scripts.push("function $init#{c}(helper,data){\n\t#{ast.code}\n}")
-			rcode.str.push("await $init#{c}($helper,data)")
+			if after
+				ast.code = after(ast.code)
+			rcode.scripts.push("function $init#{c}($helper,data, $source){\n\t#{ast.code}\n}")
+			rcode.str.push("await $init#{c}($helper,data, $source)")
 		else
-			rcode.scripts.push("function $init#{c}(helper,data){\n\t#{source}\n}")
-			rcode.str.push("await $init#{c}($helper,data)")
-
+			if after 
+				source = after(source)
+			rcode.scripts.push("function $init#{c}($helper,data, $source){\n\t#{source}\n}")
+			rcode.str.push("await $init#{c}($helper,data, $source)")
 
 
 
 
 	_normal: (node, rcode, parent)->
+
+		attrs = @_array_to_object(node.attrs)
+		nunode = 
+			childNodes: [node]
+		if attrs["kivi:if"]
+			nunode.attrs= [
+				value: attrs["kivi:if"]
+				name: 'expression'
+			]
+			delete attrs["kivi:if"]
+			node.attrs = @_object_to_array(attrs)
+			nunode.ok= yes 
+
+		if nunode.ok 
+			return @_kvIf(nunode, rcode, parent)
+
+
 		if node.nodeName == "#text"
 			rcode.lang= rcode.lang or "javascript"
 			if rcode.lang is "javascript"
@@ -293,15 +324,21 @@ class Parser
 	_analyze: (node, rcode, parent)->
 		if node.sourceCodeLocation
 			#if node.sourceCodeLocation.startLine != rcode.line
-			#	rcode.line= node.sourceCodeLocation.startLine
+			rcode.line= node.sourceCodeLocation.startLine
 			rcode.str.push("$source.line= " + rcode.line)
 
 			#if node.sourceCodeLocation.startCol != rcode.col
-			#	rcode.col= node.sourceCodeLocation.startCol
+			rcode.col= node.sourceCodeLocation.startCol
 			rcode.str.push("$source.col= " + rcode.col)
 
 
-		if node.nodeName.startsWith("vw:") or node.nodeName.startsWith("kivi:")
+		attrs = @_array_to_object(node.attrs)
+		if attrs["kivi:for"]
+			@_kvFor(node, rcode, parent, true)
+		
+
+			
+		else if node.nodeName.startsWith("vw:") or node.nodeName.startsWith("kivi:")
 			# parse expression
 			if node.nodeName == "vw:expression" or node.nodeName == "vw:rawexpression" or node.nodeName == "kivi:exp" or node.nodeName == "kivi:raw"
 				type='expression'
@@ -331,7 +368,7 @@ class Parser
 
 			else if node.nodeName == "kivi:for" or node.nodeName == "vw:for"
 				node._type= 'for'
-				@_kvRepeat(node, rcode, parent)
+				@_kvFor(node, rcode, parent)
 
 			else if node.nodeName == "kivi:import" or node.nodeName == "vw:import"
 				node._type= 'import'
