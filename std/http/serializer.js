@@ -61,7 +61,7 @@ class Serializer{
         }
         else if(typeof data == "string"){
             if(!type)
-                reply.type("text/plain;Charset=utf8")
+                reply.type("text/plain;Charset=utf-8")
             return data
         }
         else if(data === null){
@@ -73,7 +73,7 @@ class Serializer{
         else{
             str=  JSON.stringify(data)
             if(!type)
-                reply.type("application/json;Charset=utf8")
+                reply.type("application/json;Charset=utf-8")
             return str
         }
     }
