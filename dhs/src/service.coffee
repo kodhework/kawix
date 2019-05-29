@@ -676,13 +676,15 @@ class Service extends EventEmitter
 		env.reply.code(200).send config
 
 	api_500: (env)->
-		env.reply.code(500).send
-			error:
-				message: env.error.message
-				code: env.error.code
-				stack: env.error.stack
-			status: 'error'
-
+		try 
+			env.reply.code(500).send
+				error:
+					message: env.error.message
+					code: env.error.code
+					stack: env.error.stack
+				status: 'error'
+		catch e 
+			console.error "Error from ENV: ", env.error
 
 	_bundle: (env)->
 		ctx=
@@ -757,8 +759,14 @@ class Service extends EventEmitter
 
 
 		@_concurrent++
-		env.response.once "finish", ()=>
-			@_concurrent--
+		if env.response 
+			env.response.once "finish", ()=>
+				@_concurrent--
+		else if env.socket 
+			env.socket.once "finish", ()=>
+				@_concurrent--
+			env.response = env.socket
+		
 		try
 
 			if env.request?.url == "/.o./config"
@@ -792,13 +800,16 @@ class Service extends EventEmitter
 
 
 			
-
-			env.reply.code(404).send("NOT FOUND") if not env.response.finished
+			if env.socket 
+				if not env.handled
+					env.socket.end()
+			else 
+				env.reply.code(404).send("NOT FOUND") if not env.response.finished
 			env= null
 
 		catch e
 
-			if env.response?.finished
+			if not env.response?.finished
 				env.error = e
 				@api_500(env)
 			else
