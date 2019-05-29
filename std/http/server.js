@@ -228,10 +228,12 @@ class Server extends EventEmitter{
 
 		var env= new Env()
 		env.response= response
-		if(response){
-			env.reply= new Reply(env)
+		env.socket = socket
+		if(!response){
+			env.response= env.socket
 		}
-		env.socket= socket
+		if(response )
+			env.reply = new Reply(env)
 		env.type= type
 		env.head= head
 		env.request= request
