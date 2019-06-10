@@ -757,6 +757,8 @@ class Service extends EventEmitter
 			env= null
 			return
 
+		defsite = null 
+
 
 		@_concurrent++
 		if env.response 
@@ -798,8 +800,15 @@ class Service extends EventEmitter
 						await site._urouter.handle(env)
 						return if env.response.finished
 
+					
+						
+			for site in config.sites 
+				if site.hostnames?.indexOf("DEFAULT") >= 0
+					func= site._hrouter.find("GET", "/DEFAULT")
+					if typeof func?.handler == "function"
+						await site._hrouter.handle(env, func)
+					return if env.response.finished
 
-			
 			if env.socket 
 				if not env.handled
 					env.socket.end()
