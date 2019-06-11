@@ -7,7 +7,7 @@ import Os from 'os'
 import qs from 'querystring'
 import Exception from '../../util/exception'
 import Crypto from '../../util/crypto/mod.js'
-
+import './register'
 class Installer 
 	constructor: ({module, version, url, key, password, machineid, projectName})->
 		@url = url ? './'
@@ -257,12 +257,14 @@ class Installer
 							await fs.copyFileAsync(fname, fname2)
 							fileinfo.version= info0.version 
 							
-						else if not fileinfo.version or (semver.gt(info0.version, fileinfo.version))
+						else 
 							# make a symlink 
 							if fs.existsSync(fname2)
 								await fs.unlinkAsync(fname2)
 							await fs.symlinkAsync(fname, fname2)
 							fileinfo.version= info0.version 
+						
+						try await import(fname2)
 
 					fileinfo.versions= fileinfo.versions ? {}
 					fileinfo.versions[info0.version] = data 
