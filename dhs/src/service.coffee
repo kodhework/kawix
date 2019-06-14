@@ -17,6 +17,8 @@ class Service extends EventEmitter
 		super()
 		Service.current= @
 		@_crons={}
+		@_urlconns = {}
+		@__id = 0
 		@_router= new KawixHttp.router()
 		@workers= []
 		@_contexts= {}
@@ -761,18 +763,32 @@ class Service extends EventEmitter
 
 
 		@_concurrent++
+		id = @__id++ 
+		@_urlconns[id] = 
+			url: env.request?.url
+			created: Date.now() 
+			method: env.request?.method 
+			id : id 
+
 		if env.response 
 			env.response.once "finish", ()=>
 				@_concurrent--
+				delete @_urlconns[id]
 		else if env.socket 
 			env.socket.once "finish", ()=>
 				@_concurrent--
+				delete @_urlconns[id]
 			env.response = env.socket
 		
 		try
 
 			if env.request?.url == "/.o./config"
 				return env.reply.code(200).send(config)
+			
+			if env.request?.url == "/.status"
+				return env.reply.code(200).send
+					concurrent: @_concurrent
+					connections: @_urlconns
 
 			if env.request?.url.startsWith("/.static.")
 				await @api_kodhe(env) if not env.response.finished
