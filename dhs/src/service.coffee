@@ -764,7 +764,7 @@ class Service extends EventEmitter
 
 		@_concurrent++
 		id = @__id++ 
-		@_urlconns[id] = 
+		conn_ = @_urlconns[id] = 
 			url: env.request?.url
 			created: Date.now() 
 			method: env.request?.method 
@@ -774,11 +774,13 @@ class Service extends EventEmitter
 			env.response.once "finish", ()=>
 				@_concurrent--
 				delete @_urlconns[id]
+			conn_.end = env.response.end.bind(env.response)
 		else if env.socket 
 			env.socket.once "finish", ()=>
 				@_concurrent--
 				delete @_urlconns[id]
 			env.response = env.socket
+			conn_.end = env.response.close.bind(env.response)
 		
 		try
 
@@ -789,6 +791,8 @@ class Service extends EventEmitter
 				return env.reply.code(200).send
 					concurrent: @_concurrent
 					connections: @_urlconns
+			
+
 
 			if env.request?.url.startsWith("/.static.")
 				await @api_kodhe(env) if not env.response.finished
