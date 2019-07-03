@@ -10,7 +10,12 @@ import Crypto from '../../util/crypto/mod.js'
 import './register'
 class Installer 
 	constructor: ({module, version, url, key, password, machineid, projectName})->
+		if url?.startsWith("gh/")
+			parts = url.split("")
+			url = "https://cdn.jsdelivr.net/#{url}"
+			
 		@url = url ? './'
+		
 		@module = module ? ''
 		@key = key
 		@machineid= machineid
