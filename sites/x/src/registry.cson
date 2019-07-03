@@ -3,12 +3,12 @@ database:
 	# core library
 	"core":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/core"
-		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/core/${file}"
+		"url": "https://raw.githubusercontent.com/kodhework/kawix/${version}/core/${file}"
 
 	# dhs library
 	"dhs":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/dhs"
-		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/dhs/${file}"
+		"url": "https://raw.githubusercontent.com/kodhework/kawix/${version}/dhs/${file}"
 		# find the best suitable extension
 		"extensions": [
 			".js"
@@ -21,7 +21,7 @@ database:
 	# more modules
 	"modules":
 		"repo": "https://github.com/voxsoftware/kawix-modules"
-		"url": "https://raw.githubusercontent.com/voxsoftware/kawix-modules/${version}/${file}"
+		"url": "https://raw.githubusercontent.com/kodhework/kawix-modules/${version}/${file}"
 		# find the best suitable extension
 		"extensions": [
 			".js"
@@ -34,7 +34,7 @@ database:
 	# standar library
 	"std":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/std"
-		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/std/${file}"
+		"url": "https://raw.githubusercontent.com/kodhework/kawix/${version}/std/${file}"
 		"extensions": [
 			".js"
 			".coffee"
@@ -46,7 +46,7 @@ database:
 	# kivi template library
 	"kivi":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/kivi"
-		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/kivi/${file}"
+		"url": "https://raw.githubusercontent.com/kodhework/kawix/${version}/kivi/${file}"
 		# find the best suitable extension
 		"extensions": [
 			".js"
@@ -60,7 +60,7 @@ database:
 	# gix library
 	"gix":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/gix"
-		"url": "https://raw.githubusercontent.com/voxsoftware/kawix/${version}/gix/${file}"
+		"url": "https://raw.githubusercontent.com/kodhework/kawix/${version}/gix/${file}"
 		# find the best suitable extension
 		"extensions": [
 			".js"

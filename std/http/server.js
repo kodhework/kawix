@@ -30,16 +30,19 @@ class Server extends EventEmitter{
 
 	constructor(){
 		super()
-		this._http= http.createServer(this._listener.bind(this))
-		this._http.on("error", (e)=>{
-			this.emit("error", e)
-		})
+		this.options = {}
 		this._queue= []
 	}
 
 
 	/** Listen http server. Returns a promise */
 	async listen(addr){
+		if(!this._http){
+			this._http = http.createServer(this.options, this._listener.bind(this))
+			this._http.on("error", (e) => {
+				this.emit("error", e)
+			})
+		}
 
 		var host,port, self, r1, r2
 		self= this
@@ -242,6 +245,7 @@ class Server extends EventEmitter{
 
 
 
+	
 
 	_listener(req, res){
 		var env= this.reuse(req, res, undefined, undefined)

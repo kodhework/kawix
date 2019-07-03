@@ -2,7 +2,7 @@
 
 ## Windows
 
-Installers for version 0.4.2 available for Windows. Please go to [https://github.com/voxsoftware/kawix/releases/tag/v0.4.2](https://github.com/voxsoftware/kawix/releases/tag/v0.4.2)
+Installers for version 0.4.2 available for Windows. Please go to [https://github.com/kodhework/kawix/releases/tag/v0.4.2](https://github.com/kodhework/kawix/releases/tag/v0.4.2)
 
 
 ## Linux 
