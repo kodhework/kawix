@@ -9,19 +9,19 @@
 
 ## More info
 
-Please go to [https://github.com/voxsoftware/kawix](https://github.com/voxsoftware/kawix) for see the full **kawix** project
+Please go to [https://github.com/kodhework/kawix](https://github.com/kodhework/kawix) for see the full **kawix** project
 
 
 ## Instalation and Documentation
 
-* [INSTALL.md](https://github.com/voxsoftware/kawix/blob/master/core/INSTALL.md)
-* [DOCS.md](https://github.com/voxsoftware/kawix/blob/master/core/DOCS.md)
-* [CHANGES.md](https://github.com/voxsoftware/kawix/blob/master/core/CHANGES.md)
+* [INSTALL.md](https://github.com/kodhework/kawix/blob/master/core/INSTALL.md)
+* [DOCS.md](https://github.com/kodhework/kawix/blob/master/core/DOCS.md)
+* [CHANGES.md](https://github.com/kodhework/kawix/blob/master/core/CHANGES.md)
 
 
 ## Do you want contribute?
 
-You can contribute testing the code and report issues: [https://github.com/voxsoftware/kawix/issues](https://github.com/voxsoftware/kawix/issues)
+You can contribute testing the code and report issues: [https://github.com/kodhework/kawix/issues](https://github.com/kodhework/kawix/issues)
 
 Do you think that can write better some parts of this README? Feel free to check and contribute
 
