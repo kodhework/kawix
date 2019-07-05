@@ -1,10 +1,10 @@
 
 
 
-import Registry from '../../../std/package/registry.js'
+import Registry from '../../../std/package/registry'
 import Path from 'path'
 import Exception from '../../../std/util/exception'
-import uniqid from '../../../std/util/uniqid.js'
+import uniqid from '../../../std/util/uniqid'
 import {parse as parsex} from 'npm://@vue/component-compiler-utils@^2.6.0'
 
 

@@ -1,6 +1,0 @@
-{
-	"name": "@kawix/std-compression-tar",
-	"dependencies": {
-		"tar": "^4.4.8"
-	}
-}

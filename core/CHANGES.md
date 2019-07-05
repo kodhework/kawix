@@ -1,3 +1,12 @@
+## changes 0.5.1 
+
+* Better support for typescript 
+* Starting migrating ```stdlib``` from coffee to typescript 
+
+## changes 0.4.5 - 0.4.7 
+
+* Minor bugs fixed
+
 ## Changes 0.4.2
 
 * Fixed installers for Windows and GNU/Linux

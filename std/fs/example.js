@@ -1,4 +1,4 @@
-import fs from './mod.js'
+import fs from './mod'
 init() 
 
 

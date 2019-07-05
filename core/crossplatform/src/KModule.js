@@ -791,9 +791,8 @@ var builtinModules = _module.builtinModules;
 					comments: true,
 					filename: file
 				}
-
 				if (basename.endsWith(".ts")) {
-					transpilerOptions.presets = ["typescript", ['stage-2', {
+					transpilerOptions.presets = ["typescript", 'es2015', 'es2016', 'es2017', ['stage-2', {
 						decoratorsBeforeExport: false
 					}]]
 				}

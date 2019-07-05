@@ -1,4 +1,4 @@
-import './src/mod.js'
+import './src/mod'
 import Service from './src/service'
 import Config from './src/config'
 import Path from 'path'

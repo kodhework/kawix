@@ -1,80 +1,81 @@
-<vw:section name='content-inmovible'>
-	<div class='container fluid inmovible'>
-		<style>
-			.loading-container{
-				position: fixed;
-				width:100%;
-				left:0;
-				top:0;
-				z-index:130000;
-			}
-			.loading-progress{
-				width:0;
-				height:3px;
-				box-shadow: 0 0 5px rgba(255,255,255,0.6);
-			}
-			.cover{
-				position: fixed;
-				top:0;
-				z-index: 129900;
-				left:0;
-				width: 100%;
-				height: 100%;
-				opacity:1;
+<html>
 
-			}
-			.v-hidden{
-				padding-left: 10000px !important;
-				overflow: hidden !important;
-			}
-		</style>
-		<div class='cover gray lighten-5  loading-cover' style='display:none' align='center'>
+<body>
+	<style>
+		.t01 {
+			width: 100%;
+			table-layout: fixed;
 
-			<table style='border:0;table-layout:fixed;color:white;width:100%;height:100%;font-size: 2em'>
-				<tr style='width:100%;height:100%;'>
-					<td valign='middle' align='center'>
-						<!--<img style='height:60px' src='http://v.d0stream.com/image/59ae05443f3f860d9cc63c10/f/png/w/300'/>-->
+		}
 
-						<!--<span class='text-red '>Noticket</span>-->
+		.t01 td,
+		.t01 th {
+			padding: 0.5em 1em;
+			border: solid 1px rgb(220, 220, 220);
+		}
 
-<!--						<i class='fa fa-spin fa-spinner'></i>-->
-					</td>
-				</tr>
-			</table>
+		.grey {
+			background-color: grey;
+		}
 
+		.grey--text {
+			color: grey;
+		}
+
+		.grey.lighten-4 {
+			background-color: rgb(230, 230, 230);
+		}
+
+		.footer {
+			padding-top: 8px;
+			margin-top: 8px;
+		}
+	</style>
+	<div>
+
+		<b>Estimado <span>${data.person.name || ''}</span> <span>${data.person.lastname || ''}</span></b>
+		<div style='height:12px'></div>
+		Le enviamos este correo para notificarle que usted tiene obligaciones pendientes en el SRI,
+		favor contáctese con su asesor para evitar sanciones.
+		***********************************************************************************
+		Si ha recibido este mensaje por error, por favor eliminelo y notifique a la empresa
+		***********************************************************************************
+		<div>
+			<b>Fecha consulta:</b>
+			<span>${data.moment.format('DD-MM-YYYY HH:mm')}</span>
 		</div>
-		<div class='container fluid loading-container noprintable'>
-			<div class='loading-progress purple lighten-3 transitioned'>
 
-			</div>
+
+		<div>
+
+			
+			<table class='t01' border='0' spacing='0'>
+				<thead>
+					<tr>
+						<th class='grey lighten-4' style='width:35%'>Mensaje</th>
+						<th class='grey lighten-4' style='width:20%'>Periodo</th>
+						<th class='grey lighten-4' style='width:45%'>Acción</th>
+					</tr>
+				</thead>
+
+				<tbody kivi:if='data.result.Detalle'>
+					<tr kivi:for='item in data.result.Detalle'>
+						<td>${item.Mensaje}</td>
+						<td>${item.Período}</td>
+						<td>${item.Acción}</td>
+					</tr>
+				</tbody>
+				
+			</table>
+		</div>
+
+
+		<div class='grey--text footer'>
+			Si ha recibido este mensaje por error, por favor elimínelo y notifique a la empresa.
+			Este comprobante se emitió con su <b>AUTORIZACIÓN</b>. Si tiene alguna inquietud no dude en responder este
+			mensaje con el asunto <b>Ayuda</b>.
 		</div>
 	</div>
-</vw:section>
-<vw:section name='script'>
-	<script>
-		init.do(function(){
+</body>
 
-			var progress= $(".loading-progress")
-			progress.css("transition-duration", "6s")
-			progress.css("width", "80%")
-
-			setTimeout(function(){
-				var router= new program.Util.Route()
-				var promise= program.WebSite.Application.current.getModule("routemanager").init(true)
-				console.log('here')
-				if(promise && promise.then){
-
-					promise.then(function(){
-						progress.css("transition-duration", "0.7s")
-						progress.css("width", "100%")
-						setTimeout(function(){
-							$(".cover").hide()
-							$(".loading-container").hide()
-						}, 500)
-					})
-				}
-			}, 100)
-
-		})
-	</script>
-</vw:section>
+</html>

@@ -1,7 +1,7 @@
 
 // cli basic example using tar
 import tar from '../tar.js'
-import fs from '../../fs/mod.js'
+import fs from '../../fs/mod'
 var cli= async function(){
     
     try{

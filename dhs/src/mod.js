@@ -1,6 +1,6 @@
 // enable coffeescript and cson
-import '../../std/coffeescript/register.js'
-import reg from '../../std/coffeescript/cson/register.js'
+import '../../std/coffeescript/register'
+import reg from '../../std/coffeescript/cson/register'
 // this is specific of @kawix/core
 if(global.kawix ){
 	var redirs= kawix.KModule._virtualredirect
