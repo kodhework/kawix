@@ -739,17 +739,20 @@ var builtinModules = _module.builtinModules;
 
 	transpile = function (file, basename, source, options) {
 		var transpilerOptions, json, imports
+		
+		
 
-		//console.log("transpiling: ", file, options)
 		if (options.injectImport === undefined && Mod.__injected) {
 			options.injectImport = true
 		}
-
 		if (options && options.language) {
+			
 			// specified by language
 			if (Mod.languages[options.language])
 				basename += Mod.languages[options.language]
 		}
+		
+
 		for (var ext in Mod.extensions) {
 			if (basename.endsWith(ext)) {
 				if (typeof Mod.extensions[ext] == "function") {

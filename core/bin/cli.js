@@ -7,7 +7,7 @@ var Os = require("os")
 var fs = require("fs")
 var Kawix = require("../main")
 var offset = 0, pack, pack1, er, forceui
-var args = [].concat(process.argv), cmd, cmdargs, pro, args1, proposals
+var args = [].concat(process.argv), cmd, cmdargs, pro, args1, proposals, enableCoffee
 for (var i = 2; i < args.length; i++) {
     arg = args[i]
     if (!arg)
@@ -19,6 +19,9 @@ for (var i = 2; i < args.length; i++) {
         Kawix.KModule.defaultOptions = {
             force: true
         }
+    }
+    else if(arg == "--coffee"){
+        enableCoffee = true 
     }
     else if (arg == "--ui" || arg == "--force-ui") {
         // in windows automatically is opened a visual terminal
@@ -126,27 +129,43 @@ for (var i = 2; i < args.length; i++) {
                 require(arg)
             }
             else{
+
+
+                
                 // require file using KModule
                 Kawix.KModule.injectImport()
                 Kawix.mainFilename = Path.resolve(arg)
-                Kawix.KModule.import(arg, {
-                    parent: {
+                var options = {
+                    parent:{
                         filename: process.cwd() + "/cli.js"
                     }
-                }).then(function () { }).catch(function (e) {
+                }
+                var erfunc = function(e){
                     console.error("Failed executing: ", e)
-                })
+                }
+                var func = function(){
+                    Kawix.KModule.import(arg, options).then(function () { }).catch(erfunc)
+                }
+                if(enableCoffee){
+                    pack = require("../package.json")
+                    return Kawix.KModule.import("https://kwx.kodhe.com/x/v/"+pack.version+"/std/coffeescript/register",options)
+                        .then(function(){
+                            Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.version + "/std/coffeescript/cson/register", options)
+                                .then(func).catch(erfunc)
+                        }).catch(erfunc)
+                }else{
+                    return func()
+                }
+                
             }
         }
 
         if (forceui) {
-
             pro = Child.spawn(cmd, cmdargs, {
                 cwd: process.cwd(),
                 env: process.env,
                 stdio: 'inherit'
             })
-
             pro.on("error", function (e) {
                 console.log(" > Failed opening terminal ui", e)
                 execute()
