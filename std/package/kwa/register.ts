@@ -1,43 +1,29 @@
 // Copyright 2019 Kodhe @kawix/std
 
-// kwa es básicamente un .tar.gz
-Id0  = 0
+
+var Id0  = 0
 import Url from 'url'
 import Exception from '../../util/exception'
 import Path from 'path'
+import {Deferred, sleep as _sleep} from '../../util/async'
 import tar from '../../compression/tar.js'
 import fs from '../../fs/mod.js'
 import Os from 'os'
-//import uniqid from '../../util/uniqid'
 
+declare var kwcore : any;
 
 if (typeof kwcore != "object" || !kwcore) {
 	throw new Error("You need require @kawix/core")
 }
 
-var deferred= function(){
-	var def={}
-	def.promise= new Promise(function(a,b){
-		def.resolve= a
-		def.reject = b
-	})
-	return def
-}
-
-var _checkFileExists= function(file) {
-	var def;
-	def = deferred()
-	fs.access(file, fs.constants.F_OK, function(err) {
+var _checkFileExists= function(file: string) : Promise<boolean> {
+	var def = new Deferred<boolean>()
+	fs.access(file, fs.constants.F_OK, function(err : Error) {
 		return def.resolve(err ? false : true)
 	})
 	return def.promise;
 }
 
-var _sleep= function(timeout){
-	return new Promise(function(a,b){
-		setTimeout(a,timeout)
-	})
-}
 
 var _removedir = async function(path, retry = 0) {
 	var e, file, files, i, len, stat, ufile;
