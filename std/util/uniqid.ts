@@ -1,2 +1,2 @@
 import uniqid from './_uniqid/mod'
-export default uniqid()
+export default uniqid

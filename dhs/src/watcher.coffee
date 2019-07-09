@@ -2,8 +2,8 @@
 import {EventEmitter} from 'events'
 
 
-import Glob from '../glob/mod.js'
-import fs from '../../std/fs/mod.js'
+import Glob from '../glob/mod'
+import fs from '../../std/fs/mod'
 import Path from 'path'
 
 
