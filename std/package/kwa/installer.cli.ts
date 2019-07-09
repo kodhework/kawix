@@ -3,7 +3,8 @@ var Program;
 import Path from 'path';
 import Os from 'os';
 import fs from 'fs';
-import from './register';
+import './register';
+
 import colors from 'npm://colors@1.3.3/safe';
 import {
 	machineId

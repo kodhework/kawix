@@ -1,14 +1,17 @@
-
-import fs from './fs/mod.js'
+import fs from './fs/mod'
 import Path from 'path'
 import Zlib from 'zlib'
 // empaquetar kwcore en un solo archivo que se auto extrae 
 
 class Generator {
 
-	private content:Array;
-	private commands: Array;
-	private files: Array;
+	private content: Array<string>;
+	private commands: Array<string>;
+	private files: Array<string>;
+	private libname: string;
+	private dir: string;
+	private version: string
+	private corefolder: string
 
 	constructor(dirname, libname, basename) {
 		this.libname = libname
@@ -31,7 +34,7 @@ class Generator {
 		})
 	}
 
-	async read(dir) {
+	async read(dir?:string) {
 		if (!dir)
 			dir = this.dir
 		var files = await fs.readdirAsync(dir)
@@ -75,6 +78,11 @@ var coredefault= Path.join(home, "Kawix", "${this.libname}")
 var corevdefault= Path.join(home, "Kawix", "${this.libname}", "verification.file")
 var verification= Path.join(home, "Kawix", corefolder,  "${this.libname}", "verification.file")
 var out, installed
+
+kawix.KModule.addVirtualFile("@kawix/${this.libname}", {
+	redirect: Path.join(home, "Kawix", corefolder,  "${this.libname}"),
+	isdirectory: true
+})
 
 main()
 
@@ -188,4 +196,4 @@ async function init() {
 	generator = new Generator(__dirname + "/../kivi", 'kivi', 'stdlib')
 	await generator.read()
 	await generator.writeToFile(__dirname + "/../kivi/dist/kivi.js")
-}
+}[
