@@ -431,7 +431,7 @@ var builtinModules = _module.builtinModules;
 		return uri
 	}
 	changeSource = function (source) {
-		//console.info(source)
+		
 		var import1 = {
 			code: source
 		}
@@ -617,7 +617,7 @@ var builtinModules = _module.builtinModules;
 		}
 		//var uri= Url.parse(url)
 		var module = url.substring(url.indexOf("://") + 3)
-
+		
 		var parts = module.split("/")
 		var oparts = [].concat(parts)
 		var subpath = ""
@@ -636,6 +636,13 @@ var builtinModules = _module.builtinModules;
 		subpath = oparts.slice(parts.length)
 		subpath = subpath.join("/")
 		module = parts.join("/")
+		options.uid = module.split("@").slice(0, -1).join("/") 
+		if(subpath){
+			module += "/" + subpath
+		}
+		
+
+		
 		var moduledesc = Mod._npmcache[module]
 		var continue3 = function (moduledesc) {
 
@@ -1291,6 +1298,12 @@ Mod.compileSync = function (file, options) {
 var importing = {}
 Mod.import = function (file, options) {
 	var id = this.filename, def, c, def2, self
+	
+	if (this._local && this._local[file]) {
+		return this._local[file]
+	}
+
+
 	if (!id && options && options.parent) {
 		id = options.parent.filename
 		if (!id) id = "/default.js"
@@ -1307,6 +1320,7 @@ Mod.import = function (file, options) {
 			self = this
 			def2 = deferred()
 			def.promise.then(function (v) {
+				
 				self._local && (self._local[options.uid] = v)
 				return def2.resolve(v)
 			}).catch(def2.reject)
@@ -1340,6 +1354,7 @@ Mod.import = function (file, options) {
 			self = this
 			def2 = deferred()
 			def.promise.then(function (v) {
+				
 				self._local && (self._local[options.uid] = v)
 				return def2.resolve(v)
 			}).catch(def2.reject)
@@ -1358,7 +1373,7 @@ Mod.import = function (file, options) {
 
 
 Mod._import = function (file, options) {
-	var uri2, promise, original, filename, uri, parts, resolved
+	var uri2, promise, original, filename, uri, parts, resolved, self= this
 	original = file
 	options = createDefault(options)
 	if (builtinModules.indexOf(file) >= 0) {
@@ -1390,7 +1405,7 @@ Mod._import = function (file, options) {
 						return f(file, ext)
 					}
 
-					return resolve(Mod.require(cfile, options))
+					return resolve(Mod.require.call(self, cfile, options))
 				})
 			}
 			f(file)
@@ -1402,18 +1417,18 @@ Mod._import = function (file, options) {
 	if (resolved) {
 
 		if (isVirtualFile(resolved))
-			return Mod.require(resolved)
+			return Mod.require.call(self, resolved)
 
 		if (resolved.startsWith("https:") || resolved.startsWith("http:")
 			|| resolved.startsWith("npm:") || resolved.startsWith("npmi:"))
-			return Mod.require(resolved, options)
+			return Mod.require.call(self, resolved, options)
 		return getBetter(resolved)
 	}
 
 	var uri = validateFileUrl(file)
 	if (uri.protocol || Path.isAbsolute(file)) {
 		if (uri.protocol && uri.protocol != "file:") {
-			return Mod.require(file, options)
+			return Mod.require.call(self, file, options)
 		}
 		else {
 			if (uri.protocol)
@@ -1438,7 +1453,7 @@ Mod._import = function (file, options) {
 					file = file.substring(2)
 
 				file = Url.resolve(this.filename, file)
-				return Mod.require(file, options)
+				return Mod.require.call(self, file, options)
 			}
 			else {
 				if (!file.startsWith(".")) {
@@ -1447,7 +1462,7 @@ Mod._import = function (file, options) {
 
 					if (Mod._virtualfile[parts]) {
 						var ufile = Mod.resolveVirtual(Path.normalize("/virtual/" + ufile), parent)
-						if (ufile) return Mod.require(ufile, options)
+						if (ufile) return Mod.require.call(self, ufile, options)
 					}
 				}
 				// find this or with extensions
@@ -1457,7 +1472,7 @@ Mod._import = function (file, options) {
 		}
 		else {
 			file = require.resolve(file)
-			return Mod.require(file, options)
+			return Mod.require.call(self, file, options)
 		}
 	}
 }
@@ -1474,11 +1489,12 @@ Mod._import = function (file, options) {
 Mod.removeCached = function (file) {
 	var cached = Mod._cacherequire[file]
 	if (cached) {
+		/*
 		if (cached.__kawi_uid && cached.__kawi_uid.length) {
 			for (var i = 0; i < cached.__kawi_uid.length; i++) {
 				delete Module._cache[cached.__kawi_uid[i]]
 			}
-		}
+		}*/
 		delete Module._cache[file]
 		delete Mod._cacherequire[file]
 	}
@@ -1538,7 +1554,7 @@ Mod.require = function (file, options) {
 Mod._require = function (file, options) {
 	options = options || {}
 	var cached = Mod._cacherequire[file]
-	var promise, promise2, generate, module
+	var promise, promise2, generate, module, self = this
 
 	var generate = function (ast, resolve, reject) {
 
@@ -1562,10 +1578,11 @@ Mod._require = function (file, options) {
 				"\trequire= KModule.replaceSyncRequire(require,module,KModule);"
 				+ ast.code + "\n}", file)
 
+			/*
 			module.__kawi_uid = {}
 			if (options.uid)
 				module.__kawi_uid[options.uid] = true
-
+			*/
 
 			var maybePromise = module.exports.__kawi(nmod, nmod.import.bind(nmod))
 			if (module.exports && module.exports.then) {
@@ -1617,10 +1634,15 @@ Mod._require = function (file, options) {
 
 		Module._cache[file] = cached
 		if (options.uid) {
+			
+			self._local[options.uid] = cached.exports
+			/*
 			cached.__kawi_uid = cached.__kawi_uid || {}
 			cached.__kawi_uid[options.uid] = true
+			*/
 		}
-		Module._cache[options.uid || "_internal_kawi_last.js"] = cached
+		
+		//Module._cache[options.uid || "_internal_kawi_last.js"] = cached
 		return cached.exports
 
 

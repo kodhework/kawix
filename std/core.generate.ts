@@ -1,4 +1,4 @@
-import fs from './fs/mod.js'
+import fs from './fs/mod'
 import Path from 'path'
 import Zlib from 'zlib'
 
