@@ -1,9 +1,9 @@
 var deferred;
 
 import Path from 'path';
-import Tar from '../../compression/tar.js';
-import Glob from '../../../dhs/glob/mod.js';
-import fs from '../../fs/mod.js';
+import Tar from '../../compression/tar';
+import Glob from '../../../dhs/glob/mod';
+import fs from '../../fs/mod';
 
 deferred = function(number) {
 	var def;

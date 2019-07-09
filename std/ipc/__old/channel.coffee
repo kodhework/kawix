@@ -5,7 +5,7 @@ import {EventEmitter} from 'events'
 
 
 
-import fs from '../fs/mod.js'
+import fs from '../fs/mod'
 import uniqid from '../util/uniqid.js'
 import Exception from '../util/exception.js'
 

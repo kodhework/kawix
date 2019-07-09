@@ -1,5 +1,5 @@
-import '../mod.js'
-import Watcher from '../watcher.coffee'
+import '../mod'
+import Watcher from '../watcher'
 
 init()
 async function init() {

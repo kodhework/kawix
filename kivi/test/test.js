@@ -1,6 +1,6 @@
 import '../../std/coffeescript/register'
 import Parser from '../parser'
-import fs from '../../std/fs/mod.js'
+import fs from '../../std/fs/mod'
 
 init()
 async function init(){

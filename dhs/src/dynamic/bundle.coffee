@@ -1,8 +1,8 @@
-import Registry from '../../../std/package/registry.js'
-import Bundler from '../../../std/package/bundle.js'
-import KawixHttp from '../../../std/http/mod.js'
-import Exception from '../../../std/util/exception.js'
-import fs from '../../../std/fs/mod.js'
+import Registry from '../../../std/package/registry'
+import Bundler from '../../../std/package/bundle'
+import KawixHttp from '../../../std/http/mod'
+import Exception from '../../../std/util/exception'
+import fs from '../../../std/fs/mod'
 import Path from 'path'
 
 

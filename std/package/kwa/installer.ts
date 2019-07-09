@@ -1,14 +1,14 @@
 var Installer;
 
-import semver from '../semver.js';
-import fs from '../../fs/mod.js';
+import semver from '../semver';
+import fs from '../../fs/mod';
 import axios from 'npm://axios@0.18.0';
 import Url from 'url';
 import Path from 'path';
 import Os from 'os';
 import qs from 'querystring';
 import Exception from '../../util/exception';
-import Crypto from '../../util/crypto/mod.js';
+import Crypto from '../../util/crypto/mod';
 import './register';
 
 Installer = class Installer {

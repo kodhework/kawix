@@ -6,8 +6,8 @@ import Url from 'url'
 import Exception from '../../util/exception'
 import Path from 'path'
 import {Deferred, sleep as _sleep} from '../../util/async'
-import tar from '../../compression/tar.js'
-import fs from '../../fs/mod.js'
+import tar from '../../compression/tar'
+import fs from '../../fs/mod'
 import Os from 'os'
 
 declare var kwcore : any;
@@ -124,7 +124,7 @@ var loader1 = async function (filename, uri, options, helper) {
 		}
 		exports.kawixPreload= async function(){
 			try{
-				module.exports= await KModule.import(${JSON.stringify(Path.join(folder,'mod.js'))})
+				module.exports= await KModule.import(${JSON.stringify(Path.join(folder,'mod'))})
 			}catch(e){
 				if(e.message.indexOf("Cannot resolve") < 0) throw e
 			}

@@ -1,5 +1,5 @@
 // Copyright Kodhe 2019
-import fs from '../fs/mod.js'
+import fs from '../fs/mod'
 import Path from 'path'
 import Os from 'os'
 

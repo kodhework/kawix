@@ -7,7 +7,6 @@ import Exception from '../../../std/util/exception'
 import uniqid from '../../../std/util/uniqid'
 import {parse as parsex} from 'npm://@vue/component-compiler-utils@^2.6.0'
 
-
 var VueCompiler
 export var kawixPreload= async function(){
 	var registry= new Registry()

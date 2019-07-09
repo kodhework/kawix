@@ -17,7 +17,7 @@ A socket IPC channel for start electron GUI apps
 Look the *test/hello.world.js*
 
 ```javascript
-import '../src/mod.js'
+import '../src/mod'
 import Gui from '../src/gui'
 import Path from 'path'
 
