@@ -1,3 +1,4 @@
+
 import fs from './fs/mod'
 import Path from 'path'
 import Zlib from 'zlib'
@@ -12,7 +13,6 @@ class Generator {
 	private dir: string;
 	private version: string
 	private corefolder: string
-
 	constructor(dirname, libname, basename) {
 		this.libname = libname
 		this.dir = dirname
@@ -66,7 +66,6 @@ class Generator {
 
 	getString() {
 		var code = `#!/usr/bin/env node
-
 var Os= require('os')
 var Path= require('path')
 var fs= require('fs')
@@ -196,4 +195,4 @@ async function init() {
 	generator = new Generator(__dirname + "/../kivi", 'kivi', 'stdlib')
 	await generator.read()
 	await generator.writeToFile(__dirname + "/../kivi/dist/kivi.js")
-}[
+}
