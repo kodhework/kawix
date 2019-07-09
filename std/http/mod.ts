@@ -3,7 +3,7 @@ import Router from './router'
 import Reply from './reply'
 import Serializer from './serializer'
 import Static1 from './static'
-var Static= function(path,options){
+var Static= function(path:string, options?:object){
     if(!options){
         options= {
             // 1 día
