@@ -1,5 +1,12 @@
 # Install instructions
 
+If you have installed @kawix/core, you can get the latest version without reinstalling. Execute the following command in bash (unix like systems) or cmd (windows)
+
+```bash 
+kwcore --update
+``` 
+
+
 ## Windows
 
 Universal Installer (32bit, 64bit, autoupdated)  available for Windows. Please go to [https://github.com/kodhework/kawix/releases/tag/Universal-1](https://github.com/kodhework/kawix/releases/tag/Universal-1)
