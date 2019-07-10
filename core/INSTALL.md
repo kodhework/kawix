@@ -2,7 +2,7 @@
 
 ## Windows
 
-Installers for version 0.4.2 available for Windows. Please go to [https://github.com/kodhework/kawix/releases/tag/v0.4.2](https://github.com/kodhework/kawix/releases/tag/v0.4.2)
+Universal Installer (32bit, 64bit, autoupdated)  available for Windows. Please go to [https://github.com/kodhework/kawix/releases/tag/Universal-1](https://github.com/kodhework/kawix/releases/tag/Universal-1)
 
 
 ## Linux 
