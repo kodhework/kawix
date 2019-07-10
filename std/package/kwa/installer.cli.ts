@@ -12,7 +12,7 @@ import {
 
 
 Program = class Program {
-	private _str= '';
+	private _str:string
 	static main() {
 		var program;
 		program = new Program();

@@ -9,5 +9,5 @@
 // El código principal está hecho en coffeescript, por tanto se cargará el loader
 // y el archivo de coffeescript
 
-import '../../coffeescript/register.js'
+import '../../coffeescript/register'
 import './start.hidden.coffee'
