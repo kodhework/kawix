@@ -17,13 +17,20 @@ Next.prototype.transpile= function(source, options){
 
 	if (!options) {
 		options = {
-			presets: ['es2015','es2016','es2017',['stage-2',{
+			presets: ['typescript', 'es2015','es2016','es2017',['stage-2',{
 				decoratorsBeforeExport: false
 			}]],
 			sourceMaps: true,
 			comments: false
 		}
 	}
+	/*
+	if(!options.filename.endsWith(".js")){
+		if(options.presets && options.presets.indexOf("typescript") >= 0){
+			options.filename += ".ts"
+		}
+	}*/
+	// options.filename += ".js"
 	if(!options.plugins){
 		if(!dynamicImport)
 			dynamicImport=require("./babel.dynamic.import.js")

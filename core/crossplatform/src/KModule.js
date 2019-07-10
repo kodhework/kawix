@@ -794,7 +794,7 @@ var builtinModules = _module.builtinModules;
 			else {
 
 				transpilerOptions = {
-					presets: ['es2015', 'es2016', 'es2017', ['stage-2', {
+					presets: ["typescript", 'es2015', 'es2016', 'es2017', ['stage-2', {
 						decoratorsBeforeExport: false
 					}]],
 					sourceMaps: true,
@@ -802,9 +802,13 @@ var builtinModules = _module.builtinModules;
 					filename: file
 				}
 				if (basename.endsWith(".ts")) {
+					if(!transpilerOptions.filename.endsWith(".ts")){
+						transpilerOptions.filename += ".ts"
+					}
+					/*
 					transpilerOptions.presets = ["typescript", 'es2015', 'es2016', 'es2017', ['stage-2', {
 						decoratorsBeforeExport: false
-					}]]
+					}]]*/
 				}
 			}
 
@@ -1415,7 +1419,6 @@ Mod._import = function (file, options) {
 
 	resolved = Mod._resolveFilename(file, options.parent, Mod._resolveFilename)
 	if (resolved) {
-
 		if (isVirtualFile(resolved))
 			return Mod.require.call(self, resolved)
 
