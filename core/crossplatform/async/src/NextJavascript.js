@@ -24,12 +24,12 @@ Next.prototype.transpile= function(source, options){
 			comments: false
 		}
 	}
-	/*
+	
 	if(!options.filename.endsWith(".js")){
 		if(options.presets && options.presets.indexOf("typescript") >= 0){
 			options.filename += ".ts"
 		}
-	}*/
+	}
 	// options.filename += ".js"
 	if(!options.plugins){
 		if(!dynamicImport)
