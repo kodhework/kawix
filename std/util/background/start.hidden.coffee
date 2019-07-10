@@ -3,7 +3,7 @@ import Net from 'net'
 import fs from 'fs'
 import Os from 'os'
 import Path from 'path'
-import Registry from 'https://kwx.kodhe.com/x/v/0.4.0/std/package/registry.js'
+import Registry from 'https://kwx.kodhe.com/x/v/0.5.4/std/package/registry'
 pty = null 
 
 

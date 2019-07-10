@@ -3,19 +3,43 @@ import fs from '../../fs/mod'
 import Path from 'path'
 
 var names=["isBlockDevice","isCharacterDevice","isDirectory","isFIFO",""]
+
+declare var kawix 
+interface CompilerOptions{
+	ignoreIrrelevantFiles?: boolean 	
+	virtualName?: string 
+	type?: string 
+	packageJsonSupport?: boolean
+	mainScript?: string 
+	transpile?: boolean
+	disableTranspile?: boolean
+	translation?: any
+	filter?: Function 
+	passthrough?: Function 
+	profile?: string
+}
+
 class Compiler{
 
+	private _path: string 
+	/*private _filenames: any 
+	private _extensions: any 
+	private _fcount: number */
+	private options: CompilerOptions
+	private _dir: string 
+
 	/** Bundle a folder of files, like one unique file*/
-	constructor(path, options={}){
+	constructor(path?: string, options: CompilerOptions = {}){
 		if(path)
 			this._path= Path.normalize(path)
-		this._filenames= {}
-		this._fcount= 0
+		
+		//this._filenames= {}
+		//this._fcount= 0
 		this.options= options
 		if(options.ignoreIrrelevantFiles == undefined){
 			options.ignoreIrrelevantFiles= true
 		}
-		this._extensions= {}
+		//this._extensions= {}
 	}
 
 
@@ -35,21 +59,21 @@ class Compiler{
 	}
 
 	set virtualName(name){
-		return this.options.virtualName= name
+		this.options.virtualName= name
 	}
 
 	get type(){
 		return this.options.type
 	}
 	set type(value){
-		return this.options.type= value
+		this.options.type= value
 	}
 
 	get packageJsonSupport(){
 		return this.options.packageJsonSupport
 	}
 	set packageJsonSupport(value){
-		return this.options.packageJsonSupport= value
+		this.options.packageJsonSupport= value
 	}
 
 	get mainScript(){
@@ -57,7 +81,7 @@ class Compiler{
 	}
 
 	set mainScript(value){
-		return this.options.mainScript= value
+		this.options.mainScript= value
 	}
 
 	get transpile(){
@@ -65,7 +89,7 @@ class Compiler{
 	}
 
 	set transpile(value){
-		return this.options.transpile= value
+		this.options.transpile= value
 	}
 
 	get disableTranspile(){
@@ -73,39 +97,39 @@ class Compiler{
 	}
 
 	set disableTranspile(value){
-		return this.options.disableTranspile= value
+		this.options.disableTranspile= value
 	}
 
 	get translation() {
 		return this.options.translation
 	}
 	set translation(value) {
-		return this.options.translation = value
+		this.options.translation = value
 	}
 
 	get ignoreIrrelevantFiles() {
 		return this.options.ignoreIrrelevantFiles
 	}
 	set ignoreIrrelevantFiles(value) {
-		return this.options.ignoreIrrelevantFiles = value
+		this.options.ignoreIrrelevantFiles = value
 	}
 	get filter() {
 		return this.options.filter
 	}
 	set filter(value) {
-		return this.options.filter = value
+		this.options.filter = value
 	}
 	get passthrough() {
 		return this.options.passthrough
 	}
 	set passthrough(value) {
-		return this.options.passthrough = value
+		this.options.passthrough = value
 	}
 	get profile() {
 		return this.options.profile
 	}
 	set profile(value) {
-		return this.options.profile = value
+		this.options.profile = value
 	}
 
 	async _fileExists(file){
@@ -174,7 +198,7 @@ class Compiler{
 					}
 
 					if(transpile){
-						for(var ext in kwcore.KModule.extensions){
+						for(var ext in kawix.KModule.extensions){
 							if(file.endsWith(ext)){
 								//destu= Path.join(dest, file)
 
