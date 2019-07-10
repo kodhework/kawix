@@ -120,10 +120,12 @@ Parser = class Parser {
 				this._analyze(nnode, scode, node);
 			}
 		}
+		var inivar = exp.split(/\s+/g).filter(function(a){return !!a.trim()})[0]
+
 		exp = `for ${exp}\n	code()\nreturn `;
 		//c[exp] = cid
 		cid = (await this._compile("coffee", "forexpression", exp, rcode, function(source) {
-			return source.replace("code();", scode.str.join("\n"));
+			return source.replace("code();", `$helper.local.${inivar} = ${inivar};` + scode.str.join("\n"));
 		}));
 		
 		//rcode.str.push("$helper.expression($init#{cid})")
@@ -202,13 +204,19 @@ Parser = class Parser {
 			if (after) {
 				ast.code = after(ast.code);
 			}
-			rcode.scripts.push(`function $init${c}($helper,data, $source){\n\t${ast.code}\n}`);
+			if (ast.code.startsWith("(function()")){
+				ast.code = "return (async function()" + ast.code.substring(11)
+			}
+			rcode.scripts.push(`function $init${c}($helper,data, $source){\n\t var local = $helper.local;  \n\t ${ast.code}\n}`);
 			return rcode.str.push(`await $init${c}($helper,data, $source)`);
 		} else {
 			if (after) {
 				source = after(source);
 			}
-			rcode.scripts.push(`function $init${c}($helper,data, $source){\n\t${source}\n}`);
+			if (ast.code.startsWith("(function()")) {
+				ast.code = "return (async function()" + ast.code.substring(11)
+			}
+			rcode.scripts.push(`function $init${c}($helper,data, $source){\n\t var local = $helper.local;\n\t ${source}\n}`);
 			return rcode.str.push(`await $init${c}($helper,data, $source)`);
 		}
 	}
@@ -450,7 +458,7 @@ Parser = class Parser {
 		rcode.str.push("	throw er");
 		rcode.str.push("}");
 		rcode.str.push("}");
-		helper = "	(function() {\n  var Path= require(\"path\")\n  var $helper;\n  return $helper = {\n  $section: {},\ntext: function(value) {\n  return this.write(value);\n},\nwrite: function(value) {\n  value = this.scape(value);\n  return this.writeRaw(value);\n},\nwriteRaw: function(value) {\n  var ref, ref1;\n  if (value === void 0 || value === null) {\n	value = '';\n  }\n  return this.content.push(value.toString());\n},\nexpression: function(value, write) {\n  if (!write) {\n	return value;\n  }\n  if (write) {\n	return this.write(value);\n  }\n},\nrawexpression: function(value, write) {\n  if (!write) {\n	return value;\n  }\n  if (write) {\n	return this.writeRaw(value);\n  }\n},\n\n\ninclude: async function(attrs, args) {\n  var mod, ndata, result, file, section, main;\n  file= attrs.name || attrs.file\n  if(attrs.section !== undefined){\n	  section= this.$section && this.$section[file]\n	  if(section){\n		  await section(this, this.$data)\n	  }\n	  return\n  }\n  main= this.$data.options && this.$data.options.mainfolder\n  if(main && !file.startsWith(\"./\") && !file.startsWith(\"../\")){\n	  file= Path.join(main, file)\n  }\n  mod = (await import(file));\n  if(typeof mod.text == \"string\"){\n	  this.writeRaw(mod.text)\n  }\n  else if(typeof mod.default == \"string\"){\n	  this.writeRaw(mod.default)\n  }\n  else if (mod.invoke) {\n	  ndata = Object.assign({}, this.$data);\n	  if (arguments.length > 1) {\n		ndata.arguments = args;\n	  }\n	  ndata.$section= this.$section\n	  result = (await mod.invoke(ndata));\n	  return this.writeRaw(result);\n  }\n},\nreturnValue: function() {\n  return this.content.join(\"\");\n},\nopenNode: function(node) {\n  var id, ref, str1, val;\n  str1 = '';\n  if (node.nodeName === \"#documentType\") {\n	str1 = `<!DOCTYPE ${node.name.toUpperCase()}`;\n	if (node.publicId) {\n	  str1 += ` PUBLIC ${node.publicId}`;\n	}\n	if (node.systemId) {\n	  str1 += node.systemId;\n	}\n	str1 += \">\";\n  } else if (node.tagName) {\n	/*\n	if(this.$data.$ignoreroots){\n		if(node.tagName == \"html\" || node.tagName == \"head\" || node.tagName == \"body\"){\n			return;\n		}\n	}*/\n	str1 = `<${node.tagName}`;\n	if (node.attrs) {\n	  ref = Object.assign(node.attrs || {}, $attrs);\n\n	  for (id in ref) {\n		val = ref[id];\n		str1 += ` ${id}='${this.scape(val)}'`;\n	  }\n	}\n	$attrs={}\n	if (node.tagName === \"link\" || node.tagName === \"img\") {\n	  str1 += \"/>\";\n	} else {\n	  str1 += \">\";\n	}\n  }\n  if (str1) {\n	return this.writeRaw(str1);\n  }\n},\ncloseNode: function(tagName) {\n	if(!tagName || tagName == \"undefined\") return\n	/*\n	if(this.$data.$ignoreroots){\n		if(tagName == \"html\" || tagName == \"head\" || tagName == \"body\"){\n			return;\n		}\n	}*/\n  if (tagName !== \"link\" && tagName !== \"img\" && tagName !== \"br\") {\n	return this.writeRaw(`</${tagName}>`);\n  }\n},\nscape: function(unsafe) {\n  if (unsafe === void 0 || unsafe === null) {\n	return '';\n  }\n  unsafe = unsafe.toString();\n  return unsafe.replace(/[&<\"']/g, function(m) {\n	switch (m) {\n	  case '&':\n		return '&amp;';\n	  case '<':\n		return '&lt;';\n	  case '\"':\n		return '&quot;';\n	  default:\n		return '&#039;';\n	}\n  });\n}\n  };\n});";
+		helper = "	(function() {\n  var Path= require(\"path\")\n  var $helper;\n  return $helper = {\n  local:{}, $section: {},\ntext: function(value) {\n  return this.write(value);\n},\nwrite: function(value) {\n  value = this.scape(value);\n  return this.writeRaw(value);\n},\nwriteRaw: function(value) {\n  var ref, ref1;\n  if (value === void 0 || value === null) {\n	value = '';\n  }\n  return this.content.push(value.toString());\n},\nexpression: function(value, write) {\n  if (!write) {\n	return value;\n  }\n  if (write) {\n	return this.write(value);\n  }\n},\nrawexpression: function(value, write) {\n  if (!write) {\n	return value;\n  }\n  if (write) {\n	return this.writeRaw(value);\n  }\n},\n\n\ninclude: async function(attrs, args) {\n  var mod, ndata, result, file, section, main;\n  file= attrs.name || attrs.file\n  if(attrs.section !== undefined){\n	  section= this.$section && this.$section[file]\n	  if(section){\n		  await section(this, this.$data)\n	  }\n	  return\n  }\n  main= this.$data.options && this.$data.options.mainfolder\n  if(main && !file.startsWith(\"./\") && !file.startsWith(\"../\")){\n	  file= Path.join(main, file)\n  }\n  mod = (await import(file));\n  if(typeof mod.text == \"string\"){\n	  this.writeRaw(mod.text)\n  }\n  else if(typeof mod.default == \"string\"){\n	  this.writeRaw(mod.default)\n  }\n  else if (mod.invoke) {\n	  ndata = Object.assign({}, this.$data);\n	  if (arguments.length > 1) {\n		ndata.arguments = args;\n	  }\n	  ndata.$section= this.$section\n	  result = (await mod.invoke(ndata));\n	  return this.writeRaw(result);\n  }\n},\nreturnValue: function() {\n  return this.content.join(\"\");\n},\nopenNode: function(node) {\n  var id, ref, str1, val;\n  str1 = '';\n  if (node.nodeName === \"#documentType\") {\n	str1 = `<!DOCTYPE ${node.name.toUpperCase()}`;\n	if (node.publicId) {\n	  str1 += ` PUBLIC ${node.publicId}`;\n	}\n	if (node.systemId) {\n	  str1 += node.systemId;\n	}\n	str1 += \">\";\n  } else if (node.tagName) {\n	/*\n	if(this.$data.$ignoreroots){\n		if(node.tagName == \"html\" || node.tagName == \"head\" || node.tagName == \"body\"){\n			return;\n		}\n	}*/\n	str1 = `<${node.tagName}`;\n	if (node.attrs) {\n	  ref = Object.assign(node.attrs || {}, $attrs);\n\n	  for (id in ref) {\n		val = ref[id];\n		str1 += ` ${id}='${this.scape(val)}'`;\n	  }\n	}\n	$attrs={}\n	if (node.tagName === \"link\" || node.tagName === \"img\") {\n	  str1 += \"/>\";\n	} else {\n	  str1 += \">\";\n	}\n  }\n  if (str1) {\n	return this.writeRaw(str1);\n  }\n},\ncloseNode: function(tagName) {\n	if(!tagName || tagName == \"undefined\") return\n	/*\n	if(this.$data.$ignoreroots){\n		if(tagName == \"html\" || tagName == \"head\" || tagName == \"body\"){\n			return;\n		}\n	}*/\n  if (tagName !== \"link\" && tagName !== \"img\" && tagName !== \"br\") {\n	return this.writeRaw(`</${tagName}>`);\n  }\n},\nscape: function(unsafe) {\n  if (unsafe === void 0 || unsafe === null) {\n	return '';\n  }\n  unsafe = unsafe.toString();\n  return unsafe.replace(/[&<\"']/g, function(m) {\n	switch (m) {\n	  case '&':\n		return '&amp;';\n	  case '<':\n		return '&lt;';\n	  case '\"':\n		return '&quot;';\n	  default:\n		return '&#039;';\n	}\n  });\n}\n  };\n});";
 		realCode = '';
 		realCode += "var _helper= " + helper.toString();
 		ref = rcode.scripts;
@@ -467,6 +475,7 @@ Parser = class Parser {
 		ast = {
 			code: realCode
 		};
+		
 		return ast;
 	}
 

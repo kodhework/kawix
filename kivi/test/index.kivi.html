@@ -1,33 +1,50 @@
 <html>
-	<head>
-		<title>My title</title>
-		<kivi:exp>James xD</kivi:exp>
-	</head>
-	
-	<body>
-		Name: <kivi:exp>data.name</kivi:exp>
-		Lastname: <kivi:raw>data.lastname</kivi:raw>
-		Age: ${data.age}
 
-		<kivi:section name='content'>
-			<kivi:lang lang='coffee'>
-				Children: #{ data.children }
-				<p>
-					<span>Some text important</span>
-					<kivi:exp>data.person?.address?.zip</kivi:exp>
-				</p>
-			</kivi:lang>
-		</kivi:section>
-		<script lang='coffee'>
-			export default ()->
-				return
-					name: 'John'
-					lastname: 'Smith'
-		</script>
-		<script lang='coffee' server-side>
-			console.log 'Executing inside kivi'
-		</script>
-		<kivi:import name='content' section></kivi:import>
-		<kivi:import name='other'></kivi:import>
-	</body>
+<head>
+	<style>
+		body {
+
+			margin: 0;
+		}
+
+		.main {
+			min-height: 100%;
+			max-width: 1100px;
+			margin: auto;
+			background-color: white;
+			box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+		}
+
+		.item {
+			padding: 1.5em;
+			border-bottom: solid 1px rgb(240, 240, 240);
+		}
+
+		html {
+			font-family: Roboto, sans-serif;
+			background: rgb(245, 245, 245);
+		}
+
+		* {
+			box-sizing: border-box
+		}
+	</style>
+</head>
+
+<body>
+	<div class='main'>
+		<div kivi:for='item in data.questions'>
+			<div class='item'>
+				<vw:rawexpression>item.number + ". " + item.description</vw:rawexpression>
+				<div kivi:for='option in item.options'>
+
+				</div>
+				<ul>
+					<!--<li kivi:for='option in item.options'>OLA</li>-->
+				</ul>
+			</div>
+		</div>
+	</div>
+</body>
+
 </html>
