@@ -17,6 +17,9 @@ class Bundle {
 			options.ignoreIrrelevantFiles = true
 		}
 		this._extensions = {}
+		for (var ext in kawix.KModule.Module.extensions) {
+			this._extensions[ext] = true
+		}
 	}
 
 
@@ -31,6 +34,13 @@ class Bundle {
 
 	writeToFile(file) {
 		return this.writeTo(fs.createWriteStream(file))
+	}
+
+	get jsExtension(){
+		return this.options.jsExtension
+	}
+	set jsExtension(val){
+		this.options.jsExtension= val 
 	}
 
 	get virtualName() {
@@ -101,7 +111,10 @@ class Bundle {
 		return this.options.profile = value
 	}
 
-	async bundle(path) {
+
+	
+
+	async bundle(path?) {
 
 		if (!this._header) {
 			this._stream.write("(function(global, context){\n\t")
@@ -344,7 +357,10 @@ class Bundle {
 										transpilerOptions: transoptions
 									})
 									rep.content = ast.code
-									this._extensions[ext] = true
+									rep.compiled = true 
+									rep.extension = ext 
+									
+									
 									break
 								}
 							}
@@ -365,7 +381,10 @@ class Bundle {
 				}
 
 
-
+				if(this.jsExtension && rep.compiled){
+					rep.filename = Path.join(Path.dirname(rep.filename),Path.basename(rep.filename, rep.extension) + ".js")
+					rep.filename = rep.filename.replace(/\\/g, '/')
+				}
 				this._filenames[rep.filename] = this._fcount
 				this._fcount++
 
