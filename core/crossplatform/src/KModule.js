@@ -638,7 +638,7 @@ var builtinModules = _module.builtinModules;
 		module = parts.join("/")
 		options.uid = module.split("@").slice(0, -1).join("/") 
 		if(subpath){
-			module += "/" + subpath
+			options.uid += "/" + subpath
 		}
 		
 
