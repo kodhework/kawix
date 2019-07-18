@@ -519,7 +519,8 @@ Registry = (function() {
 						// execute npm install on folder
 						p = Child.spawn(process.execPath, [npmfile, "install", "--unsafe-perm"], {
 							env: Object.assign({
-								ELECTRON_RUN_AS_NODE: 1
+								ELECTRON_RUN_AS_NODE: "1",
+								NODE_REQUIRE: "1" // NEEDED FOR WINDOWS ...
 							}, process.env),
 							cwd: moduledesc.folder
 						});
