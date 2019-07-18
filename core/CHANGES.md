@@ -1,3 +1,9 @@
+## changes 0.6.0
+
+* Enable ```.kwa``` files as bundle executable
+* Adding types in typescript files to provide better experience on code editors
+* Update Windows,Mac,GNU/Linux installers
+
 ## changes 0.5.1 
 
 * Better support for typescript 

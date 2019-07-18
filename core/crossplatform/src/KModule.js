@@ -2317,6 +2317,7 @@ var helper = {
 		return def.promise
 	}
 }
+Mod.helper = helper
 
 
 

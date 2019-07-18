@@ -1,7 +1,7 @@
 
 require("./crossplatform/src/Promise")
 exports.Promise= global.Promise
-
+exports.version = require("./package.json").version 
 
 global.regeneratorRuntime = require("./crossplatform/src/runtime.js")
 global.kwcore= global.kawix= module.exports
