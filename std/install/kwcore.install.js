@@ -29,7 +29,7 @@ if (process.getuid() != 0) {
 	}
 }
 
-process.stdout.write('\033c')
+process.stdout.write('c')
 console.info("")
 console.info(" > Finishing @kawix/core installing")
 kawix.KModule.import("https://kwx.kodhe.com/x/v/" + global.kawix.version + "/std/dist/stdlib")
