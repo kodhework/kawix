@@ -1,0 +1,90 @@
+import IPC from './channel/ipc'
+import { AddressInfo, Socket } from 'net';
+import { IncomingMessage, ServerResponse } from 'http';
+import Reply from '/virtual/@kawix/std/http/reply'
+
+export interface Config {
+    _config?: any 
+    readCached(): any 
+    sites?: Array<any>
+    hosts?: Array<any>
+
+}
+
+
+
+export interface StaticOptions{
+    path?: string 
+    options?: {
+        maxAge?: number 
+    }
+}
+
+export interface CronDefinition{
+    file?: string 
+    name?: string 
+}
+
+export interface RouteDefinition{
+    path?: string 
+    middleware?: string | RouteDefinition
+    folder?: string 
+    file?: string 
+    static?: string | StaticOptions
+    method?: string 
+}
+
+export interface Site{
+    name: string 
+    id: string 
+    hostnames?: Array<string>
+    globalprefixes?: Array<string>
+    routes?: Array<RouteDefinition>
+    preload?: Array<string>
+    crons?: Array<CronDefinition>
+    defaultroute?: RouteDefinition 
+}
+
+export interface Context{
+	
+    server: DhsServer 
+    config?: Config 
+    site?: Site 
+    constants?: any 
+
+}
+
+export interface Request{
+    server?: DhsServer,
+    request?: IncomingMessage
+    response?: ServerResponse
+    reply?: Reply
+    socket?:Socket
+    params?: any 
+}
+
+export interface DhsServer{
+
+    config?: Config
+    workers?: any[]
+    channel?: IPC
+    address?: AddressInfo
+    http?: any
+    started?: number
+
+
+    createIPC(id?: string): IPC 
+    parseAddress(address: string): string 
+    getDataPath(): Promise<string>
+    getConfig(): any 
+    start(): Promise<void>
+    closeAndExit(timeout: number): Promise<void>
+    reloadCluster(): Promise<void>
+    buildRoutes(): Promise<void>
+    getContext(site: string): Context
+}
+
+
+export interface Callable {
+    (ctx: Context, env: Request)
+}
