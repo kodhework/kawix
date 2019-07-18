@@ -1,11 +1,12 @@
-var IPC;
+
 
 import Path from 'path';
 import ipc from './lib/_ipc';
 import Os from 'os';
 import fs from './lib/_fs';
 
-IPC = class IPC extends ipc {
+export class IPC extends ipc {
+	private _address
 	constructor(id) {
 		super(id);
 	}

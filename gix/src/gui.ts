@@ -1,21 +1,31 @@
-var Gui, GuiServer;
 
 import {
 	EventEmitter
 } from 'events';
 
-import Child from 'child_process';
-import Path from 'path';
-import Os from 'os';
-import Url from 'url';
-import fs from './lib/_fs';
-import IPC from './ipc';
-import Exception from './exception';
+import Child from 'child_process'
+import Path from 'path'
+import Os from 'os'
+import Url from 'url'
+import fs from './lib/_fs'
+import IPC from './ipc'
+import Exception from './exception' 
 
-GuiServer = class GuiServer {
+
+declare var kawix 
+
+export class GuiServer {
+	_f: any 
+	_evs: any 
+	_electron: any 
+	_evdef: any 
+	store: any 
+	
+
 	constructor() {
 		this._evs = [];
 		this._f = {};
+		this.store = {}
 	}
 
 	___() {
@@ -102,14 +112,24 @@ GuiServer = class GuiServer {
 		}
 	}
 
-};
+}
 
-Gui = class Gui extends EventEmitter {
-	constructor(id1) {
+export class Gui extends EventEmitter {
+	id: string 
+	ipc: IPC
+	api: any 
+	_locked: boolean
+	electron: any 
+	_p: Child.ChildProcess
+	store: any 
+	static s: any
+
+	constructor(id: string) {
 		super();
-		this.id = id1;
+		this.id = id;
 		this.ipc = new IPC(this.id);
 		this.api = {};
+		this.store = {}
 	}
 
 	deferred() {
@@ -125,7 +145,7 @@ Gui = class Gui extends EventEmitter {
 	_checkFileExists(file) {
 		var def;
 		def = this.deferred();
-		fs.access(file, fs.F_OK, function(err) {
+		fs.access(file, fs.constants.F_OK, function(err) {
 			return def.resolve(err ? false : true);
 		});
 		return def.promise;
@@ -139,7 +159,7 @@ Gui = class Gui extends EventEmitter {
 		});
 	}
 
-	async register(id, func) {
+	async register(id: string, func: Function): Promise<void> {
 		var ipc, str;
 		str = func.toString();
 		await this.ipc.send({
@@ -211,12 +231,12 @@ Gui = class Gui extends EventEmitter {
 		return false;
 	}
 
-	hasSingleInstanceLock() {
+	hasSingleInstanceLock(): boolean {
 		var ref;
 		return (ref = this._locked) != null ? ref : false;
 	}
 
-	async requestSingleInstanceLock(noretry) {
+	async requestSingleInstanceLock(noretry?: boolean) : Promise<boolean>{
 		var er, val;
 		try {
 			val = (await this._check_secondinstance());
@@ -237,7 +257,7 @@ Gui = class Gui extends EventEmitter {
 		return false;
 	}
 
-	async connect() {
+	async connect(): Promise<void> {
 		var Installer, def, dist, env, file1, file2, file3, id;
 		if (process.env.GIX_ELECTRON_PATH) {
 			dist = process.env.GIX_ELECTRON_PATH;
@@ -256,22 +276,10 @@ Gui = class Gui extends EventEmitter {
 			}
 			console.info("DIST:", dist);
 			if (!(await this._checkFileExists(dist))) {
-				Installer = (await import("../electron-install.js"));
+				Installer = (await import("../electron-install"));
 				await Installer.install();
-				/*
-				def= @deferred()
-				console.log(" > Installing electron")
-				p= Child.spawn process.execPath, ["--no-proxy-resolver", install],
-					env: Object.assign({}, process.env, {NODE_REQUIRE: '1'})
-				p.on "error", def.reject
-				p.stderr.on "data", (er)->
-					console.error er.toString()
-
-				p.stdout.on "data", (d)->
-					process.stdout.write d
-				p.on "exit", def.resolve
-				await def.promise
-				*/
+				
+				
 				if (!(await this._checkFileExists(dist))) {
 					throw Exception.create("Failed to install electron").putCode("LOAD_FAILED");
 				}
@@ -324,7 +332,7 @@ Gui = class Gui extends EventEmitter {
 		return (await this.attach());
 	}
 
-	async attach() {
+	async attach(): Promise<void> {
 		await this.ipc.connect();
 		this.connected = true;
 		await this.ipc.send({
@@ -335,7 +343,7 @@ Gui = class Gui extends EventEmitter {
 	}
 
 	//@_start_read_events()
-	startReadEvents() {
+	startReadEvents(): Promise<void> {
 		return this._start_read_events();
 	}
 
@@ -349,8 +357,7 @@ Gui = class Gui extends EventEmitter {
 		await fs.writeFileAsync(file, "\nvar arg, kawix, n, id, start\nvar Path = require(\"path\")\n\n\nfor (var i = 0; i < process.argv.length; i++) {\n	arg = process.argv[i]\n	if (n == 0) {\n		id = arg\n		n = 1\n	}\n	else if (n == 1) {\n		start = arg\n		break\n	}\n	else if (arg == process.argv[2]) {\n		// require kawix core\n		kawix = require(arg)\n		n = 0\n	}\n}\n\n\nvar init1= function(){\n	if(kawix){\n		kawix.KModule.injectImport()\n		if (!start) start = __dirname + Path.sep + \"start.js\"\n\n		kawix.KModule.import(start).then(function(response){\n			response.default(id).then(function(){\n			}).catch(function(e){\n				console.error(\"Failed execute: \", e)\n				process.exit(10)\n			})\n		}).catch(function(e){\n			console.error(\"Failed execute: \", e)\n			process.exit(10)\n		})\n	}\n}\nrequire(\"electron\").app.once(\"ready\", init1)\n");
 		return file;
 	}
-
-};
+}
 
 export var ipcCreate = function() {
 	if (!Gui.s) {
@@ -358,8 +365,7 @@ export var ipcCreate = function() {
 		global.Gix = Gui.s;
 	}
 	return Gui.s;
-};
+}
 
-//else
-//	return new GuiServer()
+
 export default Gui;
