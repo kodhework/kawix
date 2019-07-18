@@ -141,20 +141,43 @@ Parser = class Parser {
 		return rcode.str.push(`await $helper.include(${JSON.stringify(attrs)})`);
 	}
 
+	_getLastOpenNode(arr: Array<string>): any{
+		var y = arr.length - 1
+		var value: string 
+		
+		while(true){
+			value = arr[y]
+			if(value == undefined){
+				break 
+			}
+			if(value && value.startsWith("$helper.openNode")){
+				return {
+					index: y,
+					value
+				} 
+			}
+			y-- 
+		}
+		return {}
+	}
+
 	_kvAttr(node, rcode, parent) {
-		var attrs, openNode, str;
+		var attrs, openNode, res
 		attrs = this._array_to_object(node.attrs);
 		if (!attrs.name) {
 			throw Exception.create(`Parsing: line ${rcode.line} - col ${rcode.col}. ${node.nodeName} need an attribute \`name\``);
 		}
-		str = rcode.str[rcode.str.length - 1];
-		if (!str.startsWith("$helper.openNode")) {
+		res = this._getLastOpenNode(rcode.str)
+		
+		if (!res.value) {
 			throw Exception.create(`Parsing: line ${rcode.line} - col ${rcode.col}. ${node.nodeName} only can be present after a openNode`);
 		}
-		openNode = rcode.pop();
+		openNode = res.value 		
 		this._kvExpression(node, rcode, null, false);
-		rcode.str.push(`$attrs[${JSON.stringify(attrs.name)}] = ${rcode.pop()}`);
-		return rcode.str.push(openNode);
+		
+		rcode.str[res.index] = `$node.attrs[${JSON.stringify(attrs.name)}] = ${rcode.str.pop()};` + res.value 
+		//rcode.str.push(`$attrs[${JSON.stringify(attrs.name)}] = ${rcode.pop()}`);
+		//return rcode.str.push(openNode);
 	}
 
 	_kvSection(node, rcode, parent) {
@@ -279,7 +302,8 @@ Parser = class Parser {
 			tagName: node.tagName,
 			attrs: this._array_to_object(node.attrs)
 		};
-		rcode.str.push(`$helper.openNode(${JSON.stringify(nob)})`);
+		rcode.str.push(`$node = ${JSON.stringify(nob)};$node.attrs=$node.attrs || {};`)
+		rcode.str.push("$helper.openNode($node)");
 		// iterate child nodes
 		if (node.tagName !== "script") {
 			cnodes = this._getChildnodes(node);
@@ -438,7 +462,7 @@ Parser = class Parser {
 		this.options = options;
 		ast = this.parse(source);
 		rcode = {
-			str: ["class Exception extends Error{}", "var $attrs={}", "var Invoke= async function(data, options){", "var $helper= _helper()", "if(data && data.$section)", "	$helper.$section= Object.assign($helper.$section, data.$section)", "if(options !== undefined){", "	data.options= options", "}", "$helper.$data= data", "$helper.content= []", `var $source= {filename: ${JSON.stringify(options.filename)}}`, "try{", ""],
+			str: ["class Exception extends Error{}", "var $attrs={}, $node", "var Invoke= async function(data, options){", "var $helper= _helper()", "if(data && data.$section)", "	$helper.$section= Object.assign($helper.$section, data.$section)", "if(options !== undefined){", "	data.options= options", "}", "$helper.$data= data", "$helper.content= []", `var $source= {filename: ${JSON.stringify(options.filename)}}`, "try{", ""],
 			expressions: {},
 			scripts: [],
 			line: 0,
@@ -458,7 +482,58 @@ Parser = class Parser {
 		rcode.str.push("	throw er");
 		rcode.str.push("}");
 		rcode.str.push("}");
-		helper = "	(function() {\n  var Path= require(\"path\")\n  var $helper;\n  return $helper = {\n  local:{}, $section: {},\ntext: function(value) {\n  return this.write(value);\n},\nwrite: function(value) {\n  value = this.scape(value);\n  return this.writeRaw(value);\n},\nwriteRaw: function(value) {\n  var ref, ref1;\n  if (value === void 0 || value === null) {\n	value = '';\n  }\n  return this.content.push(value.toString());\n},\nexpression: function(value, write) {\n  if (!write) {\n	return value;\n  }\n  if (write) {\n	return this.write(value);\n  }\n},\nrawexpression: function(value, write) {\n  if (!write) {\n	return value;\n  }\n  if (write) {\n	return this.writeRaw(value);\n  }\n},\n\n\ninclude: async function(attrs, args) {\n  var mod, ndata, result, file, section, main;\n  file= attrs.name || attrs.file\n  if(attrs.section !== undefined){\n	  section= this.$section && this.$section[file]\n	  if(section){\n		  await section(this, this.$data)\n	  }\n	  return\n  }\n  main= this.$data.options && this.$data.options.mainfolder\n  if(main && !file.startsWith(\"./\") && !file.startsWith(\"../\")){\n	  file= Path.join(main, file)\n  }\n  mod = (await import(file));\n  if(typeof mod.text == \"string\"){\n	  this.writeRaw(mod.text)\n  }\n  else if(typeof mod.default == \"string\"){\n	  this.writeRaw(mod.default)\n  }\n  else if (mod.invoke) {\n	  ndata = Object.assign({}, this.$data);\n	  if (arguments.length > 1) {\n		ndata.arguments = args;\n	  }\n	  ndata.$section= this.$section\n	  result = (await mod.invoke(ndata));\n	  return this.writeRaw(result);\n  }\n},\nreturnValue: function() {\n  return this.content.join(\"\");\n},\nopenNode: function(node) {\n  var id, ref, str1, val;\n  str1 = '';\n  if (node.nodeName === \"#documentType\") {\n	str1 = `<!DOCTYPE ${node.name.toUpperCase()}`;\n	if (node.publicId) {\n	  str1 += ` PUBLIC ${node.publicId}`;\n	}\n	if (node.systemId) {\n	  str1 += node.systemId;\n	}\n	str1 += \">\";\n  } else if (node.tagName) {\n	/*\n	if(this.$data.$ignoreroots){\n		if(node.tagName == \"html\" || node.tagName == \"head\" || node.tagName == \"body\"){\n			return;\n		}\n	}*/\n	str1 = `<${node.tagName}`;\n	if (node.attrs) {\n	  ref = Object.assign(node.attrs || {}, $attrs);\n\n	  for (id in ref) {\n		val = ref[id];\n		str1 += ` ${id}='${this.scape(val)}'`;\n	  }\n	}\n	$attrs={}\n	if (node.tagName === \"link\" || node.tagName === \"img\") {\n	  str1 += \"/>\";\n	} else {\n	  str1 += \">\";\n	}\n  }\n  if (str1) {\n	return this.writeRaw(str1);\n  }\n},\ncloseNode: function(tagName) {\n	if(!tagName || tagName == \"undefined\") return\n	/*\n	if(this.$data.$ignoreroots){\n		if(tagName == \"html\" || tagName == \"head\" || tagName == \"body\"){\n			return;\n		}\n	}*/\n  if (tagName !== \"link\" && tagName !== \"img\" && tagName !== \"br\") {\n	return this.writeRaw(`</${tagName}>`);\n  }\n},\nscape: function(unsafe) {\n  if (unsafe === void 0 || unsafe === null) {\n	return '';\n  }\n  unsafe = unsafe.toString();\n  return unsafe.replace(/[&<\"']/g, function(m) {\n	switch (m) {\n	  case '&':\n		return '&amp;';\n	  case '<':\n		return '&lt;';\n	  case '\"':\n		return '&quot;';\n	  default:\n		return '&#039;';\n	}\n  });\n}\n  };\n});";
+
+		//var helpFunc = require("fs").readFileSync(__dirname + "/helper.txt")
+		var helpFunc:any = `
+KGZ1bmN0aW9uKCl7CiAgICB2YXIgUGF0aCA9IHJlcXVpcmUoInBhdGgiKQogICAgdmFyICRoZWxwZXIgCiAgICByZXR1cm4gJGhlbHBlciAJPSB7CiAgICAgICAgbG9j
+YWw6IHt9LAogICAgICAgICRzZWN0aW9uOiB7fSwKICAgICAgICB0ZXh0OiBmdW5jdGlvbih2YWx1ZSl7CiAgICAgICAgICAgIHJldHVybiB0aGlzLndyaXRlKHZhbHVl
+KQogICAgICAgIH0sCiAgICAgICAgd3JpdGU6IGZ1bmN0aW9uKHZhbHVlKXsKICAgICAgICAgICAgdmFsdWUgPSB0aGlzLnNjYXBlKHZhbHVlKQogICAgICAgICAgICBy
+ZXR1cm4gdGhpcy53cml0ZVJhdyh2YWx1ZSkKICAgICAgICB9LAogICAgICAgIHdyaXRlUmF3OiBmdW5jdGlvbih2YWx1ZSl7CiAgICAgICAgICAgIHZhciByZWYsIHJl
+ZjE7CiAgICAgICAgICAgIGlmICh2YWx1ZSA9PT0gdm9pZCAwIHx8IHZhbHVlID09PSBudWxsKSB7CiAgICAgICAgICAgICAgICB2YWx1ZSA9ICcnOwogICAgICAgICAg
+ICB9CiAgICAgICAgICAgIHJldHVybiB0aGlzLmNvbnRlbnQucHVzaCh2YWx1ZS50b1N0cmluZygpKTsKICAgICAgICB9LAogICAgICAgIGV4cHJlc3Npb246IGZ1bmN0
+aW9uICh2YWx1ZSwgd3JpdGUpIHsKICAgICAgICAgICAgaWYgKCF3cml0ZSkgewogICAgICAgICAgICAgICAgcmV0dXJuIHZhbHVlOwogICAgICAgICAgICB9CiAgICAg
+ICAgICAgIGlmICh3cml0ZSkgewogICAgICAgICAgICAgICAgcmV0dXJuIHRoaXMud3JpdGUodmFsdWUpOwogICAgICAgICAgICB9CiAgICAgICAgfSwKICAgICAgICBy
+YXdleHByZXNzaW9uOiBmdW5jdGlvbiAodmFsdWUsIHdyaXRlKSB7CiAgICAgICAgICAgIGlmICghd3JpdGUpIHsKICAgICAgICAgICAgICAgIHJldHVybiB2YWx1ZTsK
+ICAgICAgICAgICAgfQogICAgICAgICAgICBpZiAod3JpdGUpIHsKICAgICAgICAgICAgICAgIHJldHVybiB0aGlzLndyaXRlUmF3KHZhbHVlKTsKICAgICAgICAgICAg
+fQogICAgICAgIH0sCiAgICAgICAgaW5jbHVkZTogYXN5bmMgZnVuY3Rpb24gKGF0dHJzLCBhcmdzKSB7CiAgICAgICAgICAgIHZhciBtb2QsIG5kYXRhLCByZXN1bHQs
+IGZpbGUsIHNlY3Rpb24sIG1haW47CiAgICAgICAgICAgIGZpbGUgPSBhdHRycy5uYW1lIHx8IGF0dHJzLmZpbGUKICAgICAgICAgICAgaWYgKGF0dHJzLnNlY3Rpb24g
+IT09IHVuZGVmaW5lZCkgewogICAgICAgICAgICAgICAgc2VjdGlvbiA9IHRoaXMuJHNlY3Rpb24gJiYgdGhpcy4kc2VjdGlvbltmaWxlXQogICAgICAgICAgICAgICAg
+aWYgKHNlY3Rpb24pIHsKICAgICAgICAgICAgICAgICAgICBhd2FpdCBzZWN0aW9uKHRoaXMsIHRoaXMuJGRhdGEpCiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAg
+ICAgICByZXR1cm4KICAgICAgICAgICAgfQogICAgICAgICAgICBtYWluID0gdGhpcy4kZGF0YS5vcHRpb25zICYmIHRoaXMuJGRhdGEub3B0aW9ucy5tYWluZm9sZGVy
+CiAgICAgICAgICAgIGlmIChtYWluICYmICFmaWxlLnN0YXJ0c1dpdGgoIi4vIikgJiYgIWZpbGUuc3RhcnRzV2l0aCgiLi4vIikpIHsKICAgICAgICAgICAgICAgIGZp
+bGUgPSBQYXRoLmpvaW4obWFpbiwgZmlsZSkKICAgICAgICAgICAgfQogICAgICAgICAgICBtb2QgPSAoYXdhaXQgaW1wb3J0KGZpbGUpKTsKICAgICAgICAgICAgaWYg
+KHR5cGVvZiBtb2QudGV4dCA9PSAic3RyaW5nIikgewogICAgICAgICAgICAgICAgdGhpcy53cml0ZVJhdyhtb2QudGV4dCkKICAgICAgICAgICAgfQogICAgICAgICAg
+ICBlbHNlIGlmICh0eXBlb2YgbW9kLmRlZmF1bHQgPT0gInN0cmluZyIpIHsKICAgICAgICAgICAgICAgIHRoaXMud3JpdGVSYXcobW9kLmRlZmF1bHQpCiAgICAgICAg
+ICAgIH0KICAgICAgICAgICAgZWxzZSBpZiAobW9kLmludm9rZSkgewogICAgICAgICAgICAgICAgbmRhdGEgPSBPYmplY3QuYXNzaWduKHt9LCB0aGlzLiRkYXRhKTsK
+ICAgICAgICAgICAgICAgIGlmIChhcmd1bWVudHMubGVuZ3RoID4gMSkgewogICAgICAgICAgICAgICAgICAgIG5kYXRhLmFyZ3VtZW50cyA9IGFyZ3M7CiAgICAgICAg
+ICAgICAgICB9CiAgICAgICAgICAgICAgICBuZGF0YS4kc2VjdGlvbiA9IHRoaXMuJHNlY3Rpb24KICAgICAgICAgICAgICAgIHJlc3VsdCA9IChhd2FpdCBtb2QuaW52
+b2tlKG5kYXRhKSk7CiAgICAgICAgICAgICAgICByZXR1cm4gdGhpcy53cml0ZVJhdyhyZXN1bHQpOwogICAgICAgICAgICB9CiAgICAgICAgfSwKICAgICAgICByZXR1
+cm5WYWx1ZTogZnVuY3Rpb24gKCkgewogICAgICAgICAgICByZXR1cm4gdGhpcy5jb250ZW50LmpvaW4oIiIpOwogICAgICAgIH0sCiAgICAgICAgb3Blbk5vZGU6IGZ1
+bmN0aW9uIChub2RlKSB7CiAgICAgICAgICAgIHZhciBpZCwgcmVmLCBzdHIxLCB2YWw7CiAgICAgICAgICAgIHN0cjEgPSAnJzsKICAgICAgICAgICAgCiAgICAgICAg
+ICAgIGlmIChub2RlLm5vZGVOYW1lID09PSAiI2RvY3VtZW50VHlwZSIpIHsKICAgICAgICAgICAgICAgIHN0cjEgPSBgPCFET0NUWVBFICR7bm9kZS5uYW1lLnRvVXBw
+ZXJDYXNlKCl9YDsKICAgICAgICAgICAgICAgIGlmIChub2RlLnB1YmxpY0lkKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyMSArPSBgIFBVQkxJQyAke25vZGUucHVi
+bGljSWR9YDsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgIGlmIChub2RlLnN5c3RlbUlkKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyMSArPSBub2Rl
+LnN5c3RlbUlkOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgc3RyMSArPSAiPiI7CiAgICAgICAgICAgIH0gZWxzZSBpZiAobm9kZS50YWdOYW1lKSB7
+CiAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgIHN0cjEgPSBgPCR7bm9kZS50YWdOYW1lfWA7CiAgICAgICAgICAgICAgICBpZiAobm9kZS5hdHRycykgewog
+ICAgICAgICAgICAgICAgICAgIHJlZiA9IE9iamVjdC5hc3NpZ24obm9kZS5hdHRycyB8fCB7fSwgJGF0dHJzKTsKCiAgICAgICAgICAgICAgICAgICAgZm9yIChpZCBp
+biByZWYpIHsKICAgICAgICAgICAgICAgICAgICAgICAgdmFsID0gcmVmW2lkXTsKICAgICAgICAgICAgICAgICAgICAgICAgc3RyMSArPSBgICR7aWR9PScke3RoaXMu
+c2NhcGUodmFsKX0nYDsKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAkYXR0cnMgPSB7fQogICAgICAgICAgICAg
+ICAgaWYgKG5vZGUudGFnTmFtZSA9PT0gImxpbmsiIHx8IG5vZGUudGFnTmFtZSA9PT0gImltZyIpIHsKICAgICAgICAgICAgICAgICAgICBzdHIxICs9ICIvPiI7CiAg
+ICAgICAgICAgICAgICB9IGVsc2UgewogICAgICAgICAgICAgICAgICAgIHN0cjEgKz0gIj4iOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9CiAgICAgICAg
+ICAgIGlmIChzdHIxKSB7CiAgICAgICAgICAgICAgICByZXR1cm4gdGhpcy53cml0ZVJhdyhzdHIxKTsKICAgICAgICAgICAgfQogICAgICAgIH0sCiAgICAgICAgY2xv
+c2VOb2RlOiBmdW5jdGlvbiAodGFnTmFtZSkgewogICAgICAgICAgICBpZiAoIXRhZ05hbWUgfHwgdGFnTmFtZSA9PSAidW5kZWZpbmVkIikgcmV0dXJuCiAgICAgICAg
+ICAgIGlmICh0YWdOYW1lICE9PSAibGluayIgJiYgdGFnTmFtZSAhPT0gImltZyIgJiYgdGFnTmFtZSAhPT0gImJyIikgewogICAgICAgICAgICAgICAgcmV0dXJuIHRo
+aXMud3JpdGVSYXcoYDwvJHt0YWdOYW1lfT5gKTsKICAgICAgICAgICAgfQogICAgICAgIH0sCiAgICAgICAgc2NhcGU6IGZ1bmN0aW9uICh1bnNhZmUpIHsKICAgICAg
+ICAgICAgaWYgKHVuc2FmZSA9PT0gdm9pZCAwIHx8IHVuc2FmZSA9PT0gbnVsbCkgewogICAgICAgICAgICAgICAgcmV0dXJuICcnOwogICAgICAgICAgICB9CiAgICAg
+ICAgICAgIHVuc2FmZSA9IHVuc2FmZS50b1N0cmluZygpOwogICAgICAgICAgICByZXR1cm4gdW5zYWZlLnJlcGxhY2UoL1smPCInXS9nLCBmdW5jdGlvbiAobSkgewog
+ICAgICAgICAgICAgICAgc3dpdGNoIChtKSB7CiAgICAgICAgICAgICAgICAgICAgY2FzZSAnJic6CiAgICAgICAgICAgICAgICAgICAgICAgIHJldHVybiAnJmFtcDsn
+OwogICAgICAgICAgICAgICAgICAgIGNhc2UgJzwnOgogICAgICAgICAgICAgICAgICAgICAgICByZXR1cm4gJyZsdDsnOwogICAgICAgICAgICAgICAgICAgIGNhc2Ug
+JyInOgogICAgICAgICAgICAgICAgICAgICAgICByZXR1cm4gJyZxdW90Oyc7CiAgICAgICAgICAgICAgICAgICAgZGVmYXVsdDoKICAgICAgICAgICAgICAgICAgICAg
+ICAgcmV0dXJuICcmIzAzOTsnOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9KTsKICAgICAgICB9CQogICAgfQp9KQ==`;
+		helpFunc = Buffer.from(helpFunc.replace(/\n/g,''),'base64')
+		
+
+		helper = "(" + helpFunc.toString() + ")"
 		realCode = '';
 		realCode += "var _helper= " + helper.toString();
 		ref = rcode.scripts;

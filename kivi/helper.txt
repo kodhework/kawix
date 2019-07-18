@@ -1,0 +1,131 @@
+(function(){
+    var Path = require("path")
+    var $helper 
+    return $helper 	= {
+        local: {},
+        $section: {},
+        text: function(value){
+            return this.write(value)
+        },
+        write: function(value){
+            value = this.scape(value)
+            return this.writeRaw(value)
+        },
+        writeRaw: function(value){
+            var ref, ref1;
+            if (value === void 0 || value === null) {
+                value = '';
+            }
+            return this.content.push(value.toString());
+        },
+        expression: function (value, write) {
+            if (!write) {
+                return value;
+            }
+            if (write) {
+                return this.write(value);
+            }
+        },
+        rawexpression: function (value, write) {
+            if (!write) {
+                return value;
+            }
+            if (write) {
+                return this.writeRaw(value);
+            }
+        },
+        include: async function (attrs, args) {
+            var mod, ndata, result, file, section, main;
+            file = attrs.name || attrs.file
+            if (attrs.section !== undefined) {
+                section = this.$section && this.$section[file]
+                if (section) {
+                    await section(this, this.$data)
+                }
+                return
+            }
+            main = this.$data.options && this.$data.options.mainfolder
+            if (main && !file.startsWith("./") && !file.startsWith("../")) {
+                file = Path.join(main, file)
+            }
+            mod = (await import(file));
+            if (typeof mod.text == "string") {
+                this.writeRaw(mod.text)
+            }
+            else if (typeof mod.default == "string") {
+                this.writeRaw(mod.default)
+            }
+            else if (mod.invoke) {
+                ndata = Object.assign({}, this.$data);
+                if (arguments.length > 1) {
+                    ndata.arguments = args;
+                }
+                ndata.$section = this.$section
+                result = (await mod.invoke(ndata));
+                return this.writeRaw(result);
+            }
+        },
+        returnValue: function () {
+            return this.content.join("");
+        },
+        openNode: function (node) {
+            var id, ref, str1, val;
+            str1 = '';
+            
+            if (node.nodeName === "#documentType") {
+                str1 = `<!DOCTYPE ${node.name.toUpperCase()}`;
+                if (node.publicId) {
+                    str1 += ` PUBLIC ${node.publicId}`;
+                }
+                if (node.systemId) {
+                    str1 += node.systemId;
+                }
+                str1 += ">";
+            } else if (node.tagName) {
+                
+                str1 = `<${node.tagName}`;
+                if (node.attrs) {
+                    ref = Object.assign(node.attrs || {}, $attrs);
+
+                    for (id in ref) {
+                        val = ref[id];
+                        str1 += ` ${id}='${this.scape(val)}'`;
+                    }
+                }
+                $attrs = {}
+                if (node.tagName === "link" || node.tagName === "img") {
+                    str1 += "/>";
+                } else {
+                    str1 += ">";
+                }
+            }
+            if (str1) {
+                return this.writeRaw(str1);
+            }
+        },
+        closeNode: function (tagName) {
+            if (!tagName || tagName == "undefined") return
+            if (tagName !== "link" && tagName !== "img" && tagName !== "br") {
+                return this.writeRaw(`</${tagName}>`);
+            }
+        },
+        scape: function (unsafe) {
+            if (unsafe === void 0 || unsafe === null) {
+                return '';
+            }
+            unsafe = unsafe.toString();
+            return unsafe.replace(/[&<"']/g, function (m) {
+                switch (m) {
+                    case '&':
+                        return '&amp;';
+                    case '<':
+                        return '&lt;';
+                    case '"':
+                        return '&quot;';
+                    default:
+                        return '&#039;';
+                }
+            });
+        }	
+    }
+})
