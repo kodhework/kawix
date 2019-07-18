@@ -36,6 +36,7 @@ rm -r "$_HOME/kwcore"
 curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/kwcore"
 curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/kawix"
 chmod +x "$_HOME/kwcore"
+chmod +x "$_HOME/kawix"
 
 if [ "$EUID" -eq 0 ]
 then
