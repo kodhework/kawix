@@ -12,9 +12,4 @@ The next generation Javascript runtime written in and for nodejs
 
 ## Install runtime 
 
-Install nodejs from [https://nodejs.org](https://nodejs.org)
-
-```bash
-npm -g install @kawix/core@latest
-``` 
-
+@kawix/core is available for Windows,Mac,GNU/Linux. Go to [INSTALL.md](./core/INSTALL.md) for instructions
