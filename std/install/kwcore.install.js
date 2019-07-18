@@ -12,7 +12,7 @@ if(process.getuid() == 0){
 var newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir 
 var content= ''
 if(fs.existsSync(file)){
-	fs.readFileSync(file,'utf8')
+	content = fs.readFileSync(file,'utf8')
 }
 if(content.indexOf(newline) < 0){
 	fs.writeFileSync(file, content + newline + "\"\n")
@@ -29,6 +29,14 @@ if (process.getuid() != 0) {
 	}
 }
 
+process.stdout.write('\033c')
+console.info("")
+console.info(" > Finishing @kawix/core installing")
+kawix.KModule.import("https://kwx.kodhe.com/x/v/" + global.kawix.version + "/std/dist/stdlib")
+	.then(function(){})
+	.catch(function(er){
+		console.error(" > Failed installing stdlib")
+	})
 
 
 // install the icons 
@@ -184,6 +192,7 @@ var init= async function(){
 				<glob pattern="*.kwe" />
 				<glob pattern="*.kwsh" />
 				<glob pattern="*.kwo" />
+				<glob pattern="*.kwa" />
 				<icon name="${id}"/>
 			</mime-type>
 
