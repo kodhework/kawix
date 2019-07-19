@@ -431,7 +431,7 @@ var builtinModules = _module.builtinModules;
 		return uri
 	}
 	changeSource = function (source) {
-		
+
 		var import1 = {
 			code: source
 		}
@@ -617,7 +617,7 @@ var builtinModules = _module.builtinModules;
 		}
 		//var uri= Url.parse(url)
 		var module = url.substring(url.indexOf("://") + 3)
-		
+
 		var parts = module.split("/")
 		var oparts = [].concat(parts)
 		var subpath = ""
@@ -636,13 +636,13 @@ var builtinModules = _module.builtinModules;
 		subpath = oparts.slice(parts.length)
 		subpath = subpath.join("/")
 		module = parts.join("/")
-		options.uid = module.split("@").slice(0, -1).join("/") 
-		if(subpath){
+		options.uid = module.split("@").slice(0, -1).join("/")
+		if (subpath) {
 			options.uid += "/" + subpath
 		}
-		
 
-		
+
+
 		var moduledesc = Mod._npmcache[module]
 		var continue3 = function (moduledesc) {
 
@@ -746,19 +746,19 @@ var builtinModules = _module.builtinModules;
 
 	transpile = function (file, basename, source, options) {
 		var transpilerOptions, json, imports
-		
-		
+
+
 
 		if (options.injectImport === undefined && Mod.__injected) {
 			options.injectImport = true
 		}
 		if (options && options.language) {
-			
+
 			// specified by language
 			if (Mod.languages[options.language])
 				basename += Mod.languages[options.language]
 		}
-		
+
 
 		for (var ext in Mod.extensions) {
 			if (basename.endsWith(ext)) {
@@ -802,7 +802,7 @@ var builtinModules = _module.builtinModules;
 					filename: file
 				}
 				if (basename.endsWith(".ts")) {
-					if(!transpilerOptions.filename.endsWith(".ts")){
+					if (!transpilerOptions.filename.endsWith(".ts")) {
 						transpilerOptions.filename += ".ts"
 					}
 					/*
@@ -919,12 +919,22 @@ Mod._resolveFilename = function (name, parent, resolve) {
 	else if (builtinModules.indexOf(name) >= 0) {
 		return name
 	}
+
 	else if (!name.startsWith(".")) {
 		parts = name.split(/\/|\\/)
 		parts = Path.normalize("/virtual/" + parts[0])
 		if (Mod._virtualfile[parts]) {
 			var uname = Mod.resolveVirtual(Path.normalize("/virtual/" + name), parent, resolve)
 			if (uname) return uname
+		}
+	}
+
+	if (Path.isAbsolute(name)) {
+		try {
+			var res0 = Module._originalResolveFilename(name, parent, resolve)
+			if (res0)
+				return res0
+		} catch (e) {
 		}
 	}
 
@@ -1151,7 +1161,7 @@ Mod.requireVirtualSync = function (file, parent) {
 	module.KModule = nmod
 	Mod._cacherequire[file] = module
 	Module._cache[file] = module
-	
+
 
 
 	var code = "exports.__kawi= function(KModule){ " +
@@ -1302,7 +1312,27 @@ Mod.compileSync = function (file, options) {
 var importing = {}
 Mod.import = function (file, options) {
 	var id = this.filename, def, c, def2, self
-	
+
+
+
+	if (file.startsWith("gh+/")) {
+		// Change automatically to github
+		var pars = file.split("/")
+		var d = {
+			user: pars[1],
+			mod: pars[2],
+			version: 'master',
+			path: pars.slice(3).join("/")
+		}
+		var y = d.mod.lastIndexOf("@")
+		if (y > 0) {
+			d.version = d.mod.substring(y + 1)
+			d.mod = d.mod.substring(0, y)
+		}
+		file = "https://raw.githubusercontent.com/" + d.user + "/" + d.mod + "/" + d.version + "/" + d.path
+	}
+
+
 	if (this._local && this._local[file]) {
 		return this._local[file]
 	}
@@ -1324,7 +1354,7 @@ Mod.import = function (file, options) {
 			self = this
 			def2 = deferred()
 			def.promise.then(function (v) {
-				
+
 				self._local && (self._local[options.uid] = v)
 				return def2.resolve(v)
 			}).catch(def2.reject)
@@ -1358,7 +1388,7 @@ Mod.import = function (file, options) {
 			self = this
 			def2 = deferred()
 			def.promise.then(function (v) {
-				
+
 				self._local && (self._local[options.uid] = v)
 				return def2.resolve(v)
 			}).catch(def2.reject)
@@ -1377,7 +1407,7 @@ Mod.import = function (file, options) {
 
 
 Mod._import = function (file, options) {
-	var uri2, promise, original, filename, uri, parts, resolved, self= this
+	var uri2, promise, original, filename, uri, parts, resolved, self = this
 	original = file
 	options = createDefault(options)
 	if (builtinModules.indexOf(file) >= 0) {
@@ -1526,6 +1556,8 @@ requiring = {}
 Mod.require = function (file, options) {
 	var def, result, c
 
+
+
 	if (requiring[file]) {
 		def = deferred()
 		requiring[file].def.push(def)
@@ -1637,14 +1669,14 @@ Mod._require = function (file, options) {
 
 		Module._cache[file] = cached
 		if (options.uid) {
-			
+
 			self._local[options.uid] = cached.exports
 			/*
 			cached.__kawi_uid = cached.__kawi_uid || {}
 			cached.__kawi_uid[options.uid] = true
 			*/
 		}
-		
+
 		//Module._cache[options.uid || "_internal_kawi_last.js"] = cached
 		return cached.exports
 
@@ -1858,7 +1890,7 @@ var helper = {
 		var cache_file, cache_dir, stat1, stat2, data, vfile, locked, self, lockfile, updatetime
 		self = this
 
-		var getstat2= function(){
+		var getstat2 = function () {
 			vfile = Mod._virtualfile[file]
 			if (vfile) {
 				if (typeof vfile == "function") {

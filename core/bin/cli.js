@@ -5,11 +5,13 @@ var Path = require("path")
 var Child = require("child_process")
 var Os = require("os")
 var fs = require("fs")
+var WritePath = require("./write.path")
 var Kawix = require("../main")
 var offset = 0, pack, pack1, er, forceui
 var originalArgs = [].concat(process.argv.slice(1))
 var oargs = [].concat(process.argv)
-var args = [].concat(process.argv), cmd, cmdargs, pro, args1, proposals, enableCoffee, ignoreKwaValidation, env1={}
+var args = [].concat(process.argv), cmd, cmdargs, pro, args1,
+	proposals, enableCoffee, ignoreKwaValidation, env1 = {}, map
 pack = require("../package.json")
 
 
@@ -78,13 +80,15 @@ var enableUi = function (force, i) {
 }
 
 if (process.env.KWCORE_FORCE_UI) {
-	delete process.env.KWCORE_FORCE_UI;enableUi(true)
+	delete process.env.KWCORE_FORCE_UI; enableUi(true)
 }
 
 for (var i = 2; i < args.length; i++) {
 	arg = args[i]
 	if (!arg)
 		break
+	if (arg == "_______internal")
+		continue
 
 	if (arg == "--reload" || arg == "--force") {
 		process.argv.splice(offset + i, 1)
@@ -96,6 +100,32 @@ for (var i = 2; i < args.length; i++) {
 	else if (arg == "--install-std") {
 		arg = args.push("https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/stdlib.js")
 		console.log(" > Loading STDLIB")
+	}
+
+	else if (arg == "--map") {
+		map = args[i + 1]
+		if (!map) {
+			console.error(" > Provide an argument(name of app) for option --map")
+			process.exit(1)
+		}
+		process.argv.splice(offset + i, 2)
+		offset -= 2
+		args[i + 1] = "_______internal"
+
+	}
+
+	else if (arg == "--original-file") {
+		kawix.originalFilename = args[i + 1]
+		//console.info(kawix.originalFilename)
+		if (!args[i + 1]) {
+			console.error(" > Provide an argument for option --original-file")
+			process.exit(1)
+		}
+		process.argv.splice(offset + i, 2)
+		offset -= 2
+		args[i + 1] = "_______internal"
+
+
 	}
 
 
@@ -131,10 +161,10 @@ for (var i = 2; i < args.length; i++) {
 		}).catch(er)
 		return
 	}
-	
-	else if (arg.startsWith("--ignore-kwa-validation")) {
+
+	else if (arg.startsWith("--ignore-kwa-validation") || arg.startsWith("--disable-ui")) {
 		process.argv.splice(offset + i, 1)
-		ignoreKwaValidation = true 
+		ignoreKwaValidation = true
 		process.env.KWCORE_FORCED_UI = "1"
 		offset--
 	}
@@ -143,6 +173,28 @@ for (var i = 2; i < args.length; i++) {
 		offset--
 	}
 	else {
+
+		if (map) {
+			if (!arg)
+				return
+
+			// generate an executable file
+			var dirname = Path.dirname(process.execPath)
+			var file = Path.join(Os.homedir(), "Kawix", map)
+
+			var content0 = ''
+			if (Os.platform() == "win32") {
+				file = Path.join(Os.homedir(), "Kawix", "bin", map + ".cmd")
+				content0 = `@echo off\nset current=%~dp0\n"%current%\\kwcore.exe" --original-file "%~n0%~x0" "${arg}" %*`
+			} else {
+				WritePath.write(Path.join(Os.homedir(), "Kawix"))
+				content0 = `#!/usr/bin/env bash\n${Path.join(Path.dirname(process.execPath), "kwcore")} --disable-ui --original-file "$BASH_SOURCE" ${JSON.stringify(arg)} $@\nexit $?`
+			}
+			fs.writeFileSync(file, content0)
+			fs.chmodSync(file, "775")
+			return
+		}
+
 
 		if (cmd) {
 			if (!forceui) {
@@ -164,9 +216,6 @@ for (var i = 2; i < args.length; i++) {
 						filename: process.cwd() + "/cli.js"
 					}
 				}
-
-
-
 				// require file using KModule                
 				var erfunc = function (e) {
 					console.error("Failed executing: ", e)
@@ -176,12 +225,15 @@ for (var i = 2; i < args.length; i++) {
 				}
 				var funcKwa = function () {
 					Kawix.KModule.import(arg, options).then(function (result) {
-						if(!ignoreKwaValidation) ignoreKwaValidation = process.env.KWCORE_FORCED_UI == 1
+						if (!ignoreKwaValidation) ignoreKwaValidation = process.env.KWCORE_FORCED_UI == 1
+						if (!process.env.DISPLAY && Os.platform() == "linux") {
+							ignoreKwaValidation = true
+						}
 						if (result && result.Program) {
 							if (!ignoreKwaValidation) {
 								if (result.Program.type == "terminal") {
 									forceui = true
-									
+
 									if (Os.platform() == "win32") {
 										if (process.env.WINDOWS_GUI == 1) {
 											var name = Path.basename(cmd, ".exe")
@@ -195,13 +247,13 @@ for (var i = 2; i < args.length; i++) {
 										}
 										if (forceui) return forceuiFunc()
 									}
-									else{
-										
-										args =[args[0],args[1], "--ignore-kwa-validation"].concat(args.slice(2))
+									else {
+
+										args = [args[0], args[1], "--ignore-kwa-validation"].concat(args.slice(2))
 										enableUi(true)
-										return  forceuiFunc()
+										return forceuiFunc()
 									}
-									
+
 								}
 							}
 
@@ -225,7 +277,7 @@ for (var i = 2; i < args.length; i++) {
 				if (arg.endsWith(".kwa")) {
 
 					// LOAD THE KWA REGISTER
-					Kawix.KModule.import("https://kwx.kodhe.com/x/v/"+pack.version+"/std/dist/stdlib.js")
+					Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/stdlib.js")
 						.then(function () {
 
 							Kawix.KModule.import("/virtual/@kawix/std/package/kwa/register")
@@ -248,7 +300,7 @@ for (var i = 2; i < args.length; i++) {
 			}
 		}
 		forceuiFunc = function () {
-			
+
 			pro = Child.spawn(cmd, cmdargs, {
 				cwd: process.cwd(),
 				env: Object.assign({}, process.env, {

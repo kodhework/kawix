@@ -5,10 +5,10 @@ var Registry
 var load= async function(){
     try{
         var pack = require("../package.json")
-        Registry= await KModule.import('/virtual/@kawix/std/package/registry')
+        Registry= await KModule.import('/virtual/@kawix/std/package/registry.yarn')
         Registry= Registry.default || Registry
     }catch(e){
-        Registry= await KModule.import('https://kwx.kodhe.com/x/v/'+pack.version+'/std/package/registry')
+        Registry= await KModule.import('https://kwx.kodhe.com/x/v/'+pack.version+'/std/package/registry.yarn')
         Registry= Registry.default || Registry
     }
 }
