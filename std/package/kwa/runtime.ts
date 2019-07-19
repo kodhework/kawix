@@ -89,7 +89,7 @@ export class Runtime{
         await fs.mkdirAsync(folder)
 
 
-        if (!options.fromremote) {
+        //if (!options.fromremote) {
 
             let def = new async.Deferred<void>()
             let stout= tar.x({
@@ -101,10 +101,10 @@ export class Runtime{
             stout.on("finish", def.resolve)
             await def.promise
 
-        }
+        /*}
         else {
             throw Exception.create("Not implemented").putCode("NOT_IMPLEMENTED")
-        }
+        }*/
 
         try {
             if (fs.existsSync(sym)) {

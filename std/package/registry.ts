@@ -340,6 +340,7 @@ Registry = (function() {
 				}
 			}
 			if (!resolvedversion) {
+
 				await this._getNpmInfo(cachedInfo, module);
 				resolvedversion = null;
 				data = cachedInfo.moduleinfo.data;
@@ -447,7 +448,11 @@ Registry = (function() {
 
 		_getProposedFolder(module, version) {}
 
-		async resolve(module, version, ignorecache) {
+		
+
+		async resolve(module, version, ignorecache:boolean = false) {
+
+			
 			var binding, binding_check, cacher, e, er, err, i, ignoredependencies, j, len, moduledesc, newr, npmfile, npmmodule, p, pjson, promise, ref, ver, versions;
 			if (!version) {
 				i = module.lastIndexOf("@");
