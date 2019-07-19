@@ -280,10 +280,12 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		w.pid = w.process.pid;
 		self = this;
 		u = function(message) {
-			var c;
+			var c
+			console.log(message)
 			if (message.startsWith("Listening:")) {
 				c = message.substring(10);
 				c = JSON.parse(c);
+				self.address = c
 				return self.emit("listen", c);
 			} else {
 				return w.once("message", u);

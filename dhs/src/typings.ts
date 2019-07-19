@@ -2,6 +2,7 @@ import IPC from './channel/ipc'
 import { AddressInfo, Socket } from 'net';
 import { IncomingMessage, ServerResponse } from 'http';
 import Reply from '/virtual/@kawix/std/http/reply'
+import { EventEmitter } from 'events';
 
 export interface Config {
     _config?: any 
@@ -63,7 +64,7 @@ export interface Request{
     params?: any 
 }
 
-export interface DhsServer{
+export interface DhsServer extends EventEmitter{
 
     config?: Config
     workers?: any[]
