@@ -95,35 +95,41 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		return this.config.readCached()
 	}
 
+	getAddress(){
+		return this.address
+	}
+
+	async attachToMaster(){
+		this.channel = new IPC(this)
+		await this.channel.connect()
+		await this.channel.send({
+			action: 'import',
+			args: [__filename],
+			params: {
+				pid: process.pid
+			},
+			name: "service"
+		})
+	}
+
 	async start() {
 		var config, e;
 		if (Cluster.isMaster) {
 			config = (await this.config.read());
 			//@config.on "include", @_include_to_workers.bind(@)
 			this.config.on("change", this._config_to_workers.bind(this));
-			try {
-				this.channel = new IPC(this);
-				this._socketpath = (await this.channel._getListenPath());
-				await this.channel.listen();
-			} catch (error) {
-				e = error;
-				console.error("ERROR STARTING: ", e);
-				process.exit(10);
-			}
+			
+			this.channel = new IPC(this);
+			this._socketpath = (await this.channel._getListenPath());
+			await this.channel.listen();
+		
 			return (await this._cluster());
 		} else {
 			this.config.stop();
 			delete this.config;
-			this.channel = new IPC(this);
-			await this.channel.connect();
-			await this.channel.send({
-				action: 'import',
-				args: [__filename],
-				params: {
-					pid: process.pid
-				},
-				name: "service"
-			});
+			
+			await this.attachToMaster()
+
 			this.config = new ConfigIPC(this.channel)
 			this.config._load()
 			await this.config.read()

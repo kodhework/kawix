@@ -1,7 +1,7 @@
 
 
 import Path from 'path'
-import ipc from '../lib/_ipc'
+import ipc from '../../../std/ipc/channel'
 import Os from 'os'
 import fs from '../lib/_fs'
 
