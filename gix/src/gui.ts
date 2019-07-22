@@ -127,7 +127,8 @@ export class Gui extends EventEmitter {
 	constructor(id: string) {
 		super();
 		this.id = id;
-		this.ipc = new IPC(this.id);
+		this.ipc = new IPC(this.id)
+		this.ipc.autoconnect = false 
 		this.api = {};
 		this.store = {}
 	}
@@ -242,6 +243,7 @@ export class Gui extends EventEmitter {
 			val = (await this._check_secondinstance());
 			if (val) {
 				this.ipc = new IPC(this.id);
+				this.ipc.autoconnect = false 
 				await this.connect();
 				this._locked = true;
 				return true;
