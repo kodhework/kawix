@@ -37,6 +37,7 @@ curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/kwcore"
 curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/kawix"
 chmod +x "$_HOME/kwcore"
 chmod +x "$_HOME/kawix"
+echo "process.env.KWCORE_EXECUTE=1;require('./kwcore.app.js');" > "$_HOME/kwcore.start.js" 
 
 if [ "$EUID" -eq 0 ]
 then
