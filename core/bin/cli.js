@@ -188,7 +188,7 @@ for (var i = 2; i < args.length; i++) {
 				content0 = '@echo off\nset current=%~dp0\n"%current%\\kwcore.exe" --original-file "%~n0%~x0" "'+arg+'" %*'
 			} else {
 				WritePath.write(Path.join(Os.homedir(), "Kawix"))
-				content0 = '#!/usr/bin/env bash\n' + Path.join(Path.dirname(process.execPath), "kwcore") +' --disable-ui --original-file "$BASH_SOURCE" ' + JSON.stringify(arg) + '$@\nexit $?'
+				content0 = '#!/usr/bin/env bash\n' + Path.join(Path.dirname(process.execPath), "kwcore") +' --disable-ui --original-file "$BASH_SOURCE" ' + JSON.stringify(arg) + ' $@\nexit $?'
 			}
 			fs.writeFileSync(file, content0)
 			fs.chmodSync(file, "775")

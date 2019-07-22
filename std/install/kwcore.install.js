@@ -6,11 +6,35 @@ var Child= require("child_process")
 var dir= __dirname 
 // add to profile 
 var file= Path.join(Os.homedir(),".profile")
+var content = ''
+var newline = "\n#kwcore PROFILE\nsource ~/.profile"
+if(Os.platform() == "darwin"){
+	var file1 = Path.join(Os.homedir(), ".bash_profile")
+	if(fs.existsSync(file1))
+		content = fs.readFileSync(file1, 'utf8')
+	else 
+		content = ''
+	if (content.indexOf(newline) < 0) {
+		fs.writeFileSync(file1, content + newline + "\n")
+	}
+	
+}
+if(Os.platform() == "darwin" || Os.platform() == "linux"){
+	file1 = Path.join(Os.homedir(), ".bashrc")
+	if (fs.existsSync(file1))
+		content = fs.readFileSync(file1, 'utf8')
+	else
+		content = ''
+	if (content.indexOf(newline) < 0) {
+		fs.writeFileSync(file1, content + newline + "\n")
+	}
+}
+
 if(process.getuid() == 0){
 	file= "/etc/profile"
 }
-var newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir 
-var content= ''
+
+newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir 
 if(fs.existsSync(file)){
 	content = fs.readFileSync(file,'utf8')
 }
@@ -19,6 +43,8 @@ if(content.indexOf(newline) < 0){
 }
 
 if (process.getuid() != 0) {
+
+	/*
 	file = Path.join(Os.homedir(), ".bashrc")
 	content = ''
 	if (fs.existsSync(file)) {
@@ -26,7 +52,7 @@ if (process.getuid() != 0) {
 	}
 	if (content.indexOf(newline) < 0) {
 		fs.writeFileSync(file, content + newline + "\"\n")
-	}
+	}*/
 }
 
 process.stdout.write('c')
