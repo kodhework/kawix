@@ -16,6 +16,7 @@ exports.write = function (dir) {
     }
 
     if (process.getuid() != 0) {
+        /*
         file = Path.join(Os.homedir(), ".bashrc")
         content = ''
         if (fs.existsSync(file)) {
@@ -23,6 +24,6 @@ exports.write = function (dir) {
         }
         if (content.indexOf(newline) < 0) {
             fs.writeFileSync(file, content + newline + "\"\n")
-        }
+        }*/
     }
 }
