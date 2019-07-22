@@ -12,8 +12,10 @@ import Exception from '../util/exception';
 
 IPC = (function() {
 	class IPC extends EventEmitter {
+		public autoconnect:boolean
 		constructor(id1) {
 			super();
+			this.autoconnect = true 
 			this.id = id1;
 			this._deferred = {};
 		}
@@ -55,8 +57,15 @@ IPC = (function() {
 			socket.connect(listen);
 			def = this.deferred();
 			socket.once("connect", def.resolve);
-			socket.once("error", def.reject);
+			socket.on("error", function(e){
+				if(def)
+					def.reject(e)
+				else 
+					console.info(" > IPC, underlying socket error: ",e)
+				
+			});
 			await def.promise;
+			def = null 
 			// attach responses
 			this._type = 'client';
 			return this._connection(this.socket);
@@ -316,13 +325,13 @@ IPC = (function() {
 					}
 					self.connected = false;
 					self._deferred = {};
-					if (!self._stopped) {
+					if (!self._stopped && self.autoconnect) {
 						return self.connect();
 					}
 				});
 			} else {
 				return socket.on("close", function() {
-					return console.info("A CLIENT WAS DISCONNECTED");
+					//return console.info("A CLIENT WAS DISCONNECTED");
 				});
 			}
 		}
