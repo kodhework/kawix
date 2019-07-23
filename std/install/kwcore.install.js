@@ -4,57 +4,39 @@ var fs= require("fs")
 var Child= require("child_process")
 
 var dir= __dirname 
-// add to profile 
-var file= Path.join(Os.homedir(),".profile")
-var content = ''
-var newline = "\n#kwcore PROFILE\nsource ~/.profile"
-if(Os.platform() == "darwin"){
-	var file1 = Path.join(Os.homedir(), ".bash_profile")
-	if(fs.existsSync(file1))
-		content = fs.readFileSync(file1, 'utf8')
-	else 
-		content = ''
+
+
+var writePath = function (dir) {
+	var file = Path.join(Os.homedir(), ".bashrc")
+	if (process.getuid() == 0) {
+		file = "/etc/bash.bashrc"
+	}
+	var newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir
+	var content = ''
+	if (fs.existsSync(file)) {
+		content = fs.readFileSync(file, 'utf8')
+	}
 	if (content.indexOf(newline) < 0) {
-		fs.writeFileSync(file1, content + newline + "\n")
+		fs.writeFileSync(file, content + newline + "\"\n")
 	}
-	
-}
-if(Os.platform() == "darwin"){
-	file1 = Path.join(Os.homedir(), ".bashrc")
-	if (fs.existsSync(file1))
-		content = fs.readFileSync(file1, 'utf8')
-	else
-		content = ''
+
+
+	if (process.getuid() != 0) {
+		file = Path.join(Os.homedir(), ".profile")
+	}
+	else {
+		file = "/etc/profile"
+	}
+	content = ''
+	if (fs.existsSync(file)) {
+		content = fs.readFileSync(file, 'utf8')
+	}
 	if (content.indexOf(newline) < 0) {
-		fs.writeFileSync(file1, content + newline + "\n")
+		fs.writeFileSync(file, content + newline + "\"\n")
 	}
 }
 
-if(process.getuid() == 0){
-	file= "/etc/profile"
-}
-
-newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir 
-if(fs.existsSync(file)){
-	content = fs.readFileSync(file,'utf8')
-}
-if(content.indexOf(newline) < 0){
-	fs.writeFileSync(file, content + newline + "\"\n")
-}
-
-if (process.getuid() != 0) {
-
-	if (Os.platform() == "linux") {
-		file = Path.join(Os.homedir(), ".bashrc")
-		content = ''
-		if (fs.existsSync(file)) {
-			content = fs.readFileSync(file, 'utf8')
-		}
-		if (content.indexOf(newline) < 0) {
-			fs.writeFileSync(file, content + newline + "\"\n")
-		}
-	}
-}
+writePath(__dirname)
 
 process.stdout.write('c')
 console.info("")
