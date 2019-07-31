@@ -166,7 +166,7 @@ export class Registry{
                     return mod 
                 
                 
-                if(Semver.satisfies(version, mod.version))
+                if(Semver.satisfies(mod.version, version))
                     return mod 
             }
         }
