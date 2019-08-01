@@ -45,8 +45,14 @@ class Router {
 	_use(store, callback){
 		var self= this
 		return function(env){
-			var url= env.request.url
-			var uri= env.request.uri
+			
+			var url= env.request.url 
+			var uri = env.request.uri
+			if (!env.request.originalUrl) {
+				env.request.originalUrl = url
+				env.request.originalUri = uri
+			}
+			
 
 
 

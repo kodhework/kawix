@@ -124,15 +124,16 @@ export class Runtime{
         // tar uncompressed ...
         var source = {
             "code": `
-		exports.kawixDynamic={
-			time: 15000
-		}
+		
 		exports.kawixPreload= async function(){
 			try{
 				module.exports= await KModule.import(${JSON.stringify(Path.join(folder, 'mod'))})
 			}catch(e){
 				if(e.message.indexOf("Cannot resolve") < 0) throw e
-			}
+            }
+            module.exports.kawixDynamic={
+                time: 10000
+            }
 			module.exports["kawix.app"]= {
 				original: ${JSON.stringify(filename)},
 				resolved: ${JSON.stringify(folder)}

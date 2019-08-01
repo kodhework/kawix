@@ -183,8 +183,10 @@ export class Config extends EventEmitter {
 	async _include(config, path, timeout = 400) {
 		var e, newconfig, ref;
 		try {
+			
 			await this.sleep(timeout);
 			newconfig = (await import(path));
+			
 			if (newconfig.configfile) {
 				return (await this._include(config, newconfig.configfile, timeout));
 			} else if (newconfig["kawix.app"]) {

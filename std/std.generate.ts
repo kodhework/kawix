@@ -44,7 +44,7 @@ class Generator {
 			return
 		}
 
-		var rfile
+		var rfile, content
 		for (var i = 0; i < files.length; i++) {
 			file = files[i]
 			ufile = Path.join(dir, file)
@@ -56,8 +56,29 @@ class Generator {
 				await this.read(ufile)
 			} else {
 				rfile = Path.relative(this.dir, ufile)
-				this.files.push(Path.relative(this.dir, ufile))
-				content = await this.gzipContent(await fs.readFileAsync(ufile))
+				
+				content = await fs.readFileAsync(ufile)
+				if(ufile.endsWith(".ts") || ufile.endsWith(".js")){
+					// TRANSPILE? 
+					content = content.toString('utf8')
+					let transpilerOptions = {
+						presets: ["typescript", 'es2015', 'es2016', 'es2017', ['stage-2', {
+							decoratorsBeforeExport: false
+						}]],
+						sourceMaps: true,
+						comments: true,
+						filename: ufile
+					}
+					let ast = global.kawix.NextJavascript.transpile(content, transpilerOptions)
+					
+					content = Buffer.from(ast.code )
+					
+
+
+				}
+
+				this.files.push(rfile)
+				content = await this.gzipContent(content)
 				this.content.push(content.toString('base64'))
 			}
 		}
