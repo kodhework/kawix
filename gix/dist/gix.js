@@ -5,7 +5,7 @@ var fs= require('fs')
 var Zlib= require('zlib')
 var home= Os.homedir()
 
-var corefolder= "stdlib.0.6.4"
+var corefolder= "stdlib.0.6.5"
 var coredefault= Path.join(home, "Kawix", "gix")
 var corevdefault= Path.join(home, "Kawix", "gix", "verification.file")
 var verification= Path.join(home, "Kawix", corefolder,  "gix", "verification.file")
@@ -31,7 +31,7 @@ function main(){
 
 	if(fs.existsSync(corevdefault)){
 		installed= fs.readFileSync(corevdefault,'utf8')
-		if(installed >= "0.6.4"){
+		if(installed >= "0.6.5"){
 			out= Path.join(home,"Kawix", "gix")
 			out= Path.join(out,"mod")
 			_export(out)
@@ -80,7 +80,7 @@ if(!fs.existsSync(Path.join(out,"test"))) fs.mkdirSync(Path.join(out,"test"))
 		content= Zlib.gunzipSync(content)
 		fs.writeFileSync(Path.join(out, file), content)
 	}
-	fs.writeFileSync(verification, "0.6.4")
+	fs.writeFileSync(verification, "0.6.5")
 
 
 	/*
