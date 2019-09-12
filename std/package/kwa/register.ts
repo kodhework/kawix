@@ -81,10 +81,62 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 			fs.renameSync(path1, path)
 
 		}
-		stream = fs.createReadStream(path)
+
+
+		let start = 0
+		def = new async.Deferred<void>()
+		let stream0 = fs.createReadStream(path,{
+			start: 0,
+			end: 40
+		})
+		let buffer = []
+		stream0.on("data", function(d){
+			buffer.push(d)
+		})
+		stream0.on("end", def.resolve)
+		stream0.on("error", def.reject)
+		await def.promise
+		let content = Buffer.concat(buffer).toString()
+		if(content.startsWith("#!")){
+			start = content.indexOf("\n")			
+			content = content.substring(start+1)
+			if (content.startsWith("$KWA\n")) {
+				start += 5
+			}
+		}
+		start++
+		stream = fs.createReadStream(path,{
+			start
+		})
 
 	} else {
-		stream = fs.createReadStream(filename)
+		
+		let start = 0
+		def = new async.Deferred<void>()
+		let stream0 = fs.createReadStream(filename, {
+			start: 0,
+			end: 40
+		})
+		let buffer = []
+		stream0.on("data", function (d) {
+			buffer.push(d)
+		})
+		stream0.on("end", def.resolve)
+		stream0.on("error", def.reject)
+		await def.promise
+		let content = Buffer.concat(buffer).toString()
+		if (content.startsWith("#!")) {
+			start = content.indexOf("\n")
+			content = content.substring(start + 1)
+			if(content.startsWith("$KWA\n")){
+				start+=5
+			}
+		}
+		start++
+		stream = fs.createReadStream(filename, {
+			start
+		})
+
 	}
 	return await Runtime._internal_execute(stream, filename, uri, options, helper)
 }
