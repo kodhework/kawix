@@ -83,7 +83,7 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 		}
 
 
-		let start = 0
+		let start = -1
 		def = new async.Deferred<void>()
 		let stream0 = fs.createReadStream(path,{
 			start: 0,
@@ -111,7 +111,7 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 
 	} else {
 		
-		let start = 0
+		let start = -1
 		def = new async.Deferred<void>()
 		let stream0 = fs.createReadStream(filename, {
 			start: 0,
