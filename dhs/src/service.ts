@@ -982,12 +982,14 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			for (l = 0, len2 = ref9.length; l < len2; l++) {
 				site = ref9[l];
 				if (((ref10 = site.hostnames) != null ? ref10.indexOf("DEFAULT") : void 0) >= 0) {
-					func = site._hrouter.find("GET", "/DEFAULT");
-					if (typeof (func != null ? func.handler : void 0) === "function") {
-						await site._hrouter.handle(env, func);
-					}
-					if (env.response.finished) {
-						return;
+					if(site._hrouter){
+						func = site._hrouter.find("GET", "/DEFAULT");
+						if (typeof (func != null ? func.handler : void 0) === "function") {
+							await site._hrouter.handle(env, func);
+						}
+						if (env.response.finished) {
+							return;
+						}
 					}
 				}
 			}

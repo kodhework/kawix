@@ -339,7 +339,6 @@ for (var i = 2; i < args.length; i++) {
 						} finally {
 							if (fd > 0) fs.closeSync(fd)
 						}
-
 					}
 				}
 

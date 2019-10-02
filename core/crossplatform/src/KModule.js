@@ -1,4 +1,4 @@
-var Next, fs, Os, Path, Module, Url, browser, _require, Mod, nd, npmResolver, _module, _next, MD5
+var Next, fs, Os, Path, Module, Url, browser, _require, Mod, nd, npmResolver, _module, _next, MD5, allowCacheCompress, allowCacheCompressExt
 Os = require("os")
 Mod = function () { }
 
@@ -19,6 +19,9 @@ var deferred = function () {
 
 
 if (Os.platform() != 'browser') {
+	//allowCacheCompress = 'gzip'
+	//allowCacheCompressExt = '.cgz'
+	//Zlib = require('zl' + 'ib')
 	MD5 = function (str) {
 		if (!MD5.crypt) {
 			MD5.t = "cryp" + "to"
@@ -317,10 +320,20 @@ var builtinModules = _module.builtinModules;
 
 		full= parts.join(Path.sep)
 		*/
-		parts = ["gen", MD5(options.mask || Url.format(uri))]
+		let o = ''
+		//o = options.mask || uri.pathname  || Url.format(uri)
+		//o = Path.basename(o).replace(/\//g, '_').substring(0, 50) + "-"
+		let md = o + MD5(options.mask || Url.format(uri))
+		
+		if (allowCacheCompress) {
+			md += allowCacheCompressExt
+		}
+		parts = ["gen", md]
 		full = parts.join(Path.sep)
+		
 		kawi_dir = process.env.KAWIX_CACHE_DIR || Path.join(Os.homedir(), ".kawi")
 		file_dir = Path.join(kawi_dir, full)
+		
 		cache_dir = Path.dirname(file_dir)
 		return {
 			kawi_dir: kawi_dir,
@@ -1179,8 +1192,11 @@ Mod._writeCache = function (cache, file, data) {
 	var cache_file = (cache.file || cache)
 	var content
 	try {
-		content = fs.readFileSync(cache_file, 'utf8')
-		content = JSON.parse(content)
+		content = fs.readFileSync(cache_file)
+		if(allowCacheCompress == "gzip"){
+			content = Zlib.gunzipSync(content.reverse())
+		}
+		content = JSON.parse(content.toString('utf8'))
 	} catch (e) {
 		content = {}
 	}
@@ -1201,7 +1217,11 @@ Mod._writeCache = function (cache, file, data) {
 	}
 
 	content[file] = d
-	fs.writeFileSync(cache_file, JSON.stringify(content))
+	content = JSON.stringify(content)
+	if (allowCacheCompress == "gzip") {
+		content = Zlib.gzipSync(Buffer.from(content),{level:5}).reverse()
+	}
+	fs.writeFileSync(cache_file, content)
 }
 
 
@@ -1250,8 +1270,11 @@ Mod.compileSync = function (file, options) {
 			}*/
 
 			try {
-				content = fs.readFileSync(cached2, 'utf8')
-				content = JSON.parse(content)
+				content = fs.readFileSync(cached2)
+				if(allowCacheCompress == "gzip"){
+					content = Zlib.gunzipSync(content.reverse())
+				}
+				content = JSON.parse(content.toString('utf8'))
 				content = content[file]
 			} catch (e) {
 
@@ -1876,8 +1899,11 @@ var helper = {
 			read = true
 		}
 		if (read) {
-			cache = fs.readFileSync(cache_file, 'utf8')
-			cache = JSON.parse(cache)
+			cache = fs.readFileSync(cache_file)
+			if(allowCacheCompress == "gzip"){
+				cache = Zlib.gunzipSync(cache.reverse())
+			}
+			cache = JSON.parse(cache.toString('utf8'))
 			cache.mtime = (stat && stat.mtimeMs) || Date.now()
 			Mod._cachecontent[cache_file] = cache
 		}
@@ -2198,10 +2224,12 @@ var helper = {
 			}
 
 			def = deferred()
-			fs.readFile(file, options.encoding || 'utf8', function (err, data) {
+			fs.readFile(file, function (err, data) {
+
+
 				if (err) return def.reject(err)
 				def.resolve({
-					code: data
+					code: data.toString(options.encoding || 'utf8')
 				})
 			})
 			return def.promise

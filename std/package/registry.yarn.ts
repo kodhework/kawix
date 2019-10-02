@@ -216,14 +216,18 @@ export class Registry{
         }
 
 
-        
+        try{
+            // get all cache 
+            var mods = Path.join(out, "node_modules")
+            if(!fs.existsSync(mods))
+                throw Exception.create("Yarn install nothing").putCode("INSTALL_FAILED")
+            await this.getCacheFromFolder(mods)
+        }catch(e){
+            throw Exception.create("Failed to install packages: " + e.message).putCode("INSTALL_FAILED")
+        }
+
         await fs.writeFileAsync(verif, Date.now().toString())
-        // get all cache 
-        var mods = Path.join(out, "node_modules")
-        await this.getCacheFromFolder(mods)
         return await this.getModuleInfoFromFolder(Path.join(out, "node_modules", module))
-
-
     }
 }
 

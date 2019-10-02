@@ -64,22 +64,35 @@ export class Runtime{
 
         // decompress
         // .kwa is a compressed format
-        var folder = cachedata.file + ".folder"
-        var sym = cachedata.file + "-" + Path.basename(filename) + ".sym"
-        var ifolder = folder
-        var creations = 0
-        while (true) {
+        var folder = cachedata.file + ".pkg"
+        if (!fs.existsSync(folder)) {
+            fs.mkdirSync(folder)
+        }
+        
+        var origin= Path.join(folder, "origin")
+        if(!fs.existsSync(origin)){
+            await fs.writeFileAsync(origin, filename)
+        }
 
+        
+        var creations = 0
+        var sym = Path.join(folder, Path.basename(filename).substring(0, 60))        
+        var ifolder = Path.join(folder, creations.toString())
+        
+
+        // TRY REMOVE OLD FOLDERS? 
+        // maybe add this later 
+        
+        while (true) {
             if (await fs.existsAsync(ifolder)) {
                 try {
                     await _removedir(ifolder)
                     Id0++
                 }
                 catch (e) {
-                    ifolder = folder + "." + (creations)
                     creations++
+                    ifolder = Path.join(folder, creations.toString())
                 }
-
             } else {
                 break
             }
@@ -88,9 +101,7 @@ export class Runtime{
         folder = ifolder
         await fs.mkdirAsync(folder)
 
-
         //if (!options.fromremote) {
-
             let def = new async.Deferred<void>()
             let stout= tar.x({
                 C: folder
@@ -100,7 +111,6 @@ export class Runtime{
             stout.on("error", def.reject)
             stout.on("finish", def.resolve)
             await def.promise
-
         /*}
         else {
             throw Exception.create("Not implemented").putCode("NOT_IMPLEMENTED")
@@ -124,12 +134,20 @@ export class Runtime{
         // tar uncompressed ...
         var source = {
             "code": `
-		
+		var fs= require('fs')
 		exports.kawixPreload= async function(){
+            if(!fs.existsSync(${JSON.stringify(Path.join(folder))}))
+                throw new Error('Cannot load this module. Empty or invalid content')
 			try{
 				module.exports= await KModule.import(${JSON.stringify(Path.join(folder, 'mod'))})
 			}catch(e){
-				if(e.message.indexOf("Cannot resolve") < 0) throw e
+                
+                if(e.message.indexOf("Cannot resolve") < 0){throw e}
+                else {
+                    let files = fs.readdirSync(${JSON.stringify(Path.join(folder))})
+                    if(files.length == 0)
+                        throw e 
+                }
             }
             module.exports.kawixDynamic={
                 time: 10000
@@ -145,7 +163,6 @@ export class Runtime{
         return await helper.compile(filename, filename + ".js", source, options, cachedata)
 
     }
-
 
 
     static filenameToUrl(file) {
