@@ -10,7 +10,7 @@ import Url from 'url'
 import fs from './lib/_fs'
 import IPC from './ipc'
 import Exception from './exception' 
-
+import Registry from '../../std/package/registry.yarn'
 
 declare var kawix 
 
@@ -268,7 +268,14 @@ export class Gui extends EventEmitter {
 			//reg= new Registry()
 			//mod= await reg.resolve "electron@5.0.1"
 			//install= Path.join(mod.folder,"install.js")
-			dist = Path.join(Os.homedir(), "Kawix", "electron@5.0.1");
+			//dist = Path.join(Os.homedir(), "Kawix", "electron@5.0.1");
+
+
+			let reg = new Registry()
+			let mod = await reg.resolve("electron@6.0.11")
+			let dist = Path.join(mod.folder, "dist")
+
+
 			if (Os.platform() === "win32") {
 				dist = Path.join(dist, "electron.exe");
 			} else if (Os.platform() === "darwin") {

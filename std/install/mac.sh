@@ -10,38 +10,71 @@ if [[ ! -e "$_HOME" ]]; then
     mkdir "$_HOME"
 fi
 
-rm -f "$_HOME/kwcore.install.js"
-cp kwcore.install.js "$_HOME/kwcore.install.js"
+if [[ ! -e "$_HOME/bin" ]]; then
+    mkdir "$_HOME/bin"
+fi
+
+
+
+rm -f "$_HOME/bin/kwcore.install.js" 2> /dev/null
+
+
+
+cp kwcore.install.js "$_HOME/bin/kwcore.install.js"
 cd $_HOME
 
+
 # download kwcore.install.js
-curl -L "https://kwx.kodhe.com/x/std/install/kwcore.install.js" -o "$_HOME/kwcore.install.js"
+curl -L "https://kwx.kodhe.com/x/std/install/kwcore.install.js" -o "$_HOME/bin/kwcore.install.js"
 curl -L "https://kwx.kodhe.com/x/std/install/KawixCore.tar.gz" -o "$_HOME/KawixCore.tar.gz"
+curl -L "https://kwx.kodhe.com/x/std/install/mac.sh" -o "$_HOME/bin/kwcore.install.sh"
+
 
 # download nodejs 
-curl "https://raw.githubusercontent.com/voxsoftware/node-binaries/master/darwin/x64/10.15.3/node.gz" -o "$_HOME/node.gz"
-curl -L "https://kwx.kodhe.com/x/core/dist/kwcore.app.js" -o "$_HOME/kwcore.app.js"
-#wget "https://kwx.kodhe.com/x/std/install/dist/kwcore.app.js" -O "$_HOME/kwcore.app.js"
+curl "https://raw.githubusercontent.com/voxsoftware/kwcore-static/master/darwin/12.11.1.x64.tar.gz" -o "$_HOME/bin/node.tar.gz"
+curl -L "https://kwx.kodhe.com/x/core/dist/kwcore.app.js" -o "$_HOME/bin/kwcore.app.js"
+
 
 
 rm node 2> /dev/null
+rm "$_HOME/kwcore.install.js" 2> /dev/null
+rm "$_HOME/kwcore.app.js" 2> /dev/null
+rm "$_HOME/kwcore.start.js" 2> /dev/null
 
-gunzip node.gz 
-chmod +x node
 
-"$_HOME/node" "$_HOME/kwcore.app.js"
+cd "$_HOME/bin"
+rm node 2> /dev/null
+
+
+tar xvf node.tar.gz
+chmod +x x64/12.11.1/node
+ln -s ./x64/12.11.1/node node 
+rm node.tar.gz
+
+
+"$_HOME/bin/node" "$_HOME/bin/kwcore.app.js"
 
 # now symLink 
-rm -r "$_HOME/kwcore"
-curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/kwcore"
-curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/kawix"
-chmod +x "$_HOME/kwcore"
-chmod +x "$_HOME/kawix"
-echo "process.env.KWCORE_EXECUTE=1;require('./kwcore.app.js');" > "$_HOME/kwcore.start.js" 
+
+curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/bin/kwcore"
+curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/bin/kawix"
+chmod +x "$_HOME/bin/kwcore"
+chmod +x "$_HOME/bin/kawix"
+
+
+rm "$_HOME/kwcore" 2> /dev/null
+rm "$_HOME/kawix" 2> /dev/null
+
+cd "$_HOME"
+ln -sf bin/kwcore ./kwcore
+ln -sf bin/kawix ./kawix
+
+
+echo "process.env.KWCORE_EXECUTE=1;require('./kwcore.app.js');" > "$_HOME/bin/kwcore.start.js" 
 
 if [ "$EUID" -eq 0 ]
 then
-	ln -sf "$_HOME/kwcore" /usr/local/bin/kwcore
+	ln -sf "$_HOME/bin/kwcore" /usr/local/bin/kwcore
 fi
 
 
@@ -57,5 +90,5 @@ tar xvf "$_HOME/KawixCore.tar.gz"
 rm -f "$_HOME/KawixCore.tar.gz"
 
 
-cd "$_HOME"
+cd "$_HOME/bin"
 ./kwcore kwcore.install.js

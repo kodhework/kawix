@@ -8,6 +8,15 @@ var fs = require("fs")
 var WritePath = require("./write.path")
 var Kawix = require("../main")
 var offset = 0, pack, pack1, er, forceui
+
+
+if(process.argv[1] && (process.argv[1] == process.argv[2])){
+	var _arg = process.argv[1]
+	if(_arg.substring(_arg.length - 6) == "app.js")
+		process.argv.splice(1, 1)
+}
+
+
 var originalArgs = [].concat(process.argv.slice(1))
 var oargs = [].concat(process.argv)
 var args = [].concat(process.argv), cmd, cmdargs, pro, args1,
@@ -89,7 +98,9 @@ var enableUi = function (force, i) {
 			return !!a
 		})
 		args1.shift()
-		args1.shift()
+
+		// In new versions is not needed shift argument position 1
+		// args1.shift()
 
 		var name1 = Path.basename(process.execPath, ".exe")
 		if (name1.endsWith("w"))

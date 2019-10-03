@@ -1,7 +1,7 @@
 
 
 
-import '../src/mod.js'
+import '../src/mod'
 import Gui from '../src/gui'
 import Path from 'path'
 import Url from 'url'

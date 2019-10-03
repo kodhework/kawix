@@ -4,6 +4,7 @@ var fs= require("fs")
 var Child= require("child_process")
 
 var dir= __dirname 
+var dir2 = Path.normalize(Path.join(__dirname, ".."))
 
 
 var writePath = function (dir) {
@@ -36,7 +37,8 @@ var writePath = function (dir) {
 	}
 }
 
-writePath(__dirname)
+writePath(dir)
+writePath(dir2)
 
 process.stdout.write('c')
 console.info("")

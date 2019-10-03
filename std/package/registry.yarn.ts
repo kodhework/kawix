@@ -197,7 +197,7 @@ export class Registry{
         var def = new async.Deferred<void>()
         var err = []
         var received = function(data){
-            //process.stdout.write(data)
+            process.stdout.write(data)
             var str = data.toString()
             if(str.startsWith("error:")){
                 err.push(str)
