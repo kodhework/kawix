@@ -125,7 +125,7 @@ var InstallStd = function(){
 	}).then(function (pack) {
 		let file = "https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/stdlib.js"
 		console.log(" > Loading stdlib")
-		await Kawix.KModule.import(file).then(function () { }).catch(er)
+		Kawix.KModule.import(file).then(function () { }).catch(er)
 	}).catch(er)
 	return 
 }

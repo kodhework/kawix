@@ -95,11 +95,11 @@ cd kawix/gix
 Or use directly from URL import 
 
 ```javascript 
-import 'https://kwx.kodhe.com/x/v/0.7.2/std/dist/stdlib'
+import 'https://kwx.kodhe.com/x/v/0.7.3/std/dist/stdlib'
 
 // After import this, you can use all the module like any other 
 // local module using /virtual/@kawix/gix ....
-import 'https://kwx.kodhe.com/x/v/0.7.2/gix/dist/gix'
+import 'https://kwx.kodhe.com/x/v/0.7.3/gix/dist/gix'
 
 
 import {Electron} from '/virtual/@kawix/gix/src/electron'
@@ -110,6 +110,6 @@ import {Electron} from '/virtual/@kawix/gix/src/electron'
 You can start the example directly from your command without cloning: 
 
 ```bash 
-kwcore https://kwx.kodhe.com/x/v/0.7.2/gix/test/hello.fromweb
+kwcore https://kwx.kodhe.com/x/v/0.7.3/gix/test/hello.fromweb
 ```
 
