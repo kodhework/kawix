@@ -1,3 +1,8 @@
+## changes 0.7.2
+
+* Several bug fixes
+* Update Windows,Mac,GNU/Linux installers
+
 ## changes 0.6.0
 
 * Enable ```.kwa``` files as bundle executable
