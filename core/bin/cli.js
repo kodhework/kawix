@@ -195,7 +195,9 @@ for (var i = 2; i < args.length; i++) {
 		}).then(function (pack1) {
 
 			if (pack.version >= pack1.version) {
-				console.info("> kawix/core is up to date")
+				console.info(" > Core is up to date. Searching updates for stdlib")
+				InstallStd()
+				//console.info("> kawix/core is up to date")
 			} else {
 				console.info("> kawix/core is not up to date. Please wait while is updated")
 				Kawix.KModule.import("https://kwx.kodhe.com/x/core/dist/kwcore.app.js", {
