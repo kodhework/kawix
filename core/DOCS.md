@@ -10,7 +10,7 @@ Refer to [INSTALL.md](./INSTALL.md) for instalation instructions.
 ## Get started
 
 ```bash
-> kwcore "https://kwx.kodhe.com/x/v/0.7.2/core/example/http"
+> kwcore "https://kwx.kodhe.com/x/v/0.7.3/core/example/http"
 ```
 
 
@@ -44,7 +44,7 @@ Yes, you can import from urls or files, and inside *kawix required files* you ca
 ```javascript
 
 // require a url
-import httpServer from 'https://kwx.kodhe.com/x/v/0.7.2/core/example/http-async'
+import httpServer from 'https://kwx.kodhe.com/x/v/0.7.3/core/example/http-async'
 
 // require a file
 import test from './test'
@@ -61,7 +61,7 @@ You can run all scripts (including the examples here) using **kwcore** executabl
 var Kawix= require("@kawix/core")
 
 // Kawix.KModule.import returns a promise
-Kawix.KModule.import("https://kwx.kodhe.com/x/v/0.7.2/core/example/http", {
+Kawix.KModule.import("https://kwx.kodhe.com/x/v/0.7.3/core/example/http", {
     // allow find path relative to this module
     parent: module
 })
@@ -91,7 +91,7 @@ Create an **.js** with following content
 
 ```javascript
 
-import httpServer from 'https://kwx.kodhe.com/xv/0.7.2/core/example/http-async'
+import httpServer from 'https://kwx.kodhe.com/xv/0.7.3/core/example/http-async'
 
 var server= new httpServer()
 server.listen(8081)
@@ -297,10 +297,10 @@ console.log("Listening on 3000")
 Test yourself from your terminal
 
 ```bash
-kwcore "https://kwx.kodhe.com/x/v/0.7.2/core/example/npmrequire/express"
+kwcore "https://kwx.kodhe.com/x/v/0.7.3/core/example/npmrequire/express"
 
 # take care that this project is in active development, if fails use --force for invalidate cache
-kwcore --force "https://kwx.kodhe.com/x/v/0.7.2/core/example/npmrequire/express"
+kwcore --force "https://kwx.kodhe.com/x/v/0.7.3/core/example/npmrequire/express"
 ```
 
 
@@ -337,10 +337,10 @@ Create a *test.js* file
 
 ```javascript
 // register coffeescript loader
-import 'https://kwx.kodhe.com/x/v/0.7.2/std/coffeescript/register'
+import 'https://kwx.kodhe.com/x/v/0.7.3/std/coffeescript/register'
 
 // You can now import .coffee files
-import {start} from 'https://kwx.kodhe.com/x/v/0.7.2/std/coffeescript/example.coffee'
+import {start} from 'https://kwx.kodhe.com/x/v/0.7.3/std/coffeescript/example.coffee'
 
 start()
 ```
@@ -352,7 +352,7 @@ kwcore ./test
 ```
 
 
-There is available a loader also for *cson* at [https://kwx.kodhe.com/x/v/0.7.2/std/coffeescript/cson/register](https://kwx.kodhe.com/x/v/0.7.2/std/coffeescript/cson/register)
+There is available a loader also for *cson* at [https://kwx.kodhe.com/x/v/0.7.3/std/coffeescript/cson/register](https://kwx.kodhe.com/x/v/0.7.3/std/coffeescript/cson/register)
 
 This is only an example you can create your own loaders
 
@@ -365,8 +365,8 @@ Yes, in some cases you may prefer have a single .js file instead of loading an e
 * Create a *bundler.js* file
 
 ```javascript
-import Bundler from 'https://kwx.kodhe.com/x/v/0.7.2/std/package/bundle'
-import Registry from 'https://kwx.kodhe.com/x/v/0.7.2/std/package/registry'
+import Bundler from 'https://kwx.kodhe.com/x/v/0.7.3/std/package/bundle'
+import Registry from 'https://kwx.kodhe.com/x/v/0.7.3/std/package/registry'
 import Path from 'path'
 
 init()
