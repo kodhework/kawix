@@ -1,4 +1,3 @@
-//import Chokidar from './chokidar/mod.js'
 
 import {
 	EventEmitter
@@ -9,36 +8,136 @@ import Os from 'os'
 import Watcher from './watcher'
 import Url from 'url'
 
-export class Config extends EventEmitter {
+
+export class ConfigBase extends EventEmitter{
+
+	parseEnvironment(obj) {
+		var str
+		if (typeof obj === "object") {
+			// detect os
+			str = obj[Os.platform()]
+			if (!str) {
+				str = obj.default
+			}
+		} else {
+			str = obj
+		}
+		return str
+	}
+
+	resolvePath(path, parent) {
+		path = this.parseEnvironment(path)
+		if (path.startsWith("./") || path.startsWith("../")) {
+			path = Path.resolve(Path.dirname(parent.__defined), path)
+		}
+		return path
+	}
+
+	pathJoin(path1, path2) {
+		var pathr, uri
+		uri = Url.parse(path1)
+		if (uri.protocol === "file:") {
+			path1 = Url.fileURLToPath(path1)
+			pathr = Path.join(path1, path2)
+			return pathr
+		}
+		if (!uri.protocol) {
+			pathr = Path.join(path1, path2)
+			if (path1.startsWith("./")) {
+				return "./" + pathr
+			}
+		} else {
+			return Url.resolve(path1, path2)
+		}
+	}
+
+	get sites() {
+		return this.readCached().sites
+	}
+
+	get hosts() {
+		return this.readCached().sites
+	}
+
+	read(): any{
+
+	}
+
+	stop(): any{}
+
+
+	readCached():any{
+	}
+}
+
+
+
+export class ConfigRPA extends ConfigBase{
+	_parentConfig: any 
+	_config : any 
+	_on: any 
+
+
+	constructor(parentConfig: any){
+		super()
+		this._parentConfig = parentConfig
+
+
+		this._parentConfig.on("change", (config)=>{
+			this._config = config 
+			this.emit("change", config)
+		})
+		this._parentConfig.on("include", this.emit.bind(this, "include"))
+		this._parentConfig.on("include.remove", this.emit.bind(this, "include.remove"))
+
+	}
+
+
+
+
+	async read(){
+		return this._config = (await this._parentConfig.readCached())
+	}
+
+	readCached(){
+		return this._config 
+	}
+
+
+}
+
+export class Config extends ConfigBase {
 
 	private file: string 
 	private _read 
 	public _config 
 	public watcher: Watcher
-	private _readFromParent
+	
+
+	
+	//private _readFromParent
 	
 	constructor(file) {
 		super()
-		this.file = file;
+
+		this.file = file
 		if (file) {
-			this.start();
+			this.start()
 		}
 	}
 
-	async _load(){
 
-	}
-	
 	start() {
 		if (!this.file) {
-			// read from parent
-			this._readFromParent = true;
-			return;
+			return
 		}
-		this._read = setInterval(this._read1.bind(this), 10000);
-		this._read.unref();
-		return this._read1();
+
+
+		this._read = setInterval(this._read1.bind(this), 10000)
+		this._read.unref()
+		return this._read1()
 	}
+
 
 	stop() {
 		if (this._read) {
@@ -46,68 +145,28 @@ export class Config extends EventEmitter {
 		}
 	}
 
-	get sites() {
-		return this.readCached().sites;
-	}
 
-	get hosts() {
-		return this.readCached().sites;
-	}
-
+	
 	async _checkConfig(config) {
-		if ((!this._config && config) || (this._config.kawixDynamic !== config.kawixDynamic)) {
+		if ((!this._config && config) || (this._config.__time !== config.__time)) {
 			if (config.preload) {
-				await this._preload(config);
+				await this._preload(config)
 			}
 			if (config.include) {
-				await this._loadIncludes(config);
+				await this._loadIncludes(config)
 			}
-			this._config = config;
-			return this.emit("change", config);
+			this._config = config
+
+			// for rpa
+			config.rpa_plain = true 
+
+			return this.emit("change", config)
 		}
-		this._config = config;
-		return config;
+		this._config = config
+		return config
 	}
 
-	parseEnvironment(obj) {
-		var str;
-		if (typeof obj === "object") {
-			// detect os
-			str = obj[Os.platform()];
-			if (!str) {
-				str = obj.default;
-			}
-		} else {
-			str = obj;
-		}
-		return str;
-	}
-
-	resolvePath(path, parent) {
-		path = this.parseEnvironment(path);
-		if (path.startsWith("./") || path.startsWith("../")) {
-			path = Path.resolve(Path.dirname(parent.__defined), path);
-		}
-		return path;
-	}
-
-	pathJoin(path1, path2) {
-		var pathr, uri;
-		uri = Url.parse(path1);
-		if (uri.protocol === "file:") {
-			path1 = Url.fileURLToPath(path1);
-			pathr = Path.join(path1, path2);
-			return pathr;
-		}
-		if (!uri.protocol) {
-			pathr = Path.join(path1, path2);
-			if (path1.startsWith("./")) {
-				return "./" + pathr;
-			}
-		} else {
-			return Url.resolve(path1, path2);
-		}
-	}
+	
 
 	async _preload(config) {
 		var id, mod, ref, results;
@@ -161,18 +220,7 @@ export class Config extends EventEmitter {
 		}
 	}
 
-	/*
-	watcher = @watcher= Chokidar.watch toWatch,
-		ignored: /(^|[\/\\])\../
-		persistent: yes
-		awaitWriteFinish: yes
-
-	console.info("Watching:",toWatch)
-	watcher.on "add", (path)-> self._include(config, path)
-	watcher.on "change", (path)-> self._include(config, path)
-	watcher.on "unlink", (path)-> self._removeinclude(config, path)
-	watcher.on "error", (e)-> console.error "Watching error", e
-	*/
+	
 	sleep(time = 100) {
 		var def;
 		def = this.deferred();
@@ -192,33 +240,35 @@ export class Config extends EventEmitter {
 			} else if (newconfig["kawix.app"]) {
 				return (await this._include(config, Path.join(newconfig["kawix.app"].resolved, "app.config"), timeout));
 			}
-			this.emit("include", path);
-			this._removeinclude(config, path, false);
-			config._includes = config._includes || {};
-			config._includes[path] = true;
-			newconfig.__time = (ref = newconfig.__time) != null ? ref : Date.now();
+			this.emit("include", path)
+
+			this._removeinclude(config, path, false)
+			config._includes = config._includes || {}
+			config._includes[path] = true
+			newconfig.__time = (ref = newconfig.__time) != null ? ref : Date.now()
 			if (!newconfig.kawixDynamic) {
 				Object.defineProperty(newconfig, "kawixDynamic", {
 					enumerable: false,
 					value: {
 						time: 5000
 					}
-				});
+				})
 			}
-			return this._process(config, newconfig, path);
+			return this._process(config, newconfig, path)
+
 		} catch (error) {
-			e = error;
-			return console.error("Failed including: ", path, e);
+			e = error
+			return console.error("Failed including: ", path, e)
 		}
 	}
 
 	_removeinclude(config, path, _emit) {
-		var del, i, j, k, len, len1, offset, ref, ref1, results, site, todel;
+		var del, i, j, k, len, len1, offset, ref, ref1, results, site, todel
 		if (config._includes) {
-			delete config._includes[path];
+			delete config._includes[path]
 		}
 		if (_emit !== false) {
-			this.emit("include.remove", path);
+			this.emit("include.remove", path)
 		}
 		todel = [];
 		config.sites = (ref = config.sites) != null ? ref : [];
@@ -236,10 +286,13 @@ export class Config extends EventEmitter {
 			config.sites.splice(del - offset, 1);
 			results.push(offset++);
 		}
-		return results;
+		this.emit("change", config)
+		return results
 	}
 
 	_process(config, other, filename) {
+
+		
 		var edited, j, len, ref, site, sites;
 		config.sites = (ref = config.sites) != null ? ref : [];
 		edited = false;
@@ -261,9 +314,13 @@ export class Config extends EventEmitter {
 				this._loadSite(site);
 			}
 		}
+
+
 		if (edited) {
-			this._config = config;
-			this.emit("change", config);
+			//console.info("processing: ", config)
+			this._config = config
+			config.rpa_plain = true 
+			this.emit("change", config)
 		}
 		return config;
 	}
@@ -288,47 +345,93 @@ export class Config extends EventEmitter {
 	}
 
 	read() {
-		var def;
+		var def
 		if (this._config) {
-			return this._config;
+			return this._config
 		}
-		def = this.deferred();
-		this.once("change", def.resolve);
-		return def.promise;
+		def = this.deferred()
+		this.once("change", def.resolve)
+		return def.promise
 	}
 
 	readCached() {
-		return this._config;
+		this._config.rpa_plain = true 
+		return this._config
 	}
 
 	async _read1() {
-		var config, e, ref;
+		var config, e, ref
 		try {
+
+			
 			try {
-				config = (await import(this.file));
+				config = (await import(this.file))
 			} catch (error) {
-				e = error;
-				this.sleep(100);
-				config = (await import(this.file));
+				e = error
+				this.sleep(100)
+				config = (await import(this.file))
 			}
-			config = (ref = config.default) != null ? ref : config;
+
+			
 			if (!config.kawixDynamic) {
 				Object.defineProperty(config, "kawixDynamic", {
 					enumerable: false,
 					value: {}
-				});
+				})
 			}
-			config.__time = config.__time || Date.now();
+			config = (ref = config.default) != null ? ref : config
+
+			config.__time = config.__time || Date.now()
 			if (!config.__defined) {
-				config.__defined = this.file;
+				config.__defined = this.file
 			}
-			await this._checkConfig(config);
-			return config;
+			await this._checkConfig(config)
+			return config
+
 		} catch (error) {
-			e = error;
-			return console.error(" > [KAWIX] Failed reloading config in background: ", e);
+			e = error
+			return console.error(" > [KAWIX] Failed reloading config in background: ", e)
 		}
 	}
+
+	on(event: string | symbol, listener): this {
+		if (!listener) return
+
+
+		let self = this
+		if (listener.rpa_preserve) {
+
+
+
+			listener.rpa_preserve()
+			let generated
+
+			generated = async function () {
+				try {
+					return await listener.apply(this, arguments)
+				} catch (e) {
+
+					if (e.code == "RPA_DESTROYED" || e.code == "RPC_NOT_FOUND") {
+
+						// silent pass the error
+						// and remove listener
+						self.removeListener(event, generated)
+
+					} else {
+						throw e
+					}
+				}
+			}
+			this.addListener(event, generated)
+
+
+		} else {
+			this.addListener(event, listener)
+		}
+
+		return this
+	}
+
 
 }
 

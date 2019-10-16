@@ -68,13 +68,13 @@ export interface DhsServer extends EventEmitter{
 
     config?: Config
     workers?: any[]
-    channel?: IPC
+    channel?: any
     address?: AddressInfo
     http?: any
     started?: number
 
 
-    createIPC(id?: string): IPC 
+    createIPC?(id?: string): IPC 
     parseAddress(address: string): string 
     getDataPath(): Promise<string>
     getConfig(): any 

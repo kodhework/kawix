@@ -380,6 +380,11 @@ for (var i = 2; i < args.length; i++) {
 		}
 		forceuiFunc = function () {
 
+			if(process.env.KWCORE_ORIGINAL_EXECUTABLE){
+				cmd = process.env.KWCORE_ORIGINAL_EXECUTABLE
+				cmdargs.shift()
+			}
+
 			console.log("Executing: ", cmd, cmdargs)
 			pro = Child.spawn(cmd, cmdargs, {
 				cwd: process.cwd(),

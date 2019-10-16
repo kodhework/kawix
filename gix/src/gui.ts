@@ -126,10 +126,10 @@ export class Gui extends EventEmitter {
 
 	constructor(id: string) {
 		super();
-		this.id = id;
+		this.id = id
 		this.ipc = new IPC(this.id)
 		this.ipc.autoconnect = false 
-		this.api = {};
+		this.api = {}
 		this.store = {}
 	}
 
@@ -261,6 +261,8 @@ export class Gui extends EventEmitter {
 
 	async connect(): Promise<void> {
 		var Installer, def, dist, env, file1, file2, file3, id;
+
+		let startfile = ''
 		if (process.env.GIX_ELECTRON_PATH) {
 			dist = process.env.GIX_ELECTRON_PATH;
 		// require electron
@@ -272,10 +274,76 @@ export class Gui extends EventEmitter {
 
 
 			let reg = new Registry()
-			let mod = await reg.resolve("electron@6.0.11")
+			let wantedversion = "6.0.11"
+			let mod = await reg.resolve("electron@" + wantedversion)
 			let dist = Path.join(mod.folder, "dist")
 
+			let electronFolder = Path.join(Os.homedir(),"Kawix", "Electron-" + wantedversion)
+			let gelectronFolder = Path.join(Os.homedir(),"Kawix", "Electron")
+			let appFile = Path.join(Os.homedir(),"Kawix", "Electron", "app." + wantedversion)
+			let versioning = Path.join(Os.homedir(),"Kawix","gix.electron.version")
 
+			
+			if(!fs.existsSync(gelectronFolder)){
+				await fs.mkdirAsync(gelectronFolder)
+			}
+
+			if(process.env.KWCORE_APP_ID){
+				gelectronFolder = Path.join(gelectronFolder, process.env.KWCORE_APP_ID)				
+				if(!fs.existsSync(gelectronFolder)){
+					await fs.mkdirAsync(gelectronFolder)
+				}
+
+
+				versioning = Path.join(gelectronFolder,"version")
+				let currentVer = ""
+				if(await fs.existsAsync(versioning)){
+					currentVer = await fs.readFileAsync(versioning, 'utf8')
+					currentVer = currentVer.trim()
+				}
+
+				if(currentVer<wantedversion){
+					let files = await fs.readdirAsync(gelectronFolder)
+					for(let i=0;i<files.length;i++){
+						await fs.unlinkAsync(Path.join(gelectronFolder, files[i]))
+					}
+
+					files = await fs.readdirAsync(Path.join(mod.folder,"dist"))
+					for(let i=0;i<files.length;i++){
+						if(files[i] == "electron"){
+							let outf = Path.join(gelectronFolder, files[i])
+							if(!fs.existsSync(appFile)){
+								await fs.copyFileAsync(Path.join(mod.folder,"dist", files[i]), appFile)	
+							}
+							await fs.linkAsync(appFile, outf)
+							await fs.chmodAsync(outf, "755")
+						}else{
+							await fs.symlinkAsync(Path.join(mod.folder,"dist", files[i]), Path.join(gelectronFolder, files[i]))
+						}
+					}
+					await fs.writeFileAsync(versioning, wantedversion)
+				}
+
+				dist = gelectronFolder
+				startfile = Path.join(gelectronFolder, "start.js")
+				this.startfile = startfile
+				
+
+			}
+			
+				
+
+			/*
+			if(!fs.existsSync(electronFolder)){
+				if(Os.platform() == "win32")
+					await fs.symlinkAsync(mod.folder, electronFolder,"junction")
+				else 
+					await fs.symlinkAsync(mod.folder, electronFolder)
+			}*/
+
+
+
+			
 			if (Os.platform() === "win32") {
 				dist = Path.join(dist, "electron.exe");
 			} else if (Os.platform() === "darwin") {
@@ -283,22 +351,45 @@ export class Gui extends EventEmitter {
 			} else {
 				dist = Path.join(dist, "electron");
 			}
-			console.info("DIST:", dist);
-			if (!(await this._checkFileExists(dist))) {
-				Installer = (await import("../electron-install"));
-				await Installer.install();
+
+			/*
+			if(process.env.KWCORE_APP_ID){
+
+				// create a hard link of electron
+				if(Os.platform() == "linux"){
+
+					// this is for allow customizable desktop files 
+					// for correct iconing on systems like plank for example
+					let newdist = Path.join(Path.dirname(dist), "electron-" + process.env.KWCORE_APP_ID)
+					if(!fs.existsSync(newdist)){
+						await fs.linkAsync(dist, newdist)
+						await fs.chmodAsync(newdist, "755")
+					}
+					dist = newdist
+					
+				}
+
+			}
+			*/
+			
+			//if (!(await this._checkFileExists(dist))) {
+				//Installer = (await import("../electron-install"));
+				//await Installer.install();
 				
 				
 				if (!(await this._checkFileExists(dist))) {
 					throw Exception.create("Failed to install electron").putCode("LOAD_FAILED");
 				}
-			}
+			//}
 			this.electron = {
 				dist: dist
 			};
 		} else {
-			dist = this.electron.dist;
+			dist = this.electron.dist
+			startfile = this.startfile
 		}
+
+
 		// open electron
 		file1 = Path.join(__dirname, "_electron_boot.js");
 		file3 = Path.join(__dirname, "start");
@@ -307,12 +398,67 @@ export class Gui extends EventEmitter {
 			file1 = (await this._createBootFile());
 		}
 		file2 = kawix.__file;
-		id = this.id;
+		id = this.id
+
+		let targs = [file1, file2, id, file3]
+
+		if(startfile){
+
+			let zargs = {name:'',args:[]}
+			if(process.env.KWCORE_ORIGINAL_EXECUTABLE){
+				zargs.name = process.env.KWCORE_ORIGINAL_EXECUTABLE
+				zargs.args = [process.argv[2]]
+			}else{
+				zargs.name = process.execPath
+				zargs.args = process.argv.slice(1,2)
+			}
+			let content = `
+			if(process.env.GIX_START == 1){
+				console.log('executing here')
+				require(${JSON.stringify(kawix.__file)})	
+				kawix.KModule.injectImport()
+				var start = ${JSON.stringify(file3)}
+				var id = ${JSON.stringify(id)}
+
+				kawix.KModule.import(start).then(function (response) {
+					response.default(id).then(function () {
+					}).catch(function (e) {
+						console.error("Failed execute: ", e)
+						process.exit(10)
+					})
+				}).catch(function (e) {
+					console.error("Failed execute: ", e)
+					process.exit(10)
+				})
+			}		
+			else{
+				var Child = require("child_process")
+				var child = Child.spawn(${JSON.stringify(zargs.name)}, ${JSON.stringify(zargs.args)}, {
+					detached: true,
+					stdio:'inherit',
+					env: Object.assign({},process.env,{
+						GIX_DONT_WRITE_STARTING: 1,
+						KWCORE_APP_ID: ${JSON.stringify(process.env.KWCORE_APP_ID)}
+					})
+				})
+				child.on("error",function(e){console.error("ERROR:",e)})
+				child.unref()
+				setTimeout(process.exit.bind(process),1000)
+			}
+			`
+			if(process.env.GIX_DONT_WRITE_STARTING != "1")
+				await fs.writeFileAsync(startfile, content)
+			targs = [startfile]
+		}
+		
+
+		
 		def = this.deferred();
 		env = Object.assign({}, process.env);
 		delete env.ELECTRON_RUN_AS_NODE;
 		env.GIX_START = 1;
-		this._p = Child.spawn(dist, [file1, file2, id, file3], {
+		console.info(targs)
+		this._p = Child.spawn(dist, targs, {
 			env: env
 		});
 		this._p.on("error", def.reject);
