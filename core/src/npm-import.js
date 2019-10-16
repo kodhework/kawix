@@ -4,10 +4,18 @@ var Registry
 
 var load= async function(){
     try{
-        var pack = require("../package.json")
+        var pack1 = require("../package.json")
         Registry= await KModule.import('/virtual/@kawix/std/package/registry.yarn')
         Registry= Registry.default || Registry
     }catch(e){
+
+        /* try determine the latest version */
+        var pack = await KModule.import("https://kwx.kodhe.com/x/std/package.json", {
+            force: true 
+        })
+        if(pack.version < pack1.version) pack.version = pack1.version
+
+        
         Registry= await KModule.import('https://kwx.kodhe.com/x/v/'+pack.version+'/std/package/registry.yarn')
         Registry= Registry.default || Registry
     }

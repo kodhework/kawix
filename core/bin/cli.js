@@ -115,6 +115,22 @@ if (process.env.KWCORE_FORCE_UI) {
 	delete process.env.KWCORE_FORCE_UI; enableUi(true)
 }
 
+
+var InstallStd = function(){
+	var er = function (e) {
+		console.error(" > Failed loading stdlib")
+	}
+	Kawix.KModule.import("https://kwx.kodhe.com/x/std/package.json", {
+		force: true
+	}).then(function (pack) {
+		let file = "https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/stdlib.js"
+		console.log(" > Loading stdlib")
+		await Kawix.KModule.import(file).then(function () { }).catch(er)
+	}).catch(er)
+	return 
+}
+
+
 for (var i = 2; i < args.length; i++) {
 	arg = args[i]
 	if (!arg)
@@ -130,8 +146,8 @@ for (var i = 2; i < args.length; i++) {
 		}
 	}
 	else if (arg == "--install-std") {
-		arg = args.push("https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/stdlib.js")
-		console.log(" > Loading STDLIB")
+		
+		return InstallStd()
 	}
 
 	else if (arg == "--map") {
@@ -185,8 +201,11 @@ for (var i = 2; i < args.length; i++) {
 				Kawix.KModule.import("https://kwx.kodhe.com/x/core/dist/kwcore.app.js", {
 					force: true
 				}).then(function (a) {
-					if (a)
-						console.info("> kawix/core was updated correctly")
+
+					if(a){
+						InstallStd()
+					}	
+
 				}).catch(er)
 			}
 

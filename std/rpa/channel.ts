@@ -17,11 +17,7 @@ interface RPATarget{
 }
 
 
-
-
 export class Channel{
-
-
     cid: string 
     service: any 
     client: any 
@@ -40,6 +36,13 @@ export class Channel{
             rpa_plain: obj
         }
     }
+
+    proxy(obj){
+        return {
+            rpa_proxied: obj
+        }
+    }
+
 
     getStoreForSocket(socket: Socket, create?: boolean){
         if(create){
@@ -63,6 +66,7 @@ export class Channel{
             //console.log("RPA Command received: ", command)
             let cmd = JSON.parse(command)
             if(!cmd) return
+
             if(cmd.answer){
 
 
@@ -79,6 +83,7 @@ export class Channel{
 
                             delete tasks[cmd.taskid]
                             if(cmd.result.error){
+                                
                                 let e = cmd.result.error 
                                 let ex = Exception.create(e.message).putCode(e.code || "RPA_ERROR")
                                 for (let id in e) {
@@ -92,10 +97,6 @@ export class Channel{
                         }
                     }
 
-
-                    
-
-
                 }
 
             }
@@ -104,7 +105,7 @@ export class Channel{
             }
             else{
 
-
+                
                 try{
                     let target = this.getTarget(cmd.target)
                     if(cmd.props){
@@ -126,7 +127,7 @@ export class Channel{
 
                     let result, args 
 
-
+                    
                     if(typeof method == "function"){
                         // execute 
                         args = this.getArguments(socket, cmd.arguments)
@@ -143,6 +144,8 @@ export class Channel{
                                 })
                             }
                         }catch(e){
+
+                            
 
                             if (cmd.taskid != -1) {
                                 let ex = {
@@ -187,8 +190,7 @@ export class Channel{
                         if (cmd.taskid != -1) {
                             args = this.getArguments(socket, cmd.arguments)
                             if(args.length == 1){
-                                target[cmd.method] = args[0]
-                                
+                                target[cmd.method] = args[0]                                
                                 this.sendAnswer(socket, cmd, {
                                     data: true
                                 })
@@ -202,6 +204,7 @@ export class Channel{
 
                     }
                 }catch(e){
+
                     if (cmd.taskid != -1) {
                         let ex = {
                             message: e.message,
@@ -323,7 +326,6 @@ export class Channel{
             socket.write(JSON.stringify(command) + "\n")
             return 
         }
-
         
         let taskid = this._taskid++
         command.taskid = taskid 
@@ -343,105 +345,121 @@ export class Channel{
     convertArgument(arg: any, socket?: Socket) {
         return this._convertArgument(arg, socket)
     }
-    _convertArgument(arg:any, socket?: Socket, references?: Array<string>){
-        let rpa_id 
 
-        if(typeof arg == "function"){
-            if(!arg.rpa_wrap){
-                arg.rpa_wrap = {
-                    rpa_run: arg
-                }
-            }
-            if(!rpa_id) rpa_id = this.makeRef(arg.rpa_wrap, null, socket)
-            arg = {
-                rpa_id: rpa_id,
-                rpa_from: true,
-                rpa_function: true
-            }
+    _convertArgumentMixed(arg: any, socket?: Socket, noproxy?:Boolean, circular?: any, references?: string[]) {
 
-            if(references) references.push(rpa_id)
+        // serialize the primitive values, proxy the object values 
+        let main = false 
+        if(!circular){
+            circular = new Map()
+            main = true 
         }
-        else if (arg && typeof arg == "object") {
 
-            if (arg.rpa_id && arg.rpa_from) {
-                arg = {
-                    rpa_id: arg.rpa_id
+        if(arg){
+            if(typeof arg == "object"){
+                let props = Object.getOwnPropertyDescriptors(arg)
+                let narg:any = {}
+                let isarray = arg instanceof Array
+                let isarray_proto = Object.getPrototypeOf(arg) == Array.prototype
+                if(isarray_proto && main && !references){
+                    references = []
                 }
-            } else {
-                let rpa = arg.rpa_plain
-                if (!rpa) {
-
-
-                    // Cuando es array lo manda como objeto plano
-                    // sin hacer un proxy 
-
-                    if (!(arg instanceof Array)) {
-                        if (!rpa_id)
-                            rpa_id = this.makeRef(arg, null, socket)                                      
-                        let narg = this.needRef(arg, socket)
-                        arg = Object.assign({}, narg, {
-                            rpa_id: rpa_id,
-                            rpa_from: true
-                        })
-                        if (references) references.push(rpa_id)
+                for(let i in props){
+                    let prop = props[i]
+                    if(prop.enumerable && !prop.get){
+                        // solo lo usa si no es un getter
+                        if(circular.has(prop.value)){
+                            //narg[i] = "~(Circular)"
+                        }
+                        else{
+                            circular.set(prop.value, true)
+                            narg[i] = this._convertArgumentMixed(prop.value, socket, isarray ? false: true, circular, references)
+                        }
                     }
-                    else{
-                    
-                        let narg = {
-                            rpa_references: null, 
-                            rpa_array: true,
-                            length: arg.length
-                        }
-                        if(!references){
-                            narg.rpa_references = references = []
-                        }
-                        for(let i=0;i<arg.length;i++){
-                            narg[i] = this._convertArgument(arg[i], socket, references)
-                        }
-                        arg = narg
-
-
+                }
+                if(isarray){
+                    narg.rpa_array = true 
+                    narg.length = arg.length
+                    if(main){
+                        narg.rpa_references= references
+                        console.info("references: ", references)
                     }
-                    
+                }
+                if(!noproxy && !isarray_proto){
+                    arg = Object.assign(narg, {
+                        rpa_id: this.makeRef(arg, null, socket),
+                        rpa_from: true 
+                    })
+                    if(references){
+                        references.push(arg.rpa_id)
+                    }
                 }else{
-                    if (typeof rpa == "object") arg = arg.rpa_plain
+                    arg = narg 
                 }
+            } 
+            else if(typeof arg == "function"){
+                return null 
             }
         }
         return arg
     }
 
-    needRef(arg, socket){
-        let good = false 
-        let nobj = {}
-        for(let id in arg){
-            good = false 
-            if (!arg[id]) {
-                good = true
-            }
-            else if (typeof arg[id] != "function") {
-                if (typeof arg[id] != "object"
-                    || Object.getPrototypeOf(arg[id]) == Object.prototype
-                    || Object.getPrototypeOf(arg[id]) == Array.prototype) {
-                    good = true
+    _convertArgument(arg: any, socket?: Socket){
+        let rpa_id = ''
+
+        if (typeof arg == "function") {
+            if (!arg.rpa_wrap) {
+                arg.rpa_wrap = {
+                    rpa_run: arg
                 }
             }
-
-            if(good){
-                if(typeof arg[id] == "object" && arg[id]){
-                    nobj[id] = this.needRef(arg[id], socket)
-                }else{
-                    nobj[id] = arg[id]
-                }
+            if (!rpa_id) rpa_id = this.makeRef(arg.rpa_wrap, null, socket)
+            arg = {
+                rpa_id: rpa_id,
+                rpa_from: true,
+                rpa_function: true
             }
+            return arg
+        }
 
-            if(arg instanceof Array){
-                nobj.rpa_array = true 
-                nobj.length = arg.length
+        if(arg){
+            if(typeof arg == "object"){
+                if(arg.rpa_id && arg.rpa_from){
+                    return {
+                        rpa_id: arg.rpa_id
+                    }
+                }
+
+                if(typeof arg.rpa_plain == "object"){
+                    return arg.rpa_plain
+                }
+                if(arg.rpa_plain) return arg 
+
+
+                if(typeof arg.rpa_proxied == "object"){
+                    /* ONLY PROXIED */
+                    rpa_id = this.makeRef(arg.rpa_wrap, null, socket)
+                    arg = {
+                        rpa_id: rpa_id,
+                        rpa_from: true,
+                    }
+                    return arg
+                }
+
+
+                // mixed? 
+                if (arg.rpa_mixed) {
+                    return this._convertArgumentMixed(arg, socket)
+                }
+
+                // by default mixed 
+                return this._convertArgumentMixed(arg, socket)
             }
         }
-        return nobj 
+        return arg 
     }
+
+
 
     convertArguments(args: Array<any>){
 

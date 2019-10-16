@@ -2,6 +2,7 @@
 
 * Several bug fixes
 * Update Windows,Mac,GNU/Linux installers
+* Improving some things in caching
 
 ## changes 0.6.0
 

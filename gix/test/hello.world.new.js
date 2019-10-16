@@ -6,7 +6,9 @@ init()
 async function init() {
 	try {
 
+
 		var ui = new Electron("hello.world.example")
+		
 		if (! await ui.requestSingleInstanceLock()){
 			// only attach ...
 			await ui.attachInstance()
@@ -18,8 +20,9 @@ async function init() {
 		}
 
 		
-		
 
+
+		
 		var thisPath= __filename , url
 		if(thisPath.startsWith("http:") || thisPath.startsWith("https:")){
 			url= Url.resolve(thisPath, '../html/hello.world.html')
@@ -34,18 +37,20 @@ async function init() {
 				height: 400,
 				webPreferences: {
 					nodeIntegration: true
-				},
-				rpa_plain: true
+				}
 			}
 		}
 
 
-		let mainWindow = await ui.electron.BrowserWindow.construct(params.args)
+		let mainWindow = await ui.electron.BrowserWindow.construct(ui.channel.plain(params.args))
 		await mainWindow.loadURL(params.url)
 		await mainWindow.show()		
+
+		
 		await ui.bridge.addEventListener(mainWindow, "minimize", function () {
 			console.info("Window minimized")
 		})
+		
 		await ui.bridge.addEventListener(mainWindow, "closed", function () {
 			console.info("Window closed")
 			// close this 

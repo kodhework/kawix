@@ -29,7 +29,7 @@ export class ChannelHandler {
             target[prop] = value
         }
         else{
-            throw Exception.create("Set is not valid through RPA").putCode("RPA_INVALID_OPERATION")
+            throw Exception.create("Seting " + prop + " is not valid through RPA").putCode("RPA_INVALID_OPERATION")
         }
 
 

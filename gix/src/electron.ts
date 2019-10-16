@@ -70,6 +70,8 @@ export class Electron extends EventEmitter {
     }
 
     _sendSecondInstance(argv: string, cwd: string){
+
+        
         if(this.main){
             try{
                 let args = JSON.parse(argv) 
@@ -111,7 +113,7 @@ export class Electron extends EventEmitter {
             let wantedversion = "6.0.11"
             let mod = await reg.resolve("electron@" + wantedversion)
             dist = Path.join(mod.folder, "dist")
-
+         
 
             let electronFolder = Path.join(Os.homedir(), "Kawix", "Electron-" + wantedversion)
             let gelectronFolder = Path.join(Os.homedir(), "Kawix", "Electron")
@@ -251,6 +253,7 @@ export class Electron extends EventEmitter {
         delete env.ELECTRON_RUN_AS_NODE
 
         let def= new async.Deferred<void>()
+        
         this._p = Child.spawn(dist, targs, {
             env: env
         });
@@ -278,6 +281,7 @@ export class Electron extends EventEmitter {
         })
         await def.promise
 
+        
 
         // connect to electron 
         this.channel = await RPAChannel.connectLocal(this.id)
