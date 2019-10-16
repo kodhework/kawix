@@ -4,6 +4,13 @@ database:
 	"core":
 		"repo": "https://github.com/voxsoftware/kawix/tree/master/core"
 		"url": "https://raw.githubusercontent.com/kodhework/kawix/${version}/core/${file}"
+		"extensions": [
+			".js"
+			".ts"
+			".coffee"
+			".json"
+			".cson"			
+		]
 
 	# dhs library
 	"dhs":
@@ -12,10 +19,10 @@ database:
 		# find the best suitable extension
 		"extensions": [
 			".js"
+			".ts"
 			".coffee"
 			".json"
-			".cson"
-			".ts"
+			".cson"			
 		]
 	
 	# more modules
@@ -25,10 +32,10 @@ database:
 		# find the best suitable extension
 		"extensions": [
 			".js"
+			".ts"
 			".coffee"
 			".json"
-			".cson"
-			".ts"
+			".cson"			
 		]
 
 	# standar library
@@ -37,10 +44,11 @@ database:
 		"url": "https://raw.githubusercontent.com/kodhework/kawix/${version}/std/${file}"
 		"extensions": [
 			".js"
+			".ts"
 			".coffee"
 			".json"
 			".cson"
-			".ts"
+			
 		]
 
 	# kivi template library
@@ -50,10 +58,10 @@ database:
 		# find the best suitable extension
 		"extensions": [
 			".js"
+			".ts"
 			".coffee"
 			".json"
-			".cson"
-			".ts"
+			".cson"			
 		]
 
 
@@ -64,8 +72,8 @@ database:
 		# find the best suitable extension
 		"extensions": [
 			".js"
+			".ts"
 			".coffee"
 			".json"
-			".cson"
-			".ts"
+			".cson"			
 		]

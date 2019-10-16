@@ -1,7 +1,3 @@
-
-
-
-import '../src/mod'
 import {Electron} from '../src/electron'
 import Path from 'path'
 import Url from 'url'
