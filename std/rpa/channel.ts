@@ -398,7 +398,7 @@ export class Channel{
                 }
             } 
             else if(typeof arg == "function"){
-                return null 
+                return undefined 
             }
         }
         return arg
