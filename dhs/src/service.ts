@@ -152,8 +152,8 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			delete this.config
 			
 			await this.attachToMaster()
-
-			this.config = new ConfigRPA(await this.channel.client.config())
+			let tclient = await this.channel.client.config()
+			this.config = new ConfigRPA(tclient)
 			await this.config.read()
 
 			//this.config._load()

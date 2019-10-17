@@ -514,7 +514,7 @@ export class Channel{
 
     makeRef(object: any, id?: string, socket?: Socket){
         if(this._map.has(object)){
-            let id = this._map.get(object)
+            id = this._map.get(object)
             let refered= this._obs[id ]
             refered.refs++
             
