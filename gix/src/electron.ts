@@ -18,15 +18,15 @@ import {EventEmitter} from 'events'
 
 export class Electron extends EventEmitter {
 
-    electron: any 
-    channel: RPAChannel 
-    bridge: any 
+    electron: any
+    channel: RPAChannel
+    bridge: any
 
-    _electron: any 
-    id: string 
+    _electron: any
+    id: string
     _p: ChildProcess
 
-    main: any 
+    main: any
 
 
     constructor(id){
@@ -48,7 +48,7 @@ export class Electron extends EventEmitter {
 
 
     async requestSingleInstanceLock(){
-        
+
         try{
             let channel = await RPAChannel.connectLocal(this.id)
             try{
@@ -57,25 +57,25 @@ export class Electron extends EventEmitter {
             }catch(e){
                 console.error("ERROR sending data of second instance. ", e)
             }
-            channel.close() 
-            return false 
+            channel.close()
+            return false
         }catch(e){
         }
 
         await this.startInstance()
         await this.bridge.main(this)
-        return true 
+        return true
 
 
     }
 
     _sendSecondInstance(argv: string, cwd: string){
 
-        
+
         if(this.main){
             try{
-                let args = JSON.parse(argv) 
-                args.rpa_plain = true 
+                let args = JSON.parse(argv)
+                args.rpa_plain = true
                 this.main.emit("second-instance", args, cwd)
             }catch(e){}
         }
@@ -83,15 +83,19 @@ export class Electron extends EventEmitter {
 
 
     async attachInstance(){
-        
+
         this.channel = await RPAChannel.connectLocal(this.id)
         this.bridge = this.channel.client
         this.electron = await this.bridge.electron()
 
     }
 
+    dynamicInvoke(code: string, ...args){
+        let dyn = Function(code)
+        return dyn(this,  ...args)
+    }
 
-    
+
 
     async startInstance(){
 
@@ -101,19 +105,19 @@ export class Electron extends EventEmitter {
             dist = process.env.GIX_ELECTRON_PATH
         }
         else if(this._electron){
-            
-            dist = this._electron.dist 
+
+            dist = this._electron.dist
             startfile = this._electron.startfile
         }
         else{
 
-            
-            
+
+
             let reg = new Registry()
             let wantedversion = "6.0.11"
             let mod = await reg.resolve("electron@" + wantedversion)
             dist = Path.join(mod.folder, "dist")
-         
+
 
             let electronFolder = Path.join(Os.homedir(), "Kawix", "Electron-" + wantedversion)
             let gelectronFolder = Path.join(Os.homedir(), "Kawix", "Electron")
@@ -165,7 +169,7 @@ export class Electron extends EventEmitter {
 
             }
 
-            
+
 
             if (Os.platform() === "win32") {
                 dist = Path.join(dist, "electron.exe");
@@ -194,7 +198,7 @@ export class Electron extends EventEmitter {
         let mainkawix = kawix.__file
         let targs = [file1, mainkawix, this.id, file3]
         if (startfile) {
-            
+
 
             let zargs = { name: '', args: [] }
             if (process.env.KWCORE_ORIGINAL_EXECUTABLE) {
@@ -207,7 +211,7 @@ export class Electron extends EventEmitter {
             let content = `
 			if(process.env.GIX_START == 1){
 				console.log('executing here')
-				require(${JSON.stringify(kawix.__file)})	
+				require(${JSON.stringify(kawix.__file)})
 				kawix.KModule.injectImport()
 				var start = ${JSON.stringify(file3)}
 				var id = ${JSON.stringify(this.id)}
@@ -222,7 +226,7 @@ export class Electron extends EventEmitter {
 					console.error("Failed execute: ", e)
 					process.exit(10)
 				})
-			}		
+			}
 			else{
 				var Child = require("child_process")
 				var child = Child.spawn(${JSON.stringify(zargs.name)}, ${JSON.stringify(zargs.args)}, {
@@ -253,7 +257,7 @@ export class Electron extends EventEmitter {
         delete env.ELECTRON_RUN_AS_NODE
 
         let def= new async.Deferred<void>()
-        
+
         this._p = Child.spawn(dist, targs, {
             env: env
         });
@@ -261,7 +265,7 @@ export class Electron extends EventEmitter {
         this._p.on("exit", () => {
             if (def) {
                 def.reject(Exception.create("Failed start electron"))
-                def = null 
+                def = null
             }
         })
         this._p.stdout.on("data", function (d) {
@@ -269,7 +273,7 @@ export class Electron extends EventEmitter {
             try {
                 if (def && d.toString().indexOf("ELECTRON PROCESS LISTENING") >= 0) {
                     def.resolve()
-                    def = null 
+                    def = null
                 }else{
                     process.stdout.write(" [GIX Electron]: ")
                     process.stdout.write(d)
@@ -281,13 +285,13 @@ export class Electron extends EventEmitter {
         })
         await def.promise
 
-        
 
-        // connect to electron 
+
+        // connect to electron
         this.channel = await RPAChannel.connectLocal(this.id)
-        this.bridge = this.channel.client 
+        this.bridge = this.channel.client
         this.electron =  await this.bridge.electron()
-        return this 
+        return this
 
     }
 

@@ -1,5 +1,5 @@
 
-// 2019-10-09 
+// 2019-10-09
 // New module for IPC, advanced and more stable
 import {Channel} from '../../std/rpa/channel'
 
@@ -27,7 +27,7 @@ import {
 import { AddressInfo } from 'net'
 import * as Types from './typings'
 
-declare var kawix 
+declare var kawix
 
 
 export class Service extends EventEmitter implements Types.DhsServer{
@@ -37,34 +37,34 @@ export class Service extends EventEmitter implements Types.DhsServer{
 	__id: number
 	_router
 	_cronstop: any
-	
-	_contexts: any
-	_concurrent: number 
-	__time: number 
-	__reloadtimeout: any 
 
-	__ks0: any 
-	__ks1: any 
-	__ks2: any 
-	
+	_contexts: any
+	_concurrent: number
+	__time: number
+	__reloadtimeout: any
+
+	__ks0: any
+	__ks1: any
+	__ks2: any
+
 
 	ipcmodule = 'RPA'
 
 
-	static current: Service 
-	config: ConfigBase 
+	static current: Service
+	config: ConfigBase
 	workers: any[]
-	
+
 	channel: Channel
-	
+
 	address: AddressInfo
-	http: any 
-	started: number 
+	http: any
+	started: number
 
 	constructor(config1) {
 		super()
 		Service.current = this
-		
+
 		this.config = config1
 		this._crons = {}
 		this._urlconns = {}
@@ -98,7 +98,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		return value
 	}
 
-	
+
 	async getDataPath(): Promise<string> {
 		var path
 		path = Path.join(Os.homedir(), ".kawi")
@@ -123,34 +123,39 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			if(worker.process.pid == pid){
 
 				service.rpa_preserve()
-				worker.service = service 
-				
+				worker.service = service
+
 
 			}
 		}
 	}
 
 	async attachToMaster(){
-		this.channel = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID)		
+		this.channel = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID)
 		this.channel.client.setWorkerService(process.pid, this)
 	}
 
 	async start() {
 		var config, e
-		if (Cluster.isMaster) {
 
+		if (Cluster.isMaster) {
 			config = (await this.config.read())
-			//this.config.on("change", this._config_to_workers.bind(this))
-			this.channel = await Channel.registerLocal("DHS." + config.id, this)
-			process.env.KAWIX_CHANNEL_ID = "DHS." + config.id
-			return (await this._cluster())
+            if(config.singleprocess){
+				return await this._start()
+			}
+			else{
+    			//this.config.on("change", this._config_to_workers.bind(this))
+    			this.channel = await Channel.registerLocal("DHS." + config.id, this)
+    			process.env.KAWIX_CHANNEL_ID = "DHS." + config.id
+    			return (await this._cluster())
+            }
 
 		} else {
 
 
 			this.config.stop()
 			delete this.config
-			
+
 			await this.attachToMaster()
 			let tclient = await this.channel.client.config()
 			this.config = new ConfigRPA(tclient)
@@ -203,10 +208,10 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		return results;
 	}
 
-	
-	
 
-	
+
+
+
 
 	_fork(cluster) {
 		var env, ref, self, u, w
@@ -223,7 +228,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		self = this
 
 
-		
+
 		w.on("error", function(e) {
 			return console.error(" > [kawix/dhs] Error in worker: ", w.pid, e);
 		});
@@ -246,11 +251,11 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			console.info("FROM WORKER STDERR:", d)
 			self.emit("worker.stderr", w, d)
 		*/
-		
+
 		return w;
 	}
 
-	
+
 	async closeAndExit(timeout = 2 * 3600) {
 		var e, num
 		num = 0
@@ -273,12 +278,12 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		}
 	}
 
-	
+
 	// reload workers gracefull, when main configuration changed
 	async reloadCluster() {
 
 		// This need be change, to fully use the new RPA
-		
+
 	}
 
 
@@ -288,7 +293,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		config = this.config.readCached()
 
 
-		addr = process.env.ADDRESS || config.address
+		addr =  config.address || process.env.DHS_ADDRESS || process.env.ADDRESS 
 		if (!addr) {
 			return Exception.create("Listen address no specified").putCode("INVALID_ADDR").raise()
 		}
@@ -298,31 +303,31 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		if (config.maxqueuecount) {
 			this.http.maxqueuecount = config.maxqueuecount
 		}
-		
+
 		def = new async.Deferred<any>()
 		this.address = (await this.http.listen(addr))
 		console.info(" > [kawix/dhs] Listening on: ", this.address)
 		if (Cluster.isMaster) {
 			this.emit("listen", this.address)
 		} else {
-			
 
-			this.address.rpa_plain= true 
+
+			this.address.rpa_plain= true
 			this.channel.client.emit("listen", this.address)
 
 		}
-		
 
-		
+
+
 		// build Router for each Site
 		this.startbuildingRoutes()
-		
+
 		// date integer when started
 		this.started = Date.now()
 		if (parseInt(process.env.CRON_ENABLED) === 1) {
 			this._startCron()
 		}
-		
+
 		// start accept
 		return this._accept()
 	}
@@ -448,16 +453,16 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		if(!this.__time){
 			this.__time = config.__time
 		}else{
-			
-			this.__time = config.__time 
-			
+
+			this.__time = config.__time
+
 			// close for restart, only if multiprocess
 			if(!Cluster.isMaster){
 				this.closeAndExit()
-				return 
+				return
 			}
-		}		
-		this.config.once("change", this.startbuildingRoutes.bind(this))		
+		}
+		this.config.once("change", this.startbuildingRoutes.bind(this))
 		if (!config.sites) {
 			return
 		}
@@ -670,14 +675,14 @@ export class Service extends EventEmitter implements Types.DhsServer{
 
 	_createCallback(_route : string | Types.RouteDefinition, site) {
 		var g, h, par
-		var self = this 
-		var route: Types.RouteDefinition 
+		var self = this
+		var route: Types.RouteDefinition
 		if(typeof _route == "string"){
 			route = {
 				file: _route
 			}
 		}else{
-			route = _route 
+			route = _route
 		}
 
 
@@ -694,7 +699,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			par.file = this.config.resolvePath(route.file, site)
 		}
 		let ctx = this.getContext(site)
-		
+
 		g = async function(env) {
 			var e, file, method, mod, name, ref, ref1
 			try {
@@ -755,7 +760,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			}
 			this._handle(env)
 			env = null
-		}		
+		}
 	}
 
 	api_config(env) {

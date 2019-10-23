@@ -186,7 +186,7 @@ export class Registry{
         var reg = new NormalRegistry({})
         var moduledesc= await reg.resolve("yarn", "1.17.3")
         var bin = Path.join(moduledesc.folder, "bin/yarn.js")
-        var p = Child.spawn(process.execPath, [bin, "install", "--mutex", "file:" + Path.join(this._packagesfolder, "lock")], {
+        var p = Child.spawn(process.execPath, [bin, "install", "--mutex", "network"], {
             env: Object.assign({}, process.env, {
                 NODE_REQUIRE: "1",
                 ELECTRON_RUN_AS_NODE: "1"

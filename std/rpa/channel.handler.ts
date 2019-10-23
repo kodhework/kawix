@@ -7,7 +7,7 @@ import Exception from '../util/exception'
 interface RPATarget {
     rpa_id: string,
     rpa_from?: boolean,
-    rpa_preserved?: number 
+    rpa_preserved?: number
 }
 
 
@@ -24,7 +24,7 @@ export class ChannelHandler {
     }
 
     set(target: any, prop: string, value:any) {
-        
+
         if(prop && prop.startsWith && prop.startsWith("rpa_")){
             target[prop] = value
         }
@@ -37,7 +37,7 @@ export class ChannelHandler {
 
     get(target: any, prop: string, receiver) {
 
-        
+
         if(!prop || !prop.startsWith){
             return target[prop]
         }
@@ -67,12 +67,10 @@ export class ChannelHandler {
         }
 
         let val = target[prop]
-        if(val !== undefined && typeof val !== "function"){
-            return target[prop]
-        }
-
-
         if (!this._funcs.has(prop)) {
+            if(val !== undefined && typeof val !== "function"){
+                return val
+            }
             this._funcs.set(prop, this.generateFunction(target, prop))
         }
         val = this._funcs.get(prop)
@@ -98,7 +96,7 @@ export class ChannelHandler {
         let self = this
         return function () {
             if(target.rpa_preserved == undefined){
-                target.rpa_preserved = 1 
+                target.rpa_preserved = 1
             }else{
                 target.rpa_preserved++
             }
@@ -109,87 +107,37 @@ export class ChannelHandler {
     generateFunction(target: RPATarget, prop: string, noproxy?:boolean) {
         let self = this
         let func
-        
+
         let rpa_class_id = count++
 
         func = function (...input) {
 
-            let construct = false 
-
-            /*
-            if(this && this.rpa_class_id == rpa_class_id){
-                construct = true 
-                this.rpa_class_id = null 
-            }
-
-            else if(this){
-
-                if(this.rpa_promise){
-                    try{
-                        let v= this.rpa_promise
-                        console.info(v.rpa_id)
-                        this.rpa_object = v 
-                    }catch(e){
-                        console.error(e)
-                        this.rpa_error = e 
-                        throw e 
-                    }
-                }
-                
-                target = this.rpa_object
-                if (this.rpa_error) throw this.rpa_error
-                if (this.rpa_object) target = this.rpa_object
-            }*/
-
-
             let args = self._channel.convertArguments(input)
-            let current = target 
-            let props = undefined 
+            let current = target
+            let props = undefined
             if(current.rpa_parent){
                 props = []
                 while(current.rpa_parent){
                     props.push(current.rpa_prop)
                     current = current.rpa_parent
                 }
-                /*
-                if (target.rpa_props){
-                    for(let i=target.rpa_props.length-1;i>=0;i--){
-                        props.push(target.rpa_props[i])
-                    }
-                }*/
                 props.reverse()
 
             }
-            /*
-            else if(target.rpa_props){
-                props = target.rpa_props
-            }*/
-
-            
-            if(prop == "construct"){
-                prop = props.pop() 
-                construct = true 
-            }
-
             let cmd = {
                 target: target.rpa_id,
                 method: prop,
                 arguments: args,
-                construct,
-                props: props 
+                props: props
             }
             let promise =  self._channel.send(self._socket, cmd).promise
-            /*
-            if(construct){
-                this.rpa_promise = promise 
-            }*/
             return promise
         }
-        if (noproxy) return func 
-        
+        if (noproxy) return func
+
         func.rpa_id= target.rpa_id
         func.rpa_parent = target
-        func.rpa_prop= prop 
+        func.rpa_prop= prop
         // func.prototype.rpa_class_id = rpa_class_id
         //let handler = new ChannelHandler(this._socket, this._channel)
         return new Proxy(func, this)

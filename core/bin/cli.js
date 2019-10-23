@@ -10,9 +10,9 @@ var Kawix = require("../main")
 var offset = 0, pack, pack1, er, forceui
 
 
-if(process.argv[1] && (process.argv[1] == process.argv[2])){
+if (process.argv[1] && (process.argv[1] == process.argv[2])) {
 	var _arg = process.argv[1]
-	if(_arg.substring(_arg.length - 6) == "app.js")
+	if (_arg.substring(_arg.length - 6) == "app.js")
 		process.argv.splice(1, 1)
 }
 
@@ -28,8 +28,8 @@ pack = require("../package.json")
 
 var enableUi = function (force, i) {
 	// in windows automatically is opened a visual terminal
-	// but in osx and linux not 
-	// this is for open visual terminal 
+	// but in osx and linux not
+	// this is for open visual terminal
 	if (Os.platform() == "darwin") {
 		args1 = args.map(function (a, index) {
 			if (index == i) {
@@ -116,7 +116,7 @@ if (process.env.KWCORE_FORCE_UI) {
 }
 
 
-var InstallStd = function(){
+var InstallStd = function () {
 	var er = function (e) {
 		console.error(" > Failed loading stdlib")
 	}
@@ -127,7 +127,7 @@ var InstallStd = function(){
 		console.log(" > Loading stdlib")
 		Kawix.KModule.import(file).then(function () { }).catch(er)
 	}).catch(er)
-	return 
+	return
 }
 
 
@@ -146,7 +146,7 @@ for (var i = 2; i < args.length; i++) {
 		}
 	}
 	else if (arg == "--install-std") {
-		
+
 		return InstallStd()
 	}
 
@@ -184,7 +184,7 @@ for (var i = 2; i < args.length; i++) {
 		enableUi(arg == "--force-ui", i)
 	}
 	else if (arg == "--update") {
-		// this works on release version 
+		// this works on release version
 
 		er = function (e) {
 			console.error("")
@@ -204,9 +204,9 @@ for (var i = 2; i < args.length; i++) {
 					force: true
 				}).then(function (a) {
 
-					if(a){
+					if (a) {
 						InstallStd()
-					}	
+					}
 
 				}).catch(er)
 			}
@@ -265,13 +265,16 @@ for (var i = 2; i < args.length; i++) {
 			else {
 
 				Kawix.KModule.injectImport()
-				Kawix.mainFilename = Path.resolve(arg)
+				if(arg.substring(0,4) != "gh+/" && arg.indexOf("://") < 0)
+					Kawix.mainFilename = Path.resolve(arg)
+				else
+					Kawix.mainFilename = arg
 				var options = {
 					parent: {
 						filename: process.cwd() + "/cli.js"
 					}
 				}
-				// require file using KModule                
+				// require file using KModule
 				var erfunc = function (e) {
 					console.error("Failed executing: ", e)
 				}
@@ -340,7 +343,7 @@ for (var i = 2; i < args.length; i++) {
 				}
 
 
-				// see if have extension valid 
+				// see if have extension valid
 				var valid0 = false
 				kwa = arg.endsWith(".kwa")
 				if (!kwa) {
@@ -401,9 +404,11 @@ for (var i = 2; i < args.length; i++) {
 		}
 		forceuiFunc = function () {
 
-			if(process.env.KWCORE_ORIGINAL_EXECUTABLE){
-				cmd = process.env.KWCORE_ORIGINAL_EXECUTABLE
-				cmdargs.shift()
+			if (cmdargs[0].indexOf("node") >= 0) {
+				if (process.env.KWCORE_ORIGINAL_EXECUTABLE) {
+					cmd = process.env.KWCORE_ORIGINAL_EXECUTABLE
+					cmdargs.shift()
+				}
 			}
 
 			console.log("Executing: ", cmd, cmdargs)

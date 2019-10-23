@@ -18,9 +18,9 @@ interface RPATarget{
 
 
 export class Channel{
-    cid: string 
-    service: any 
-    client: any 
+    cid: string
+    service: any
+    client: any
 
     _str= ''
     _map: Map<any, any>
@@ -28,8 +28,8 @@ export class Channel{
     _count= 0
     _store: Map<any,any>
     _taskid= 0
-    _net 
-    autounref = true 
+    _net
+    autounref = true
 
     plain(obj){
         return {
@@ -53,7 +53,7 @@ export class Channel{
                 })
             }
         }else{
-            if (!this._store.has(socket))  return null 
+            if (!this._store.has(socket))  return null
         }
         return this._store.get(socket)
     }
@@ -62,7 +62,7 @@ export class Channel{
     async executeCommand(socket: Socket, command: string){
 
         try{
-            
+
             //console.log("RPA Command received: ", command)
             let cmd = JSON.parse(command)
             if(!cmd) return
@@ -72,7 +72,7 @@ export class Channel{
 
                 let store= this.getStoreForSocket(socket)
                 if(store){
-                    
+
                     let tasks = store.tasks
                     if(tasks){
                         let task = tasks[cmd.taskid] as async.Deferred<any>
@@ -83,8 +83,8 @@ export class Channel{
 
                             delete tasks[cmd.taskid]
                             if(cmd.result.error){
-                                
-                                let e = cmd.result.error 
+
+                                let e = cmd.result.error
                                 let ex = Exception.create(e.message).putCode(e.code || "RPA_ERROR")
                                 for (let id in e) {
                                     ex[id] = e[id]
@@ -92,7 +92,7 @@ export class Channel{
                                 task.reject(ex)
                             }else{
                                 task.resolve(this.getArgument(socket,cmd.result.data))
-                            }               
+                            }
 
                         }
                     }
@@ -105,11 +105,18 @@ export class Channel{
             }
             else{
 
-                
+
                 try{
                     let target = this.getTarget(cmd.target)
+
+                    if((cmd.method == ".ctor" || cmd.method == "construct") && !cmd.construct){
+                        if(cmd.props) cmd.method = cmd.props.pop()
+                        cmd.construct = true
+                    }
+
+
                     if(cmd.props){
-                        // get target by props 
+                        // get target by props
                         for(let i=0;i<cmd.props.length;i++){
                             target = target[cmd.props[i]]
                             if(!target)
@@ -125,19 +132,21 @@ export class Channel{
                     }*/
 
 
-                    let result, args 
+                    let result, args
 
-                    
+
                     if(typeof method == "function"){
-                        // execute 
+                        // execute
                         args = this.getArguments(socket, cmd.arguments)
+                        //console.info("CMD .....", cmd)
                         try{
+
                             if (cmd.construct) {
                                 result = new target[cmd.method](...args)
                             }else{
                                 result = await method.apply(target, args)
                             }
-                            
+
                             if(cmd.taskid != -1){
                                 this.sendAnswer(socket, cmd, {
                                     data: result
@@ -145,7 +154,7 @@ export class Channel{
                             }
                         }catch(e){
 
-                            
+
 
                             if (cmd.taskid != -1) {
                                 let ex = {
@@ -190,7 +199,7 @@ export class Channel{
                         if (cmd.taskid != -1) {
                             args = this.getArguments(socket, cmd.arguments)
                             if(args.length == 1){
-                                target[cmd.method] = args[0]                                
+                                target[cmd.method] = args[0]
                                 this.sendAnswer(socket, cmd, {
                                     data: true
                                 })
@@ -222,7 +231,7 @@ export class Channel{
                         console.error("Error on RPA: ", e)
                     }
                 }
-            
+
             }
 
         }catch(e){
@@ -233,7 +242,7 @@ export class Channel{
 
 
     constructor(service?:any){
-        
+
         this._store = new Map<any, any>()
         this._map = new Map<any,any>()
         if (service) {
@@ -246,16 +255,16 @@ export class Channel{
     }
 
     getArgument(socket: Socket, arg: any) {
-        
+
         if (arg && arg.rpa_id) {
-            if (arg.rpa_from) {            
+            if (arg.rpa_from) {
                 // create a proxy from rpa comunication
-                arg = this.createProxy(socket, arg)                
+                arg = this.createProxy(socket, arg)
             }
             else {
-                // get from current 
+                // get from current
                 let id = arg.rpa_id
-                
+
                 arg = this._obs[arg.rpa_id]
                 if (!arg)
                     throw Exception.create(`The remote object with id '${id}' was not found`).putCode("RPC_INVALID_OBJECT")
@@ -285,7 +294,7 @@ export class Channel{
             for(let i=0;i<arg.length;i++){
                 arg[i] = this.getArgument(socket, arg[i])
             }
-            
+
         }
         return arg
     }
@@ -316,7 +325,7 @@ export class Channel{
 
     send(socket: Socket, command: any, notask?: boolean){
 
-        
+
         if(socket.destroyed || !socket.writable){
             throw Exception.create(`Cannot complete the call: ${command.target}->${command.method}. The RPA connection was destroyed`).putCode("RPA_DESTROYED")
         }
@@ -324,15 +333,15 @@ export class Channel{
         if(notask){
             command.taskid = -1
             socket.write(JSON.stringify(command) + "\n")
-            return 
+            return
         }
-        
+
         let taskid = this._taskid++
-        command.taskid = taskid 
-        
+        command.taskid = taskid
+
 
         let store = this.getStoreForSocket(socket, true)
-        
+
         socket.write(JSON.stringify(command) + "\n")
         return  store.tasks[taskid] = new async.Deferred<any>()
     }
@@ -348,11 +357,11 @@ export class Channel{
 
     _convertArgumentMixed(arg: any, socket?: Socket, noproxy?:Boolean, circular?: any, references?: string[]) {
 
-        // serialize the primitive values, proxy the object values 
-        let main = false 
+        // serialize the primitive values, proxy the object values
+        let main = false
         if(!circular){
             circular = new Map()
-            main = true 
+            main = true
         }
 
         if(arg){
@@ -378,7 +387,7 @@ export class Channel{
                     }
                 }
                 if(isarray){
-                    narg.rpa_array = true 
+                    narg.rpa_array = true
                     narg.length = arg.length
                     if(main){
                         narg.rpa_references= references
@@ -388,17 +397,17 @@ export class Channel{
                 if(!noproxy && !isarray_proto){
                     arg = Object.assign(narg, {
                         rpa_id: this.makeRef(arg, null, socket),
-                        rpa_from: true 
+                        rpa_from: true
                     })
                     if(references){
                         references.push(arg.rpa_id)
                     }
                 }else{
-                    arg = narg 
+                    arg = narg
                 }
-            } 
+            }
             else if(typeof arg == "function"){
-                return undefined 
+                return undefined
             }
         }
         return arg
@@ -433,7 +442,7 @@ export class Channel{
                 if(typeof arg.rpa_plain == "object"){
                     return arg.rpa_plain
                 }
-                if(arg.rpa_plain) return arg 
+                if(arg.rpa_plain) return arg
 
 
                 if(typeof arg.rpa_proxied == "object"){
@@ -447,16 +456,16 @@ export class Channel{
                 }
 
 
-                // mixed? 
+                // mixed?
                 if (arg.rpa_mixed) {
                     return this._convertArgumentMixed(arg, socket)
                 }
 
-                // by default mixed 
+                // by default mixed
                 return this._convertArgumentMixed(arg, socket)
             }
         }
-        return arg 
+        return arg
     }
 
 
@@ -474,26 +483,26 @@ export class Channel{
 
 
 
-    
+
 
     createProxy(socket: Socket, arg: any){
-        
+
         let handler = new ChannelHandler(socket, this)
         let proxy
 
         if (arg.rpa_function) {
             let f
             let x = handler.generateFunction(arg, "rpa_run", true)
-            
-            f = x 
+
+            f = x
             f.rpa_id = arg.rpa_id
             f.rpa_from = arg.rpa_from
             f.rpa_function = arg.rpa_function
-            arg = f 
-            
+            arg = f
+
         }
 
-        
+
         proxy = new Proxy(arg, handler)
         return proxy
     }
@@ -517,7 +526,6 @@ export class Channel{
             id = this._map.get(object)
             let refered= this._obs[id ]
             refered.refs++
-            
         }
         else{
             if(!id){
@@ -529,7 +537,7 @@ export class Channel{
                 refs: 1
             }
         }
-            
+
         if(socket){
             let store = this.getStoreForSocket(socket, true)
             if(store.refs[id] == undefined) store.refs[id] = 0
@@ -538,23 +546,23 @@ export class Channel{
         return id
     }
 
-    unRef(object: any, socket?: Socket) {      
-        let id:string = ''      
+    unRef(object: any, socket?: Socket) {
+        let id:string = ''
         if(object && object.rpa_id && object.rpa_from){
             return object.rpa_unref()
         }
         if(typeof object == "string"){
             id = object
-            // unref many 
+            // unref many
             if(id.indexOf(",") >= 0){
                 let ids = id.split(",")
                 for(let i=0;i<ids.length;i++){
                     this.unRef(ids[i], socket)
                 }
-                return 
+                return
             }
         }
-        else if (this._map.has(object)) {            
+        else if (this._map.has(object)) {
             id = this._map.get(object)
         }
 
@@ -578,23 +586,23 @@ export class Channel{
                 }
             }
         }
-            
+
     }
 
-    
+
 
     _connection(socket){
 
         socket.on("data", (data)=>{
             let i = -1
-            
+
             while((i = data.indexOf(10)) >= 0){
                 let command = this._str + data.slice(0, i).toString()
                 if(command){
                     this.executeCommand(socket, command)
                 }
                 this._str = ''
-                data = data.slice(i + 1)                
+                data = data.slice(i + 1)
             }
             if(data.length){
                 this._str += data.toString()
@@ -603,11 +611,11 @@ export class Channel{
 
         socket.on("close", ()=>{
 
-            // reject all tasks 
+            // reject all tasks
 
             let store = this.getStoreForSocket(socket)
             if(store){
-                
+
                 let tasks = store.tasks
                 if(tasks){
                     let ex = Exception.create("RPA connection was destroyed").putCode("RPA_DESTROYED")
@@ -620,7 +628,7 @@ export class Channel{
                         let count = store.refs[id]
                         for (let i = 0; i < count; i++)
                             this.unRef(id)
-                    }                    
+                    }
                 }
                 this._store.delete(socket)
             }
@@ -668,7 +676,7 @@ export class Channel{
 
             // close ...
             this.close()
-            throw e 
+            throw e
         }
 
 
@@ -692,9 +700,9 @@ export class Channel{
             listen = Path.join(listen, hash)
         }
 
-        let socket = null 
+        let socket = null
         try{
-            socket = new Net.Socket()        
+            socket = new Net.Socket()
             let def = new async.Deferred<void>()
             socket.on("error", function (e) {
                 if (def) def.reject(e)
@@ -702,11 +710,11 @@ export class Channel{
             socket.once("connect", def.resolve)
             socket.connect(listen)
             await def.promise
-            def = null 
+            def = null
         }catch(e){
             if(e.code == "ECONNREFUSED"){
                 throw Exception.create(`The RPA service with id ${this.cid} was not found`).putCode("RPA_UNAVAILABLE")
-            }   
+            }
             else{
                 throw e
             }
@@ -734,7 +742,7 @@ export class Channel{
         await def.promise
         def = null
 
-        let thiscid = this.cid 
+        let thiscid = this.cid
         let service = this.service
 
         let newservice = {
@@ -754,11 +762,11 @@ export class Channel{
     }
 
     async registerLocal(){
-        
+
         let hash = crypto.createHash('sha1').update(this.cid).digest('hex')
         let listen = ''
         if(Os.platform() == "win32"){
-            listen = "//./pipe/"  + hash 
+            listen = "//./pipe/"  + hash
         }else{
             listen = Path.join(Os.homedir(),".kawi")
             if(!fs.existsSync(listen)){
@@ -768,14 +776,14 @@ export class Channel{
             if (!fs.existsSync(listen)) {
                 fs.mkdirSync(listen)
             }
-            listen = Path.join(listen, hash)            
+            listen = Path.join(listen, hash)
         }
 
 
-        let failedconnect = true 
+        let failedconnect = true
         if(Os.platform() != "win32"){
             if(fs.existsSync(listen)){
-                failedconnect = false 
+                failedconnect = false
                 try {
                     let socket = new Net.Socket()
                     let def = new async.Deferred<void>()
@@ -789,16 +797,16 @@ export class Channel{
                     socket.destroy()
 
                 } catch (e) {
-                    // failed connect, so try delete the file 
+                    // failed connect, so try delete the file
                     failedconnect = true
                     await fs.unlinkAsync(listen)
                 }
             }
-        } 
+        }
 
         if(!failedconnect)
             throw Exception.create("RPA cannot register, id "  + this.id + " is already used").putCode("RPA_ID_USED")
-        
+
 
         let def = new async.Deferred<void>()
         let net = Net.createServer(this._connection.bind(this))
@@ -807,7 +815,7 @@ export class Channel{
         })
         net.once("listening", def.resolve)
         net.listen(listen)
-        this._net = net 
+        this._net = net
         await def.promise
         def = null
 
