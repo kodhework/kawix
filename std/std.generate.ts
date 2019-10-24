@@ -70,11 +70,9 @@ class Generator {
 						filename: ufile
 					}
 					let ast = global.kawix.NextJavascript.transpile(content, transpilerOptions)
-					
-					content = Buffer.from(ast.code )
-					
-
-
+					//let changed = global.kawix.KModule.injectImports(ast.code)
+					//content = Buffer.from(changed.source)
+					content = Buffer.from(ast.code)
 				}
 
 				this.files.push(rfile)

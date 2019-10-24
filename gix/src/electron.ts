@@ -267,6 +267,7 @@ export class Electron extends EventEmitter {
                 def.reject(Exception.create("Failed start electron"))
                 def = null
             }
+            this.emit("close")
         })
         this._p.stdout.on("data", function (d) {
             var e

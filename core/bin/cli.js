@@ -233,15 +233,21 @@ for (var i = 2; i < args.length; i++) {
 
 			// generate an executable file
 			var dirname = Path.dirname(process.execPath)
-			var file = Path.join(Os.homedir(), "Kawix", map)
+			var file = Path.join(Os.homedir(), "Kawix", "bin",  map)
 
 			var content0 = ''
 			if (Os.platform() == "win32") {
 				file = Path.join(Os.homedir(), "Kawix", "bin", map + ".cmd")
 				content0 = '@echo off\nset current=%~dp0\n"%current%\\kwcore.exe" --original-file "%~n0%~x0" "' + arg + '" %*'
 			} else {
-				WritePath.write(Path.join(Os.homedir(), "Kawix"))
-				content0 = '#!/usr/bin/env bash\n' + Path.join(Path.dirname(process.execPath), "kwcore") + ' --disable-ui --original-file "$BASH_SOURCE" ' + JSON.stringify(arg) + ' $@\nexit $?'
+				WritePath.write(Path.join(Os.homedir(), "Kawix", "bin"))
+				var exe1 = process.execPath
+				if(process.env.KWCORE_ORIGINAL_EXECUTABLE){
+					exe1 = `"${process.env.KWCORE_ORIGINAL_EXECUTABLE}"`
+				}else{
+					exe1 = `"${process.execPath}" "${process.argv[1]}"`
+				}
+				content0 = '#!/usr/bin/env bash\n' + exe1 + ' --disable-ui --original-file "$BASH_SOURCE" ' + JSON.stringify(arg) + ' $@\nexit $?'
 			}
 			fs.writeFileSync(file, content0)
 			fs.chmodSync(file, "775")

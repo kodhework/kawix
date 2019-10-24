@@ -113,7 +113,7 @@ export class ChannelHandler {
         func = function (...input) {
 
             let args = self._channel.convertArguments(input)
-            let current = target
+            let current = this
             let props = undefined
             if(current.rpa_parent){
                 props = []
@@ -136,7 +136,7 @@ export class ChannelHandler {
         if (noproxy) return func
 
         func.rpa_id= target.rpa_id
-        func.rpa_parent = target
+        func.rpa_parent = this
         func.rpa_prop= prop
         // func.prototype.rpa_class_id = rpa_class_id
         //let handler = new ChannelHandler(this._socket, this._channel)

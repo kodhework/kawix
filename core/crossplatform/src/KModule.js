@@ -443,7 +443,7 @@ var builtinModules = _module.builtinModules;
 		}
 		return uri
 	}
-	changeSource = function (source) {
+	changeSource = Mod.injectImports = function (source) {
 
 		var import1 = {
 			code: source

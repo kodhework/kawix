@@ -140,19 +140,17 @@ export class Service extends EventEmitter implements Types.DhsServer{
 
 		if (Cluster.isMaster) {
 			config = (await this.config.read())
+
+			this.channel = await Channel.registerLocal("DHS." + config.id, this)
+			process.env.KAWIX_CHANNEL_ID = "DHS." + config.id
             if(config.singleprocess){
 				return await this._start()
 			}
 			else{
     			//this.config.on("change", this._config_to_workers.bind(this))
-    			this.channel = await Channel.registerLocal("DHS." + config.id, this)
-    			process.env.KAWIX_CHANNEL_ID = "DHS." + config.id
     			return (await this._cluster())
             }
-
 		} else {
-
-
 			this.config.stop()
 			delete this.config
 
@@ -293,7 +291,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		config = this.config.readCached()
 
 
-		addr =  config.address || process.env.DHS_ADDRESS || process.env.ADDRESS 
+		addr =  config.address || process.env.DHS_ADDRESS || process.env.ADDRESS
 		if (!addr) {
 			return Exception.create("Listen address no specified").putCode("INVALID_ADDR").raise()
 		}
