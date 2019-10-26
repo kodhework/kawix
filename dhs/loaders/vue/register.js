@@ -1,7 +1,7 @@
 
 
 
-import Registry from '../../../std/package/registry'
+import Registry from '../../../std/package/registry.yarn'
 import Path from 'path'
 import Exception from '../../../std/util/exception'
 import uniqid from '../../../std/util/uniqid'
@@ -188,7 +188,7 @@ var compile1= function(code,filename,options){
 		code.push(`var generateCode= function(style){
 
 			var str= '<style>', rule , si, rulec, rulec2
-			
+
 			for(var i=0;i<style.rules.length;i++){
 				rule=style.rules[i]
 				if(style.scoped){
@@ -212,7 +212,7 @@ var compile1= function(code,filename,options){
 						return us
 					}).join(",")
 
-					si= "." + ModInfo.cid 
+					si= "." + ModInfo.cid
 					rulec2= rule.selectors.map(function(a){
 
 						var us= ''

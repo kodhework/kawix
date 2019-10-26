@@ -182,10 +182,17 @@ export class Registry{
             return await this.getModuleInfoFromFolder(Path.join(out, "node_modules", module))
         }
 
-
-        var reg = new NormalRegistry({})
-        var moduledesc= await reg.resolve("yarn", "1.17.3")
-        var bin = Path.join(moduledesc.folder, "bin/yarn.js")
+        var bin = ''
+        bin = Path.join(Os.homedir(), ".kawi", "npm-inst", "yarn@1.17.3", "package.json")
+        
+        if(fs.existsSync(bin)){
+            // this avoid need internet for check project
+            bin = Path.join(Os.homedir(), ".kawi", "npm-inst", "yarn@1.17.3", "bin", "yarn.js")
+        }else{
+            var reg = new NormalRegistry({})
+            var moduledesc= await reg.resolve("yarn", "1.17.3")
+            bin = Path.join(moduledesc.folder, "bin/yarn.js")
+        }
         var p = Child.spawn(process.execPath, [bin, "install", "--mutex", "network"], {
             env: Object.assign({}, process.env, {
                 NODE_REQUIRE: "1",

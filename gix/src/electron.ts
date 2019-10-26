@@ -17,6 +17,7 @@ import Child, { ChildProcess } from 'child_process'
 import {EventEmitter} from 'events'
 
 export class Electron extends EventEmitter {
+    [x: string]: any
 
     electron: any
     channel: RPAChannel

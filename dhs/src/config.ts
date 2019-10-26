@@ -73,9 +73,9 @@ export class ConfigBase extends EventEmitter{
 
 
 export class ConfigRPA extends ConfigBase{
-	_parentConfig: any 
-	_config : any 
-	_on: any 
+	_parentConfig: any
+	_config : any
+	_on: any
 
 
 	constructor(parentConfig: any){
@@ -84,7 +84,7 @@ export class ConfigRPA extends ConfigBase{
 
 
 		this._parentConfig.on("change", (config)=>{
-			this._config = config 
+			this._config = config
 			this.emit("change", config)
 		})
 		this._parentConfig.on("include", this.emit.bind(this, "include"))
@@ -100,7 +100,7 @@ export class ConfigRPA extends ConfigBase{
 	}
 
 	readCached(){
-		return this._config 
+		return this._config
 	}
 
 
@@ -108,15 +108,15 @@ export class ConfigRPA extends ConfigBase{
 
 export class Config extends ConfigBase {
 
-	private file: string 
-	private _read 
-	public _config 
+	private file: string
+	private _read
+	public _config
 	public watcher: Watcher
-	
 
-	
+
+
 	//private _readFromParent
-	
+
 	constructor(file) {
 		super()
 
@@ -146,7 +146,7 @@ export class Config extends ConfigBase {
 	}
 
 
-	
+
 	async _checkConfig(config) {
 		if ((!this._config && config) || (this._config.__time !== config.__time)) {
 			if (config.preload) {
@@ -158,7 +158,7 @@ export class Config extends ConfigBase {
 			this._config = config
 
 			// for rpa
-			config.rpa_plain = true 
+			config.rpa_plain = true
 
 			return this.emit("change", config)
 		}
@@ -166,7 +166,7 @@ export class Config extends ConfigBase {
 		return config
 	}
 
-	
+
 
 	async _preload(config) {
 		var id, mod, ref, results;
@@ -220,7 +220,7 @@ export class Config extends ConfigBase {
 		}
 	}
 
-	
+
 	sleep(time = 100) {
 		var def;
 		def = this.deferred();
@@ -231,10 +231,10 @@ export class Config extends ConfigBase {
 	async _include(config, path, timeout = 400) {
 		var e, newconfig, ref;
 		try {
-			
+
 			await this.sleep(timeout);
 			newconfig = (await import(path));
-			
+
 			if (newconfig.configfile) {
 				return (await this._include(config, newconfig.configfile, timeout));
 			} else if (newconfig["kawix.app"]) {
@@ -292,7 +292,7 @@ export class Config extends ConfigBase {
 
 	_process(config, other, filename) {
 
-		
+
 		var edited, j, len, ref, site, sites;
 		config.sites = (ref = config.sites) != null ? ref : [];
 		edited = false;
@@ -318,8 +318,9 @@ export class Config extends ConfigBase {
 
 		if (edited) {
 			//console.info("processing: ", config)
+			
 			this._config = config
-			config.rpa_plain = true 
+			config.rpa_plain = true
 			this.emit("change", config)
 		}
 		return config;
@@ -355,7 +356,7 @@ export class Config extends ConfigBase {
 	}
 
 	readCached() {
-		this._config.rpa_plain = true 
+		this._config.rpa_plain = true
 		return this._config
 	}
 
@@ -363,7 +364,7 @@ export class Config extends ConfigBase {
 		var config, e, ref
 		try {
 
-			
+
 			try {
 				config = (await import(this.file))
 			} catch (error) {
@@ -372,7 +373,7 @@ export class Config extends ConfigBase {
 				config = (await import(this.file))
 			}
 
-			
+
 			if (!config.kawixDynamic) {
 				Object.defineProperty(config, "kawixDynamic", {
 					enumerable: false,
