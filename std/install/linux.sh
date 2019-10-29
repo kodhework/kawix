@@ -42,8 +42,8 @@ rm node 2> /dev/null
 
 tar xvf node.tar.gz
 chmod +x x64/12.11.1/node
-ln -s ./x64/12.11.1/node node 
-rm node.tar.gz 
+ln -s ./x64/12.11.1/node node
+rm node.tar.gz
 
 "$_HOME/bin/node" "$_HOME/bin/kwcore.app.js"
 
@@ -69,7 +69,7 @@ ln -sf bin/kawix ./kawix
 
 
 
-echo "process.env.KWCORE_EXECUTE=1;require('./kwcore.app.js');" > "$_HOME/bin/kwcore.start.js" 
+echo "process.env.KWCORE_EXECUTE=1;require('./kwcore.app.js');" > "$_HOME/bin/kwcore.start.js"
 
 
 if [ "$EUID" -eq 0 ]
@@ -81,7 +81,7 @@ fi
 # download icons
 cd "$_HOME/bin"
 mkdir icons
-curl "https://raw.githubusercontent.com/voxsoftware/kawix/master/icons/icons.tar.gz" -o icons/kwcore.icons.tar.gz 
+curl "https://raw.githubusercontent.com/voxsoftware/kawix/master/icons/icons.tar.gz" -o icons/kwcore.icons.tar.gz
 
 
 #curl "https://raw.githubusercontent.com/voxsoftware/kawix/master/icons/24x24.png" -o icons/24x24.png
@@ -94,9 +94,9 @@ curl "https://raw.githubusercontent.com/voxsoftware/kawix/master/icons/icons.tar
 #curl "https://raw.githubusercontent.com/voxsoftware/kawix/master/icons/512x512.png" -o icons/512x512.png
 
 
-cd icons 
-tar xvf kwcore.icons.tar.gz 
-rm kwcore.icons.tar.gz 
+cd icons
+tar xvf kwcore.icons.tar.gz
+rm kwcore.icons.tar.gz
 
 
 

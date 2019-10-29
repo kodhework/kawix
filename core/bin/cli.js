@@ -237,7 +237,7 @@ for (var i = 2; i < args.length; i++) {
 			if(!fs.existsSync(file)){
 				fs.mkdirSync(file)
 			}
-			file = Path.join(file, "map")
+			file = Path.join(file, map)
 
 			var content0 = ''
 			if (Os.platform() == "win32") {
