@@ -233,7 +233,11 @@ for (var i = 2; i < args.length; i++) {
 
 			// generate an executable file
 			var dirname = Path.dirname(process.execPath)
-			var file = Path.join(Os.homedir(), "Kawix", "bin",  map)
+			var file = Path.join(Os.homedir(), "Kawix", "bin")
+			if(!fs.existsSync(file)){
+				fs.mkdirSync(file)
+			}
+			file = Path.join(file, "map")
 
 			var content0 = ''
 			if (Os.platform() == "win32") {
@@ -245,14 +249,15 @@ for (var i = 2; i < args.length; i++) {
 
 
 
-				if(process.env.KWCORE_ORIGINAL_EXECUTABLE){
-					content0 = "#!" +  process.env.KWCORE_ORIGINAL_EXECUTABLE + "\n" +
-						"kawix.originalFilename = __filename\n" +
-						"kawix.KModule.import(" + JSON.stringify(arg)  + ")\n"
+				//if(process.env.KWCORE_ORIGINAL_EXECUTABLE){
+					content0 = "#!" +  process.execPath + "\n" +
+						"// kawix.originalFilename = __filename\n" +
+						"process.argv = [process.execPath, " + JSON.stringify(__filename) + ", "+JSON.stringify(arg)+"].concat(process.argv.slice(2))\n" +
+						"require(" + JSON.stringify(__filename)  + ")\n"
 						// + "\n// kawi converted. Preserve this line, Kawi transpiler will not reprocess if this line found"
-				}else{
-					content0 = '#!/usr/bin/env bash\n' + exe1 + ' --disable-ui --original-file "$BASH_SOURCE" ' + JSON.stringify(arg) + ' "$@"\nexit $?'
-				}
+				//}else{
+				//	content0 = '#!/usr/bin/env bash\n' + exe1 + ' --disable-ui --original-file "$BASH_SOURCE" ' + JSON.stringify(arg) + ' "$@"\nexit $?'
+				//}
 
 
 			}
