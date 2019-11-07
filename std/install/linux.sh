@@ -53,8 +53,8 @@ rm -r "$_HOME/kwcore"
 #curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/bin/kwcore"
 #curl -L "https://kwx.kodhe.com/x/std/install/kwcore" -o "$_HOME/bin/kawix"
 
-echo -e "#!""$_HOME/bin/node\nprocess.env.KWCORE_ORIGINAL_EXECUTABLE = __filename\nrequire(process.env.HOME + '/Kawix/core/bin/cli')" > "$_HOME/bin/kwcore"
-echo -e "#!""$_HOME/bin/node\nprocess.env.KWCORE_ORIGINAL_EXECUTABLE = __filename\nrequire(process.env.HOME + '/Kawix/core/bin/cli')" > "$_HOME/bin/kawix"
+echo -e "#!""$_HOME/bin/node --http-parser=legacy\nprocess.env.KWCORE_ORIGINAL_EXECUTABLE = __filename\nrequire(process.env.HOME + '/Kawix/core/bin/cli')" > "$_HOME/bin/kwcore"
+echo -e "#!""$_HOME/bin/node --http-parser=legacy\nprocess.env.KWCORE_ORIGINAL_EXECUTABLE = __filename\nrequire(process.env.HOME + '/Kawix/core/bin/cli')" > "$_HOME/bin/kawix"
 
 
 chmod +x "$_HOME/bin/kwcore"
