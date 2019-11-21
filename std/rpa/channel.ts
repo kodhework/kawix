@@ -7,82 +7,82 @@ import Path from 'path'
 import fs from '../fs/mod'
 import Exception from '../util/exception'
 import { Socket } from 'net'
-import {ChannelHandler} from './channel.handler'
+import { ChannelHandler } from './channel.handler'
 import { EventEmitter } from 'events'
+import readline from 'readline'
 
-
-interface RPATarget{
-    rpa_id:string,
-    rpa_from?:boolean
+interface RPATarget {
+    rpa_id: string,
+    rpa_from?: boolean
 }
 
 
-export class Channel{
+export class Channel {
     cid: string
     service: any
     client: any
 
-    _str= ''
+    _str = ''
     _map: Map<any, any>
-    _obs= {}
-    _count= 0
-    _store: Map<any,any>
-    _taskid= 0
+    _obs = {}
+    _count = 0
+    _store: Map<any, any>
+    _taskid = 0
     _net
     autounref = true
 
-    plain(obj){
+    plain(obj) {
         return {
             rpa_plain: obj
         }
     }
 
-    proxy(obj){
+    proxy(obj) {
         return {
             rpa_proxied: obj
         }
     }
 
 
-    getStoreForSocket(socket: Socket, create?: boolean){
-        if(create){
-            if(!this._store.has(socket)){
+    getStoreForSocket(socket: Socket, create?: boolean) {
+        if (create) {
+            if (!this._store.has(socket)) {
                 this._store.set(socket, {
                     tasks: {},
                     refs: {}
                 })
             }
-        }else{
-            if (!this._store.has(socket))  return null
+        } else {
+            if (!this._store.has(socket)) return null
         }
         return this._store.get(socket)
     }
 
 
-    async executeCommand(socket: Socket, command: string){
+    async executeCommand(socket: Socket, command: string) {
 
-        try{
+        try {
 
             //console.log("RPA Command received: ", command)
             let cmd = JSON.parse(command)
-            if(!cmd) return
+            if (!cmd) return
 
-            if(cmd.answer){
+            if (cmd.answer) {
 
 
-                let store= this.getStoreForSocket(socket)
-                if(store){
+                let store = this.getStoreForSocket(socket)
+                if (store) {
 
                     let tasks = store.tasks
-                    if(tasks){
+                    if (tasks) {
                         let task = tasks[cmd.taskid] as async.Deferred<any>
-                        if(!task){
+                        if (!task) {
                             console.info("RPA Error: Failed to read taskid: " + cmd.taskid, cmd.result)
                         }
-                        else{
+                        else {
 
                             delete tasks[cmd.taskid]
-                            if(cmd.result.error){
+                            if (cmd.result.error) {
 
                                 let e = cmd.result.error
                                 let ex = Exception.create(e.message).putCode(e.code || "RPA_ERROR")
@@ -90,8 +90,8 @@ export class Channel{
                                     ex[id] = e[id]
                                 }
                                 task.reject(ex)
-                            }else{
-                                task.resolve(this.getArgument(socket,cmd.result.data))
+                            } else {
+                                task.resolve(this.getArgument(socket, cmd.result.data))
                             }
 
                         }
@@ -100,26 +100,26 @@ export class Channel{
                 }
 
             }
-            else if(cmd.unref){
+            else if (cmd.unref) {
 
             }
-            else{
+            else {
 
 
-                try{
+                try {
                     let target = this.getTarget(cmd.target)
 
-                    if((cmd.method == ".ctor" || cmd.method == "construct") && !cmd.construct){
-                        if(cmd.props) cmd.method = cmd.props.pop()
+                    if ((cmd.method == ".ctor" || cmd.method == "construct") && !cmd.construct) {
+                        if (cmd.props) cmd.method = cmd.props.pop()
                         cmd.construct = true
                     }
 
 
-                    if(cmd.props){
+                    if (cmd.props) {
                         // get target by props
-                        for(let i=0;i<cmd.props.length;i++){
+                        for (let i = 0; i < cmd.props.length; i++) {
                             target = target[cmd.props[i]]
-                            if(!target)
+                            if (!target)
                                 throw Exception.create(`The property '${cmd.props.join(".")}' is not valid for remote object`).putCode("RPC_OBJECT_NOT_FOUND")
                         }
                     }
@@ -135,24 +135,24 @@ export class Channel{
                     let result, args
 
 
-                    if(typeof method == "function"){
+                    if (typeof method == "function") {
                         // execute
                         args = this.getArguments(socket, cmd.arguments)
                         //console.info("CMD .....", cmd)
-                        try{
+                        try {
 
                             if (cmd.construct) {
                                 result = new target[cmd.method](...args)
-                            }else{
+                            } else {
                                 result = await method.apply(target, args)
                             }
 
-                            if(cmd.taskid != -1){
+                            if (cmd.taskid != -1) {
                                 this.sendAnswer(socket, cmd, {
                                     data: result
                                 })
                             }
-                        }catch(e){
+                        } catch (e) {
 
 
 
@@ -162,7 +162,7 @@ export class Channel{
                                     code: e.code || "RPA_ERROR",
                                     stack: e.stack
                                 }
-                                for(let id in e){
+                                for (let id in e) {
                                     ex[id] = e[id]
                                 }
                                 this.sendAnswer(socket, cmd, {
@@ -171,18 +171,18 @@ export class Channel{
                             }
 
 
-                        }finally{
+                        } finally {
 
                             // make unref
                             if (cmd.taskid != -1 && this.autounref) {
-                                for(let i=0;i<args.length;i++){
+                                for (let i = 0; i < args.length; i++) {
                                     let arg = args[i]
-                                    if(arg && arg.rpa_unref){
-                                        if(!arg.rpa_preserved){
-                                            try{
+                                    if (arg && arg.rpa_unref) {
+                                        if (!arg.rpa_preserved) {
+                                            try {
                                                 //console.info("unrefing")
                                                 arg.rpa_unref()
-                                            }catch(e){}
+                                            } catch (e) { }
                                         }
                                     }
                                 }
@@ -190,21 +190,21 @@ export class Channel{
 
                         }
 
-                    }else{
+                    } else {
 
-                        if(cmd.construct){
+                        if (cmd.construct) {
                             throw Exception.create(`The method '${cmd.target}'->'${cmd.method}' is not a constructor`).putCode("RPC_ERROR")
                         }
 
                         if (cmd.taskid != -1) {
                             args = this.getArguments(socket, cmd.arguments)
-                            if(args.length == 1){
+                            if (args.length == 1) {
                                 target[cmd.method] = args[0]
                                 this.sendAnswer(socket, cmd, {
                                     data: true
                                 })
 
-                            }else{
+                            } else {
                                 this.sendAnswer(socket, cmd, {
                                     data: method
                                 })
@@ -212,7 +212,7 @@ export class Channel{
                         }
 
                     }
-                }catch(e){
+                } catch (e) {
 
                     if (cmd.taskid != -1) {
                         let ex = {
@@ -227,24 +227,24 @@ export class Channel{
                             error: ex
                         })
                     }
-                    else{
+                    else {
                         console.error("Error on RPA: ", e)
                     }
                 }
 
             }
 
-        }catch(e){
+        } catch (e) {
             console.error("Failed parse command: ", e)
         }
 
     }
 
 
-    constructor(service?:any){
+    constructor(service?: any) {
 
         this._store = new Map<any, any>()
-        this._map = new Map<any,any>()
+        this._map = new Map<any, any>()
         if (service) {
             this.service = service
             this.makeRef(this.service)
@@ -277,9 +277,9 @@ export class Channel{
         else if (arg && arg.rpa_array) {
 
             let self = this
-            if(arg.rpa_references && arg.rpa_references.length){
+            if (arg.rpa_references && arg.rpa_references.length) {
                 let references = arg.rpa_references.join(",")
-                arg.rpa_unref =  function () {
+                arg.rpa_unref = function () {
                     let cmd = {
                         target: "R>y",
                         method: "unRef",
@@ -291,7 +291,7 @@ export class Channel{
             }
 
             Object.setPrototypeOf(arg, Array.prototype)
-            for(let i=0;i<arg.length;i++){
+            for (let i = 0; i < arg.length; i++) {
                 arg[i] = this.getArgument(socket, arg[i])
             }
 
@@ -299,17 +299,17 @@ export class Channel{
         return arg
     }
 
-    getArguments(socket: Socket, args: Array<any>){
+    getArguments(socket: Socket, args: Array<any>) {
         //let newargs = []
-        for(let i=0;i<args.length;i++){
+        for (let i = 0; i < args.length; i++) {
             let arg = args[i]
             args[i] = this.getArgument(socket, arg)
         }
         return args
     }
 
-    sendAnswer(socket: Socket, command: any, result: any){
-        if(result.data){
+    sendAnswer(socket: Socket, command: any, result: any) {
+        if (result.data) {
             result.data = this.convertArgument(result.data, socket)
         }
         let newcommand = {
@@ -323,14 +323,14 @@ export class Channel{
         socket.write(JSON.stringify(newcommand) + "\n")
     }
 
-    send(socket: Socket, command: any, notask?: boolean){
+    send(socket: Socket, command: any, notask?: boolean) {
 
 
-        if(socket.destroyed || !socket.writable){
+        if (socket.destroyed || !socket.writable) {
             throw Exception.create(`Cannot complete the call: ${command.target}->${command.method}. The RPA connection was destroyed`).putCode("RPA_DESTROYED")
         }
 
-        if(notask){
+        if (notask) {
             command.taskid = -1
             socket.write(JSON.stringify(command) + "\n")
             return
@@ -343,11 +343,11 @@ export class Channel{
         let store = this.getStoreForSocket(socket, true)
 
         socket.write(JSON.stringify(command) + "\n")
-        return  store.tasks[taskid] = new async.Deferred<any>()
+        return store.tasks[taskid] = new async.Deferred<any>()
     }
 
 
-    wrap(arg){
+    wrap(arg) {
         return this.convertArgument(arg)
     }
 
@@ -355,65 +355,65 @@ export class Channel{
         return this._convertArgument(arg, socket)
     }
 
-    _convertArgumentMixed(arg: any, socket?: Socket, noproxy?:Boolean, circular?: any, references?: string[]) {
+    _convertArgumentMixed(arg: any, socket?: Socket, noproxy?: Boolean, circular?: any, references?: string[]) {
 
         // serialize the primitive values, proxy the object values
         let main = false
-        if(!circular){
+        if (!circular) {
             circular = new Map()
             main = true
         }
 
-        if(arg){
-            if(typeof arg == "object"){
+        if (arg) {
+            if (typeof arg == "object") {
                 let props = Object.getOwnPropertyDescriptors(arg)
-                let narg:any = {}
+                let narg: any = {}
                 let isarray = arg instanceof Array
                 let isarray_proto = Object.getPrototypeOf(arg) == Array.prototype
-                if(isarray_proto && main && !references){
+                if (isarray_proto && main && !references) {
                     references = []
                 }
-                for(let i in props){
+                for (let i in props) {
                     let prop = props[i]
-                    if(prop.enumerable && !prop.get){
+                    if (prop.enumerable && !prop.get) {
                         // solo lo usa si no es un getter
-                        if(circular.has(prop.value)){
+                        if (circular.has(prop.value)) {
                             //narg[i] = "~(Circular)"
                         }
-                        else{
+                        else {
                             circular.set(prop.value, true)
-                            narg[i] = this._convertArgumentMixed(prop.value, socket, isarray ? false: true, circular, references)
+                            narg[i] = this._convertArgumentMixed(prop.value, socket, isarray ? false : true, circular, references)
                         }
                     }
                 }
-                if(isarray){
+                if (isarray) {
                     narg.rpa_array = true
                     narg.length = arg.length
-                    if(main){
-                        narg.rpa_references= references
+                    if (main) {
+                        narg.rpa_references = references
                         console.info("references: ", references)
                     }
                 }
-                if(!noproxy && !isarray_proto){
+                if (!noproxy && !isarray_proto) {
                     arg = Object.assign(narg, {
                         rpa_id: this.makeRef(arg, null, socket),
                         rpa_from: true
                     })
-                    if(references){
+                    if (references) {
                         references.push(arg.rpa_id)
                     }
-                }else{
+                } else {
                     arg = narg
                 }
             }
-            else if(typeof arg == "function"){
+            else if (typeof arg == "function") {
                 return undefined
             }
         }
         return arg
     }
 
-    _convertArgument(arg: any, socket?: Socket){
+    _convertArgument(arg: any, socket?: Socket) {
         let rpa_id = ''
 
         if (typeof arg == "function") {
@@ -431,21 +431,21 @@ export class Channel{
             return arg
         }
 
-        if(arg){
-            if(typeof arg == "object"){
-                if(arg.rpa_id && arg.rpa_from){
+        if (arg) {
+            if (typeof arg == "object") {
+                if (arg.rpa_id && arg.rpa_from) {
                     return {
                         rpa_id: arg.rpa_id
                     }
                 }
 
-                if(typeof arg.rpa_plain == "object"){
+                if (typeof arg.rpa_plain == "object") {
                     return arg.rpa_plain
                 }
-                if(arg.rpa_plain) return arg
+                if (arg.rpa_plain) return arg
 
 
-                if(typeof arg.rpa_proxied == "object"){
+                if (typeof arg.rpa_proxied == "object") {
                     /* ONLY PROXIED */
                     rpa_id = this.makeRef(arg.rpa_wrap, null, socket)
                     arg = {
@@ -470,7 +470,7 @@ export class Channel{
 
 
 
-    convertArguments(args: Array<any>){
+    convertArguments(args: Array<any>) {
 
         for (let i = 0; i < args.length; i++) {
             let arg = args[i]
@@ -485,7 +485,7 @@ export class Channel{
 
 
 
-    createProxy(socket: Socket, arg: any){
+    createProxy(socket: Socket, arg: any) {
 
         let handler = new ChannelHandler(socket, this)
         let proxy
@@ -509,26 +509,26 @@ export class Channel{
 
 
 
-    getTarget(cid: string){
-        let target =  this._obs[cid]
-        if(!target){
+    getTarget(cid: string) {
+        let target = this._obs[cid]
+        if (!target) {
             throw Exception.create("The remote object doesn't exists or was disconnected").putCode("RPA_NOT_FOUND")
         }
         return target.target
     }
 
-    addRef(object, id, socket){
+    addRef(object, id, socket) {
         return this.makeRef(object, id, socket)
     }
 
-    makeRef(object: any, id?: string, socket?: Socket){
-        if(this._map.has(object)){
+    makeRef(object: any, id?: string, socket?: Socket) {
+        if (this._map.has(object)) {
             id = this._map.get(object)
-            let refered= this._obs[id ]
+            let refered = this._obs[id]
             refered.refs++
         }
-        else{
-            if(!id){
+        else {
+            if (!id) {
                 id = "R>" + (this._count++)
             }
             this._map.set(object, id)
@@ -538,25 +538,25 @@ export class Channel{
             }
         }
 
-        if(socket){
+        if (socket) {
             let store = this.getStoreForSocket(socket, true)
-            if(store.refs[id] == undefined) store.refs[id] = 0
+            if (store.refs[id] == undefined) store.refs[id] = 0
             store.refs[id]++
         }
         return id
     }
 
     unRef(object: any, socket?: Socket) {
-        let id:string = ''
-        if(object && object.rpa_id && object.rpa_from){
+        let id: string = ''
+        if (object && object.rpa_id && object.rpa_from) {
             return object.rpa_unref()
         }
-        if(typeof object == "string"){
+        if (typeof object == "string") {
             id = object
             // unref many
-            if(id.indexOf(",") >= 0){
+            if (id.indexOf(",") >= 0) {
                 let ids = id.split(",")
-                for(let i=0;i<ids.length;i++){
+                for (let i = 0; i < ids.length; i++) {
                     this.unRef(ids[i], socket)
                 }
                 return
@@ -566,7 +566,7 @@ export class Channel{
             id = this._map.get(object)
         }
 
-        if(id){
+        if (id) {
             let refered = this._obs[id]
             if (refered) {
                 refered.refs--
@@ -591,8 +591,9 @@ export class Channel{
 
 
 
-    _connection(socket){
+    _connection(socket) {
 
+        /*
         socket.on("data", (data)=>{
             let i = -1
 
@@ -607,19 +608,28 @@ export class Channel{
             if(data.length){
                 this._str += data.toString()
             }
+        })*/
+
+
+        readline.createInterface({
+            input: socket
+        }).on("line", (command) => {
+            this.executeCommand(socket, command)
         })
 
-        socket.on("close", ()=>{
+
+
+        socket.on("close", () => {
 
             // reject all tasks
 
             let store = this.getStoreForSocket(socket)
-            if(store){
+            if (store) {
 
                 let tasks = store.tasks
-                if(tasks){
+                if (tasks) {
                     let ex = Exception.create("RPA connection was destroyed").putCode("RPA_DESTROYED")
-                    for(let id in tasks){
+                    for (let id in tasks) {
                         tasks[id].reject(ex)
                     }
                 }
@@ -634,12 +644,12 @@ export class Channel{
             }
         })
 
-        socket.on("error",function(){})
+        socket.on("error", function () { })
 
 
     }
 
-    async connectRemote(port: number, host: string){
+    async connectRemote(port: number, host: string) {
 
         let socket: Net.Socket = null
         try {
@@ -663,16 +673,16 @@ export class Channel{
         this._net = socket
         this._connection(socket)
 
-        try{
+        try {
             this.client = this.getArgument(socket, {
                 rpa_id: "R>0",
                 rpa_from: true
             })
             this.client = await this.client.get(this.cid)
-            if(!this.client){
+            if (!this.client) {
                 throw Exception.create(`The RPA service with id ${this.cid} was not found in this remote server. `).putCode("RPA_UNAVAILABLE")
             }
-        }catch(e){
+        } catch (e) {
 
             // close ...
             this.close()
@@ -682,7 +692,10 @@ export class Channel{
 
     }
 
-    async connectLocal() {
+
+
+
+    async getSocket() {
 
         let hash = crypto.createHash('sha1').update(this.cid).digest('hex')
         let listen = ''
@@ -701,7 +714,7 @@ export class Channel{
         }
 
         let socket = null
-        try{
+        try {
             socket = new Net.Socket()
             let def = new async.Deferred<void>()
             socket.on("error", function (e) {
@@ -711,25 +724,28 @@ export class Channel{
             socket.connect(listen)
             await def.promise
             def = null
-        }catch(e){
-            if(e.code == "ECONNREFUSED"){
+        } catch (e) {
+            if (e.code == "ECONNREFUSED") {
                 throw Exception.create(`The RPA service with id ${this.cid} was not found`).putCode("RPA_UNAVAILABLE")
             }
-            else{
+            else {
                 throw e
             }
         }
+        return socket
+    }
+
+    async connectLocal() {
+        let socket = await this.getSocket()
         this._net = socket
         this._connection(socket)
-
-        this.client =  this.getArgument(socket, {
+        this.client = this.getArgument(socket, {
             rpa_id: "R>0",
             rpa_from: true
         })
-
     }
 
-    async registerRemote(port: number, hostname?: string){
+    async registerRemote(port: number, hostname?: string) {
 
         let def = new async.Deferred<void>()
         let net = Net.createServer(this._connection.bind(this))
@@ -761,15 +777,15 @@ export class Channel{
 
     }
 
-    async registerLocal(){
+    async registerLocal() {
 
         let hash = crypto.createHash('sha1').update(this.cid).digest('hex')
         let listen = ''
-        if(Os.platform() == "win32"){
-            listen = "//./pipe/"  + hash
-        }else{
-            listen = Path.join(Os.homedir(),".kawi")
-            if(!fs.existsSync(listen)){
+        if (Os.platform() == "win32") {
+            listen = "//./pipe/" + hash
+        } else {
+            listen = Path.join(Os.homedir(), ".kawi")
+            if (!fs.existsSync(listen)) {
                 fs.mkdirSync(listen)
             }
             listen = Path.join(listen, "rpa")
@@ -781,8 +797,8 @@ export class Channel{
 
 
         let failedconnect = true
-        if(Os.platform() != "win32"){
-            if(fs.existsSync(listen)){
+        if (Os.platform() != "win32") {
+            if (fs.existsSync(listen)) {
                 failedconnect = false
                 try {
                     let socket = new Net.Socket()
@@ -804,13 +820,13 @@ export class Channel{
             }
         }
 
-        if(!failedconnect)
-            throw Exception.create("RPA cannot register, id "  + this.id + " is already used").putCode("RPA_ID_USED")
+        if (!failedconnect)
+            throw Exception.create("RPA cannot register, id " + this.id + " is already used").putCode("RPA_ID_USED")
 
 
         let def = new async.Deferred<void>()
         let net = Net.createServer(this._connection.bind(this))
-        net.on("error", function(e){
+        net.on("error", function (e) {
             if (def) def.reject(e)
         })
         net.once("listening", def.resolve)
@@ -821,7 +837,7 @@ export class Channel{
 
     }
 
-    close(){
+    close() {
         this._net.close ? this._net.close() : this._net.destroy()
     }
 

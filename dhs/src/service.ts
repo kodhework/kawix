@@ -451,13 +451,16 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		if(!this.__time){
 			this.__time = config.__time
 		}else{
-
-			this.__time = config.__time
-
-			// close for restart, only if multiprocess
-			if(!Cluster.isMaster){
-				this.closeAndExit()
-				return
+			if(this.__time != config.__time){
+				this.__time = config.__time
+				// close for restart, only if multiprocess
+				if(!Cluster.isMaster){
+					console.info(" > [kawix/dhs] Main config change detected, restarting cluster")
+					this.closeAndExit()
+					return
+				}
+			}else{
+				console.info(" > [kawix/dhs] Site change detected ...")
 			}
 		}
 		this.config.once("change", this.startbuildingRoutes.bind(this))
