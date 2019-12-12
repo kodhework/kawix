@@ -61,6 +61,13 @@ class Bundle {
 		return this.options.packageJsonSupport = value
 	}
 
+	get filenameMap() {
+		return this.options.filenamemap
+	}
+	set filenameMap(value) {
+		return this.options.filenamemap = value
+	}
+
 	get mainScript() {
 		return this.options.mainScript
 	}
@@ -111,7 +118,7 @@ class Bundle {
 		return this.options.profile = value
 	}
 
-
+	
 	
 
 	async bundle(path?) {
@@ -169,13 +176,13 @@ class Bundle {
 
 		var virtualAdd = `
 		var mod1= function(KModule, exports){
-			var i=0, main, pe, filecount, pjson
+			var i=0,main, pe, filecount, pjson
 			for(var id in filenames){
+				i = filenames[id]
 				if(typeof module == "object"){
 					${packageJson}
 				}
 				KModule.addVirtualFile("${this.virtualName}" + (id ? ("/"+id) : ""), fileData[i])
-				i++
 			}
 			if(pjson){
 				main= pjson.main
@@ -310,9 +317,10 @@ class Bundle {
 					mtimeMs: stat.mtimeMs,
 					atime: stat.atime,
 					atimeMs: stat.atimeMs,
-				}//Object.assign({}, stat)
+				}
+
 				rep.stat.isfile = true
-				rep.filename = rev
+				rep.filename = this._getfilename(rev)
 
 
 
@@ -402,7 +410,7 @@ class Bundle {
 					atimeMs: stat.atimeMs,
 				}
 				rep.stat.isdirectory = true
-				rep.filename = rev
+				rep.filename = this._getfilename(rev)
 				str = JSON.stringify(rep, null, '\t')
 				this._stream.write(`\n\tfileData.push(function(){return ${str}})`)
 				this._filenames[rep.filename] = this._fcount
@@ -419,7 +427,17 @@ class Bundle {
 		}
 
 	}
-
+	_getfilename(rev){
+		if (this.options.filenamemap) {
+			if (typeof this.options.filenamemap == "function") {
+				return this.options.filenamemap(rev)
+			} else {
+				return this.options.filenamemap[rev] || rev
+			}
+		} else {
+			return rev
+		}
+	}
 }
 
 export default Bundle

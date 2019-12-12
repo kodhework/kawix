@@ -88,7 +88,8 @@ var compile1= function(code,filename,options){
 
 			delete ast.options
 			delete ast.map
-			console.log("Vue filename:",filename)
+			
+			//console.log("Vue filename:",filename)
 
 			kawixAsync.push(`
 			ast= ${JSON.stringify(ast)}
@@ -245,51 +246,78 @@ var compile1= function(code,filename,options){
 
 		code.push("var _def_=" + `function(env){
 			var c, scoped=false
-			var injectStyles= function(){
+			var mergeFuncs = function(a,b){
+				return function(){
+					a = a || function(){}
+					let v = a.apply(this,arguments)
+					b.apply(this,arguments)
+					return v 
+				}
+			}
+			var injectStyles= function(styles){
+				var ds = []
+				return {
+					created: function(){
+						for(var i=0;i<styles.length;i++){
+							let style= styles[i]
+							if(style._good) continue
 
-				for(var i=0;i<exports.styles.length;i++){
-					let style=exports.styles[i]
-					if(style._good) continue
-
-					if(style.generated){
-						d= document.createElement("div")
-						d.innerHTML= style.generated
-						d.style.display= 'none'
-						document.body.appendChild(d)
+							if(style.generated){
+								d= document.createElement("div")
+								d.innerHTML= style.generated
+								d.style.display= 'none'
+								document.body.appendChild(d)
+								ds.push(d)
+							}
+						}
+					},
+					destroyed: function(){
+						if(ds.length){
+							for(var i=0;i<ds.length;i++){
+								ds[i].remove()
+							}
+						}
 					}
 				}
 			}
 
+			var value = {}
 			if(ModInfo.script){
 				if(typeof ModInfo.script == "function"){
-					exports= module.exports= ModInfo.script()
+					if(ModInfo.script.prototype && typeof ModInfo.script.prototype._init == "function"){
+						value = {
+							__class: ModInfo.script,
+						}
+					}
+					else{
+						value =  ModInfo.script()
+					}
 				}
 				else{
-					exports= module.exports= ModInfo.script
+					value = ModInfo.script
 				}
 			}
 
 			if(ModInfo.styles){
-				exports.styles= ModInfo.styles
-				for(var i=0;i<exports.styles.length;i++){
-					if(exports.styles[i].scoped) scoped= true
-					let n= exports.styles[i].style
-					exports.styles[i].rules= rulesFromStyle(n)
-					exports.styles[i].generated= generateCode(exports.styles[i])
+				value.styles= ModInfo.styles
+				for(var i=0;i<value.styles.length;i++){
+					if(value.styles[i].scoped) scoped= true
+					let n= value.styles[i].style
+					value.styles[i].rules= rulesFromStyle(n)
+					value.styles[i].generated= generateCode(value.styles[i])
 				}
-				c= exports.created
-				exports.created= function(){
-					// attach styles
-					injectStyles()
-					c && c.apply(this,arguments)
-				}
+
+				value.__fns = injectStyles(value.styles, value.created, value.destroyed)
+				value.created = mergeFuncs(value.created, value.__fns.created)
+				value.destroyed = mergeFuncs(value.destroyed, value.__fns.destroyed)
+
 			}
 
 			if(ModInfo.template){
-				exports.template= ModInfo.template
+				value.template= ModInfo.template
 
 				if(scoped){
-					let temp= exports.template.trim()
+					let temp= value.template.trim()
 					let a= temp.indexOf(" ")
 					let b= temp.indexOf(">")
 
@@ -297,11 +325,30 @@ var compile1= function(code,filename,options){
 					if(a > 0){
 						temp= temp.substring(0,a) + " " + ModInfo.cid + " " + temp.substring(a)
 					}
-					exports.template= temp
+					value.template= temp
 				}
 			}
+			if(value.__class){
+				
+				
+				value.__class.options.template = value.template 
+				var fns = value.__fns 
+				value = value.__class
 
-			return exports
+				var  _init = value.prototype._init
+				value.prototype._init = function(){
+					_init.apply(this, arguments)
+					fns.created && fns.created()
+
+
+					this.$options.destroyed = mergeFuncs(this.$options.destroyed, fns.destroyed)
+				}
+
+				
+				//fns.destroyed
+			}
+			exports = module.exports = value 
+			return value
 
 		}`)
 
