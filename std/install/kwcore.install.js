@@ -8,11 +8,14 @@ var dir2 = Path.normalize(Path.join(__dirname, ".."))
 
 
 var writePath = function (dir) {
+
+	var newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir
+
+
 	var file = Path.join(Os.homedir(), ".bashrc")
 	if (process.getuid() == 0) {
 		file = "/etc/bash.bashrc"
 	}
-	var newline = "\n#kwcore PATH\nexport PATH=\"$PATH:" + dir
 	var content = ''
 	if (fs.existsSync(file)) {
 		content = fs.readFileSync(file, 'utf8')
@@ -20,6 +23,23 @@ var writePath = function (dir) {
 	if (content.indexOf(newline) < 0) {
 		fs.writeFileSync(file, content + newline + "\"\n")
 	}
+
+
+	file = Path.join(Os.homedir(), ".zshrc")
+	if (process.getuid() == 0) {
+		file = "/etc/zsh/zshrc"
+		if(!fs.existsSync("/etc/zsh")){
+			fs.mkdirSync("/etc/zsh")
+		}
+	}
+	var content = ''
+	if (fs.existsSync(file)) {
+		content = fs.readFileSync(file, 'utf8')
+	}
+	if (content.indexOf(newline) < 0) {
+		fs.writeFileSync(file, content + newline + "\"\n")
+	}
+
 
 
 	if (process.getuid() != 0) {

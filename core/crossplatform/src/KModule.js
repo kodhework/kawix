@@ -262,7 +262,7 @@ var builtinModules = _module.builtinModules;
 		for (var i = 0; i < Mod._virtualredirect.length; i++) {
 			data = Mod._virtualredirect[i]
 
-			if (file.startsWith(data.resolvedpath)) {
+			if (file.startsWith(data.resolvedpath + "/") || file == data.resolvedpath) {
 
 				name = Path.relative(data.resolvedpath, file)
 				redir = data.redirect + (data.redirect.endsWith("/") ? "" : "/") + "default"
@@ -807,9 +807,13 @@ var builtinModules = _module.builtinModules;
 			else {
 
 				transpilerOptions = {
+					/*
 					presets: ["typescript", 'es2015', 'es2016', 'es2017', ['stage-2', {
-						decoratorsBeforeExport: false
+						decoratorsBeforeExport: true,
+						experimentalDecorators: true
 					}]],
+					"plugins": ["transform-decorators-legacy", "transform-class-properties"],
+					*/
 					sourceMaps: true,
 					comments: true,
 					filename: file

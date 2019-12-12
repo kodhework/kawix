@@ -12,9 +12,11 @@ Next.prototype.transpile= function(source, options){
 		}
 	}
 
-	if(!Babel)
-		Babel = require("./babel")
-
+	if(!Babel){
+		require("./babel")
+		Babel = ___Babel 
+	}
+	/*
 	if (!options) {
 		options = {
 			presets: ['typescript', 'es2015','es2016','es2017',['stage-2',{
@@ -24,20 +26,27 @@ Next.prototype.transpile= function(source, options){
 			comments: false
 		}
 	}
-	
+	*/
 	if(!options.filename.endsWith(".js")){
+		/*
 		if(options.presets && options.presets.indexOf("typescript") >= 0){
 			options.filename += ".ts"
-		}
+		}*/
 	}
+
+	/*
 	// options.filename += ".js"
 	if(!options.plugins){
 		if(!dynamicImport)
 			dynamicImport=require("./babel.dynamic.import.js")
 		options.plugins= [dynamicImport]
-	}
+	}*/
+	var result 
 	
-	var result= Babel.transform(source, options)
+	if(Babel.__defaultTransform)
+		result = Babel.__defaultTransform(source,options)
+	else 
+		result= Babel.transform(source, options)
 	if(result.code){
 		result.code += transpiledLine
 		if(result.code.trim().startsWith("#!")){
