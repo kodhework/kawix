@@ -27,11 +27,12 @@ Next.prototype.transpile= function(source, options){
 		}
 	}
 	*/
-	if(!options.filename.endsWith(".js")){
+	if(!options.filename.endsWith(".ts")){
 		/*
 		if(options.presets && options.presets.indexOf("typescript") >= 0){
 			options.filename += ".ts"
 		}*/
+		options.filename += ".ts"
 	}
 
 	/*

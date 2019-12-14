@@ -62,9 +62,7 @@ class Generator {
 					// TRANSPILE? 
 					content = content.toString('utf8')
 					let transpilerOptions = {
-						presets: ["typescript", 'es2015', 'es2016', 'es2017', ['stage-2', {
-							decoratorsBeforeExport: false
-						}]],
+						
 						sourceMaps: true,
 						comments: true,
 						filename: ufile
