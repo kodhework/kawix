@@ -1448,7 +1448,6 @@ Mod._import = function (file, options) {
 					cfile = file + ext
 				}
 
-				console.info("CFILE:", cfile)
 				fs.access(cfile, fs.constants.F_OK, function (err) {
 					if (err) {
 						// test next
