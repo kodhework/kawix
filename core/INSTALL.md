@@ -19,6 +19,17 @@ Only x64 is supported
 curl  -sL https://kwx.kodhe.com/x/std/install/mac.sh | bash
 ```
 
+## Android 
+
+
+Just now only TERMUX supported.
+First install termux application from playstore.
+
+```bash
+pkg install -y curl
+curl  -sL https://kwx.kodhe.com/x/std/install/android.sh | bash
+```
+
 
 # Install instructions
 
