@@ -57,7 +57,7 @@ ln -sf bin/kawix ./kawix
 echo "process.env.KWCORE_EXECUTE=1;require('./kwcore.app.js');" > "$_HOME/bin/kwcore.start.js"
 
 
-ln -sf "$_HOME/bin/kwcore" $_HOME/../usr/bin/kwcore
+ln -sf "$_HOME/bin/kwcore" $HOME/../usr/bin/kwcore
 
 cd "$_HOME/bin"
 ./kwcore kwcore.install.js
