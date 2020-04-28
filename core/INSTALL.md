@@ -23,7 +23,7 @@ curl  -sL https://kwx.kodhe.com/x/std/install/mac.sh | bash
 
 
 Just now only TERMUX supported.
-First install (termux)[https://play.google.com/store/apps/details?id=com.termux&hl=] application from playstore and execute the commands:
+First install [termux](https://play.google.com/store/apps/details?id=com.termux) application from playstore and execute the commands:
 
 ```bash
 pkg install -y curl
