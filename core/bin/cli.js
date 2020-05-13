@@ -84,9 +84,9 @@ var enableUi = function (force, i) {
 			forceui = force
 			cmdargs = ["-e"].concat(args1)
 			if(cmd && cmd.indexOf("xfce4")>=0){
-				cmdargs = ["-e", "'" + args1.map(function(a){
+				cmdargs = ["-e", args1.map(function(a){
 					return '"' + a + '"'
-				}).join(" ") + "'"]
+				}).join(" ") ]
 			}
 		}
 	}
