@@ -71,7 +71,6 @@ var enableUi = function (force, i) {
 				if (fs.existsSync(cmd))
 					break
 			}
-
 			args1 = args.map(function (a, index) {
 				if (index == i) {
 					return undefined
@@ -84,6 +83,11 @@ var enableUi = function (force, i) {
 
 			forceui = force
 			cmdargs = ["-e"].concat(args1)
+			if(cmd && cmd.indexOf("xfce4")>=0){
+				cmdargs = ["-e", "'" + args1.map(function(a){
+					return '"' + a + '"'
+				}).join(" ") + "'"]
+			}
 		}
 	}
 	else if (Os.platform() == "win32") {
@@ -194,7 +198,7 @@ for (var i = 2; i < args.length; i++) {
 			force: true
 		}).then(function (pack1) {
 
-			if (pack.version >= pack1.version) {
+			if (pack.stdVersion >= pack1.version) {
 				console.info(" > Core is up to date. Searching updates for stdlib")
 				InstallStd()
 				//console.info("> kawix/core is up to date")
@@ -398,7 +402,7 @@ for (var i = 2; i < args.length; i++) {
 				if (kwa) {
 
 					// LOAD THE KWA REGISTER
-					Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/stdlib.js")
+					Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.stdVersion + "/std/dist/stdlib.js")
 						.then(function () {
 
 							Kawix.KModule.import("/virtual/@kawix/std/package/kwa/register")
@@ -409,9 +413,9 @@ for (var i = 2; i < args.length; i++) {
 				}
 				else if (enableCoffee) {
 					pack = require("../package.json")
-					return Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.version + "/std/coffeescript/register", options)
+					return Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.stdVersion + "/std/coffeescript/register", options)
 						.then(function () {
-							Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.version + "/std/coffeescript/cson/register", options)
+							Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.stdVersion + "/std/coffeescript/cson/register", options)
 								.then(func).catch(erfunc)
 						}).catch(erfunc)
 				} else {
