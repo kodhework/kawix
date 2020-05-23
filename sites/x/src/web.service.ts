@@ -53,6 +53,9 @@ export async function invoke(env, ctx){
 
 	let repo = await registry()
 	let library = env.params.lib || env.params.lib_discover_version
+	if(!env.params.version){
+		env.params.version = "master"
+	}
 	let version = "master"
 	if(library){
 		let y = library.indexOf("@")
