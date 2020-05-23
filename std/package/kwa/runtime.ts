@@ -88,8 +88,8 @@ export class Runtime{
             if (await fs.existsAsync(ifolder)) {
                 toremove.push(ifolder)
 				creations++
-            } else {
 				ifolder = Path.join(folder, creations.toString())
+            } else {				
                 break
             }
         }

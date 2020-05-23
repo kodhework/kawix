@@ -108,6 +108,8 @@ export async function invoke(env, ctx){
 		version = vers[0].branch
 	}
 
+	env.params.lib = library 
+	env.params.version = version
 
 	let file = env.params.file= env.params["*"]
 	let url = libInfo.url
@@ -133,7 +135,7 @@ export async function invoke(env, ctx){
 
 				try{
 					let response = await axios({
-						method: 'HEAD',
+						method: 'GET',
 						url
 					})
 					/*
