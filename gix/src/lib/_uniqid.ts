@@ -1,3 +1,4 @@
-import def from '../../../std/util/uniqid/mod'
+import '../../base_import'
+import def from '/virtual/@kawix/std/util/uniqid/mod'
 export default def
-export * from '../../../std/util/uniqid/mod'
+export * from '/virtual/@kawix/std/util/uniqid/mod'

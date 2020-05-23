@@ -1,3 +1,4 @@
-import def from '../../../std/package/registry'
+import '../../base_import'
+import def from '/virtual/@kawix/std/package/registry'
 export default def
-export * from '../../../std/package/registry'
+export * from '/virtual/@kawix/std/package/registry'

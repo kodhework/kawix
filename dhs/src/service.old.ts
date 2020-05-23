@@ -1,6 +1,6 @@
 
 import {Exception} from './exception'
-import KawixHttp from '../../std/http/mod';
+import KawixHttp from '/virtual/@kawix/std/http/mod';
 import Url from 'url';
 import Path from 'path';
 import Cluster from 'cluster';
@@ -17,7 +17,7 @@ import {
 import { AddressInfo } from 'net';
 import * as Types from './typings'
 
-declare var kawix 
+declare var kawix
 export class Service extends EventEmitter implements Types.DhsServer{
 
 	_crons: any
@@ -25,26 +25,26 @@ export class Service extends EventEmitter implements Types.DhsServer{
 	__id: number
 	_router
 	_cronstop: any
-	_socketpath: string 
+	_socketpath: string
 	_contexts: any
-	_concurrent: number 
-	__time: number 
-	__reloadtimeout: any 
+	_concurrent: number
+	__time: number
+	__reloadtimeout: any
 
-	__ks0: any 
-	__ks1: any 
-	__ks2: any 
-	
-
+	__ks0: any
+	__ks1: any
+	__ks2: any
 
 
-	static current: Service 
-	config: Config 
+
+
+	static current: Service
+	config: Config
 	workers: any[]
-	channel: IPC 
+	channel: IPC
 	address: AddressInfo
-	http: any 
-	started: number 
+	http: any
+	started: number
 
 	constructor(config1) {
 		super();
@@ -81,7 +81,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		return value
 	}
 
-	
+
 	async getDataPath(): Promise<string> {
 		var path;
 		path = Path.join(Os.homedir(), ".kawi");
@@ -118,16 +118,16 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			config = (await this.config.read());
 			//@config.on "include", @_include_to_workers.bind(@)
 			this.config.on("change", this._config_to_workers.bind(this));
-			
+
 			this.channel = new IPC(this);
 			this._socketpath = (await this.channel._getListenPath());
 			await this.channel.listen();
-		
+
 			return (await this._cluster());
 		} else {
 			this.config.stop();
 			delete this.config;
-			
+
 			await this.attachToMaster()
 
 			this.config = new ConfigIPC(this.channel)
@@ -345,7 +345,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		}
 	}
 
-	
+
 	// reload workers gracefull, when main configuration changed
 	async reloadCluster() {
 		var j, k, len, len1, ref, ref1, results, w;
@@ -410,7 +410,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		} else {
 			process.send("Listening: " + JSON.stringify(this.address))
 		}
-		
+
 
 		//@_router.get "/.o./config", @api_config.bind(@)
 		//@_router.all "*", @api_404.bind(@)
@@ -725,22 +725,22 @@ export class Service extends EventEmitter implements Types.DhsServer{
 
 	_createCallback(_route : string | Types.RouteDefinition, site) {
 		var g, h, par
-		var self = this 
+		var self = this
 
-		var route: Types.RouteDefinition 
+		var route: Types.RouteDefinition
 		if(typeof _route == "string"){
 			route = {
 				file: _route
 			}
 		}else{
-			route = _route 
+			route = _route
 		}
 
 
 		if (route.static) {
 			return this._createStaticCallback(route, site);
 		}
-		
+
 		par = {
 			c: {}
 		};
@@ -751,7 +751,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			par.file = this.config.resolvePath(route.file, site);
 		}
 		let ctx = this.getContext(site)
-		
+
 		g = async function(env) {
 			var e, file, method, mod, name, ref, ref1;
 			try {

@@ -1,5 +1,6 @@
 // Copyright 2019 Kodhe @kawix/kivi
-import '../std/coffeescript/register'
+import './base_import'
+import '/virtual/@kawix/std/coffeescript/register'
 import Parser from './parser'
 
 var compile= function(code, file, options){

@@ -4,14 +4,14 @@ import {
 	EventEmitter
 } from 'events'
 import Glob from '../glob/mod'
-import fs from '../../std/fs/mod'
+import fs from '/virtual/@kawix/std/fs/mod'
 import Path from 'path'
-import * as async from '../../std/util/async'
+import * as async from '/virtual/@kawix/std/util/async'
 export class Watcher extends EventEmitter {
-	private options 
-	private paths 
-	private _stats 
-	private _started 
+	private options
+	private paths
+	private _stats
+	private _started
 
 	constructor(options = {}) {
 		super();
@@ -93,14 +93,14 @@ export class Watcher extends EventEmitter {
 				this.emit("add", path, stat);
 			} else if (old.mtimeMs !== stat.mtimeMs) {
 
-				// THIS portions helps to determine if file still being written, 
-				// example when is downloading 
+				// THIS portions helps to determine if file still being written,
+				// example when is downloading
 				let nstat = await fs.statAsync(path)
 				while(true){
 					await async.sleep(100)
 					let newstat = await fs.statAsync(path)
 					if(newstat.size == nstat.size){
-						break 
+						break
 					}
 				}
 

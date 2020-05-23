@@ -6,9 +6,10 @@ import Exception from '../../util/exception'
 import Os from 'os'
 import { Readable } from 'stream'
 import Url from 'url'
+import { Unarchiver } from '../../compression/kzt/Unarchiver'
 
 var Id0 = 0
-declare var kawix 
+declare var kawix
 var _removedir = async function (path, retry = 0) {
     var e, file, files, i, len, stat, ufile;
     try {
@@ -68,40 +69,52 @@ export class Runtime{
         if (!fs.existsSync(folder)) {
             fs.mkdirSync(folder)
         }
-        
+
         var origin= Path.join(folder, "origin")
         if(!fs.existsSync(origin)){
             await fs.writeFileAsync(origin, filename)
         }
 
-        
-        var creations = 0
-        var sym = Path.join(folder, Path.basename(filename).substring(0, 60))        
-        var ifolder = Path.join(folder, creations.toString())
-        
 
-        // TRY REMOVE OLD FOLDERS? 
-        // maybe add this later 
-        
+        var creations = 0
+        var sym = Path.join(folder, Path.basename(filename).substring(0, 60))
+        var ifolder = Path.join(folder, creations.toString())
+
+
+        // TRY REMOVE OLD FOLDERS?
+        // maybe add this later
+		let toremove = []
         while (true) {
             if (await fs.existsAsync(ifolder)) {
-                try {
-                    await _removedir(ifolder)
-                    Id0++
-                }
-                catch (e) {
-                    creations++
-                    ifolder = Path.join(folder, creations.toString())
-                }
+                toremove.push(ifolder)
+				creations++
             } else {
+				ifolder = Path.join(folder, creations.toString())
                 break
             }
         }
+
+
 
         folder = ifolder
         await fs.mkdirAsync(folder)
 
         //if (!options.fromremote) {
+        if(options.compression == "kzt"){
+
+            let unarchiver:Unarchiver
+            try{
+                unarchiver = await Unarchiver.fromStream(stream)
+                await unarchiver.extractAllTo(folder)
+            }catch(e){
+                throw e
+            }
+            finally{
+                if(unarchiver) await unarchiver.dispose()
+            }
+
+        }
+        else{
             let def = new async.Deferred<void>()
             let stout= tar.x({
                 C: folder
@@ -111,24 +124,36 @@ export class Runtime{
             stout.on("error", def.reject)
             stout.on("finish", def.resolve)
             await def.promise
+        }
         /*}
         else {
             throw Exception.create("Not implemented").putCode("NOT_IMPLEMENTED")
         }*/
 
         try {
-            if (fs.existsSync(sym)) {
-                await fs.unlinkAsync(sym)
-            }
 
+			// remove async and put sync functions
+			// to avoid some sync problems
+            if (fs.existsSync(sym)) {
+                fs.unlinkSync(sym)
+            }
             try {
-                await fs.symlinkAsync(folder, sym, Os.platform() == "win32" ? "junction" : "dir")
+                fs.symlinkSync(folder, sym, Os.platform() == "win32" ? "junction" : "dir")
                 folder = sym
             } catch (e) {
-
             }
         } catch (e) {
         }
+
+
+		// DELETE PREVIOUS, NOT USED ANYMORE FOLDERS
+		if(toremove.length){
+			for(let i=0;i<toremove.length;i++){
+				try{
+					await _removedir(toremove[i])
+				}catch(e){}
+			}
+		}
 
 
         // tar uncompressed ...
@@ -141,12 +166,12 @@ export class Runtime{
 			try{
 				module.exports= await KModule.import(${JSON.stringify(Path.join(folder, 'mod'))})
 			}catch(e){
-                
+
                 if(e.message.indexOf("Cannot resolve") < 0){throw e}
                 else {
                     let files = fs.readdirSync(${JSON.stringify(Path.join(folder))})
                     if(files.length == 0)
-                        throw e 
+                        throw e
                 }
             }
             module.exports.kawixDynamic={
@@ -179,6 +204,6 @@ export class Runtime{
         return uri
     }
 
-    
+
 }
-export default Runtime 
+export default Runtime

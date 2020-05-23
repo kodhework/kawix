@@ -692,7 +692,8 @@ var builtinModules = _module.builtinModules;
 			}
 			var continue1 = function () {
 				if (!process.env.DISABLE_COMPILATION_INFO) {
-					console.info("Caching npm module: " + url + " ...")
+
+					console.info("\x1b[32m[kawix] NPM Module:", "\x1b[0m", url)
 				}
 				Mod._npmImport.resolve(module, {
 					nativeEnabled: npmi
@@ -2351,8 +2352,7 @@ var helper = {
 						return def.resolve(source)
 					}
 					if (!file.startsWith("npm:") && process.env.DISABLE_COMPILATION_INFO != 1) {
-
-						console.info(" > [kawix] Compiling file: ", file)
+						console.info("\x1b[32m[kawix] Compile:", "\x1b[0m", file)
 					}
 
 					try {

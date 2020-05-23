@@ -14,6 +14,14 @@ site:
 	]
 
 	routes: [
+
+		{
+			path: "/api/:lib_discover_version/versions"
+			method: "get"
+			file: "./src/web.service"
+		}
+
+
 		{
 			path: "/v/:version/:lib/*"
 			method: "get"

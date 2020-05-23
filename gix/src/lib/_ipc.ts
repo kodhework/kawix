@@ -1,3 +1,4 @@
-import def from '../../../std/ipc/channel'
+import '../../base_import'
+import def from '/virtual/@kawix/std/ipc/channel'
 export default def
-export * from '../../../std/ipc/channel'
+export * from '/virtual/@kawix/std/ipc/channel'

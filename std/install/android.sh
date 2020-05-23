@@ -61,4 +61,3 @@ ln -sf "$_HOME/bin/kwcore" $HOME/../usr/bin/kwcore
 
 cd "$_HOME/bin"
 ./kwcore kwcore.install.js
-

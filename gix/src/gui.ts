@@ -1,4 +1,6 @@
 
+import '../base_import'
+
 import {
 	EventEmitter
 } from 'events';
@@ -9,18 +11,18 @@ import Os from 'os'
 import Url from 'url'
 import fs from './lib/_fs'
 import IPC from './ipc'
-import Exception from './exception' 
-import Registry from '../../std/package/registry.yarn'
+import Exception from './exception'
+import Registry from '/virtual/@kawix/std/package/registry.yarn'
 
-declare var kawix 
+declare var kawix
 
 export class GuiServer {
-	_f: any 
-	_evs: any 
-	_electron: any 
-	_evdef: any 
-	store: any 
-	
+	_f: any
+	_evs: any
+	_electron: any
+	_evdef: any
+	store: any
+
 
 	constructor() {
 		this._evs = [];
@@ -115,20 +117,20 @@ export class GuiServer {
 }
 
 export class Gui extends EventEmitter {
-	id: string 
+	id: string
 	ipc: IPC
-	api: any 
+	api: any
 	_locked: boolean
-	electron: any 
+	electron: any
 	_p: Child.ChildProcess
-	store: any 
+	store: any
 	static s: any
 
 	constructor(id: string) {
 		super();
 		this.id = id
 		this.ipc = new IPC(this.id)
-		this.ipc.autoconnect = false 
+		this.ipc.autoconnect = false
 		this.api = {}
 		this.store = {}
 	}
@@ -243,7 +245,7 @@ export class Gui extends EventEmitter {
 			val = (await this._check_secondinstance());
 			if (val) {
 				this.ipc = new IPC(this.id);
-				this.ipc.autoconnect = false 
+				this.ipc.autoconnect = false
 				await this.connect();
 				this._locked = true;
 				return true;
@@ -283,13 +285,13 @@ export class Gui extends EventEmitter {
 			let appFile = Path.join(Os.homedir(),"Kawix", "Electron", "app." + wantedversion)
 			let versioning = Path.join(Os.homedir(),"Kawix","gix.electron.version")
 
-			
+
 			if(!fs.existsSync(gelectronFolder)){
 				await fs.mkdirAsync(gelectronFolder)
 			}
 
 			if(process.env.KWCORE_APP_ID){
-				gelectronFolder = Path.join(gelectronFolder, process.env.KWCORE_APP_ID)				
+				gelectronFolder = Path.join(gelectronFolder, process.env.KWCORE_APP_ID)
 				if(!fs.existsSync(gelectronFolder)){
 					await fs.mkdirAsync(gelectronFolder)
 				}
@@ -313,7 +315,7 @@ export class Gui extends EventEmitter {
 						if(files[i] == "electron"){
 							let outf = Path.join(gelectronFolder, files[i])
 							if(!fs.existsSync(appFile)){
-								await fs.copyFileAsync(Path.join(mod.folder,"dist", files[i]), appFile)	
+								await fs.copyFileAsync(Path.join(mod.folder,"dist", files[i]), appFile)
 							}
 							await fs.linkAsync(appFile, outf)
 							await fs.chmodAsync(outf, "755")
@@ -327,23 +329,23 @@ export class Gui extends EventEmitter {
 				dist = gelectronFolder
 				startfile = Path.join(gelectronFolder, "start.js")
 				this.startfile = startfile
-				
+
 
 			}
-			
-				
+
+
 
 			/*
 			if(!fs.existsSync(electronFolder)){
 				if(Os.platform() == "win32")
 					await fs.symlinkAsync(mod.folder, electronFolder,"junction")
-				else 
+				else
 					await fs.symlinkAsync(mod.folder, electronFolder)
 			}*/
 
 
 
-			
+
 			if (Os.platform() === "win32") {
 				dist = Path.join(dist, "electron.exe");
 			} else if (Os.platform() === "darwin") {
@@ -358,7 +360,7 @@ export class Gui extends EventEmitter {
 				// create a hard link of electron
 				if(Os.platform() == "linux"){
 
-					// this is for allow customizable desktop files 
+					// this is for allow customizable desktop files
 					// for correct iconing on systems like plank for example
 					let newdist = Path.join(Path.dirname(dist), "electron-" + process.env.KWCORE_APP_ID)
 					if(!fs.existsSync(newdist)){
@@ -366,17 +368,17 @@ export class Gui extends EventEmitter {
 						await fs.chmodAsync(newdist, "755")
 					}
 					dist = newdist
-					
+
 				}
 
 			}
 			*/
-			
+
 			//if (!(await this._checkFileExists(dist))) {
 				//Installer = (await import("../electron-install"));
 				//await Installer.install();
-				
-				
+
+
 				if (!(await this._checkFileExists(dist))) {
 					throw Exception.create("Failed to install electron").putCode("LOAD_FAILED");
 				}
@@ -415,7 +417,7 @@ export class Gui extends EventEmitter {
 			let content = `
 			if(process.env.GIX_START == 1){
 				console.log('executing here')
-				require(${JSON.stringify(kawix.__file)})	
+				require(${JSON.stringify(kawix.__file)})
 				kawix.KModule.injectImport()
 				var start = ${JSON.stringify(file3)}
 				var id = ${JSON.stringify(id)}
@@ -430,7 +432,7 @@ export class Gui extends EventEmitter {
 					console.error("Failed execute: ", e)
 					process.exit(10)
 				})
-			}		
+			}
 			else{
 				var Child = require("child_process")
 				var child = Child.spawn(${JSON.stringify(zargs.name)}, ${JSON.stringify(zargs.args)}, {
@@ -450,9 +452,9 @@ export class Gui extends EventEmitter {
 				await fs.writeFileAsync(startfile, content)
 			targs = [startfile]
 		}
-		
 
-		
+
+
 		def = this.deferred();
 		env = Object.assign({}, process.env);
 		delete env.ELECTRON_RUN_AS_NODE;

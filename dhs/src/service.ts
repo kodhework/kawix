@@ -1,11 +1,11 @@
 
 // 2019-10-09
 // New module for IPC, advanced and more stable
-import {Channel} from '../../std/rpa/channel'
+import {Channel} from '/virtual/@kawix/std/rpa/channel'
 
 
-import Exception from '../../std/util/exception'
-import KawixHttp from '../../std/http/mod'
+import Exception from '/virtual/@kawix/std/util/exception'
+import KawixHttp from '/virtual/@kawix/std/http/mod'
 import Url from 'url'
 import Path from 'path'
 import Cluster from 'cluster'
@@ -228,7 +228,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 
 
 		w.on("error", function(e) {
-			return console.error(" > [kawix/dhs] Error in worker: ", w.pid, e);
+			return console.error("[kawix/dhs] Error in worker: ", w.pid, e);
 		});
 		w.once("exit", function() {
 			var i;
@@ -237,7 +237,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			if (!w.finished) {
 				return self._fork(cluster);
 			} else {
-				return console.info(` > [kawix/dhs] Worker ${w.pid} fully closed`);
+				return console.info(`[kawix/dhs] Worker ${w.pid} fully closed`);
 			}
 		});
 
@@ -304,7 +304,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 
 		def = new async.Deferred<any>()
 		this.address = (await this.http.listen(addr))
-		console.info(" > [kawix/dhs] Listening on: ", this.address)
+		console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" +  "Listening on ", this.address)
 		if (Cluster.isMaster) {
 			this.emit("listen", this.address)
 		} else {
@@ -409,7 +409,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			if (cron.id) {
 				ccron = this._crons[cron.id]
 			}
-			console.log(` > [kawix/dhs] Starting cron ${cron.id}`)
+			console.log("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" +`Starting cron ${cron.id}`)
 			cron._executing = true
 			if (ccron) {
 				ccron._executing = true
@@ -425,7 +425,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			}
 		} catch (error) {
 			e = error
-			return console.error(` > [kawix/dhs] Failed executing cron: ${cron.name || 'nodefined'} in site ${site.name}. Error: `, e)
+			return console.error(`[kawix/dhs] Failed executing cron: ${cron.name || 'nodefined'} in site ${site.name}. Error: `, e)
 		} finally {
 			cron._executing = false
 			if (ccron) {
@@ -438,7 +438,9 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		if(this.startbuildingRoutes.timer){
 			clearTimeout(this.startbuildingRoutes.timer)
 		}
-		this.startbuildingRoutes.timer = setTimeout(this.buildRoutes.bind(this), 200)
+
+		// Previous 200ms, now wait about 1.5 second, maybe is better
+		this.startbuildingRoutes.timer = setTimeout(this.buildRoutes.bind(this), 1500)
 
 	}
 
@@ -455,14 +457,18 @@ export class Service extends EventEmitter implements Types.DhsServer{
 				this.__time = config.__time
 				// close for restart, only if multiprocess
 				if(!Cluster.isMaster){
-					console.info(" > [kawix/dhs] Main config change detected, restarting cluster")
+					console.info("[kawix/dhs] Main config change detected, restarting cluster")
 					this.closeAndExit()
 					return
 				}
 			}else{
-				console.info(" > [kawix/dhs] Site change detected ...")
+				console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" + " Site change detected")
 			}
 		}
+
+
+		// wait a little?
+
 		this.config.once("change", this.startbuildingRoutes.bind(this))
 		if (!config.sites) {
 			return
@@ -547,7 +553,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 				}
 			} catch (error) {
 				e = error
-				results.push(console.error(" > [kawix/dhs] Failed reloading site routes: ", e))
+				results.push(console.error("[kawix/dhs] Failed reloading site routes: ", e))
 			}
 		}
 		return results
@@ -962,7 +968,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 				env.error = e
 				this.api_500(env)
 			} else {
-				console.error(` > [kawix/dhs] Error in server handle: ${e.stack}`)
+				console.error(`[kawix/dhs] Error in server handle: ${e.stack}`)
 			}
 			return env = null
 		} finally {

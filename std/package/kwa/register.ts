@@ -9,6 +9,7 @@ import crypto from 'crypto'
 import Os from 'os'
 import Path from 'path'
 import uniqid from '../../util/uniqid'
+import {Unarchiver} from '../../compression/kzt/Unarchiver'
 var Https = {
 	"http:": http,
 	"https:": https
@@ -82,6 +83,20 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 
 		}
 
+		// saber si es KZT
+		options = options || {}		
+		let unan:Unarchiver = null
+		try{
+			unan = new Unarchiver(path)
+			let isKzt = await unan.isValid()
+			if(isKzt){
+				options.compression = "kzt"
+			}
+		}catch(e){
+			throw e 
+		}finally{
+			await (unan && unan.dispose())
+		}
 
 		let start = -1
 		def = new async.Deferred<void>()
@@ -136,8 +151,8 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 		stream = fs.createReadStream(filename, {
 			start
 		})
-
 	}
+
 	return await Runtime._internal_execute(stream, filename, uri, options, helper)
 }
 

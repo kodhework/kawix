@@ -1,17 +1,25 @@
-import fs from './fs/mod'
+
+import fs from '../std/fs/mod'
 import Path from 'path'
 import Zlib from 'zlib'
-
 // empaquetar kwcore en un solo archivo que se auto extrae
 
 class Generator {
-	constructor() {
-		
-		this.dir = Path.resolve(Path.join(__dirname, "..", "core"))
-		var pack = Path.resolve(Path.join(__dirname, "..", "core", "package.json"))
+
+	private content: Array<string>;
+	private commands: Array<string>;
+	private files: Array<string>;
+	private libname: string;
+	private dir: string;
+	private version: string
+	private corefolder: string
+	constructor(dirname, libname, basename) {
+		this.libname = libname
+		this.dir = dirname
+		var pack = Path.resolve(Path.join(__dirname, "..", "gix", "package.json"))
 		var config = require(pack)
 		this.version = config.version
-		this.corefolder = "core." + config.version
+		this.corefolder = (basename || libname) + "." + config.version
 		this.content = []
 		this.commands = []
 		this.files = []
@@ -26,17 +34,17 @@ class Generator {
 		})
 	}
 
-	async read(dir) {
+	async read(dir?:string) {
 		if (!dir)
 			dir = this.dir
 		var files = await fs.readdirAsync(dir)
 		var file, ufile, stat, v, content
 		v = Path.relative(this.dir, dir)
-		if (v == "example" || v == "dist") {
+		if (v == "example" || v == "test" || v == "dist" || v == "core" || v == "icons" || v == "sites") {
 			return
 		}
 
-		var rfile
+		var rfile, content
 		for (var i = 0; i < files.length; i++) {
 			file = files[i]
 			ufile = Path.join(dir, file)
@@ -48,8 +56,25 @@ class Generator {
 				await this.read(ufile)
 			} else {
 				rfile = Path.relative(this.dir, ufile)
-				this.files.push(Path.relative(this.dir, ufile))
-				content = await this.gzipContent(await fs.readFileAsync(ufile))
+
+				content = await fs.readFileAsync(ufile)
+				if(ufile.endsWith(".ts") || ufile.endsWith(".js")){
+					// TRANSPILE?
+					content = content.toString('utf8')
+					let transpilerOptions = {
+
+						sourceMaps: true,
+						comments: true,
+						filename: ufile
+					}
+					let ast = global.kawix.NextJavascript.transpile(content, transpilerOptions)
+					//let changed = global.kawix.KModule.injectImports(ast.code)
+					//content = Buffer.from(changed.source)
+					content = Buffer.from(ast.code)
+				}
+
+				this.files.push(rfile)
+				content = await this.gzipContent(content)
 				this.content.push(content.toString('base64'))
 			}
 		}
@@ -58,7 +83,6 @@ class Generator {
 
 	getString() {
 		var code = `#!/usr/bin/env node
-
 var Os= require('os')
 var Path= require('path')
 var fs= require('fs')
@@ -66,35 +90,44 @@ var Zlib= require('zlib')
 var home= Os.homedir()
 
 var corefolder= ${JSON.stringify(this.corefolder)}
-var coredefault= Path.join(home, "Kawix", "core")
-var corevdefault= Path.join(home, "Kawix", "core", "verification.file")
-var verification= Path.join(home, "Kawix",corefolder, "verification.file")
+var coredefault= Path.join(home, "Kawix", "${this.libname}")
+var corevdefault= Path.join(home, "Kawix", "${this.libname}", "verification.file")
+var verification= Path.join(home, "Kawix", corefolder,  "${this.libname}", "verification.file")
 var out, installed
+
+kawix.KModule.addVirtualFile("@kawix/${this.libname}", {
+	redirect: Path.join(home, "Kawix", corefolder,  "${this.libname}"),
+	isdirectory: true
+})
 
 main()
 
+function _export(out){
+	module.exports = {
+		filename: out ,
+		dirname: Path.dirname(out)
+	}
+}
+
 function main(){
+
+	/* this is commented, because the idea is load specific version
+
 	if(fs.existsSync(corevdefault)){
 		installed= fs.readFileSync(corevdefault,'utf8')
 		if(installed >= ${JSON.stringify(this.version)}){
-			out= Path.join(home,"Kawix", "core")
-			if(process.env.KWCORE_EXECUTE == 1){
-				delete process.env.KWCORE_EXECUTE
-				out= Path.join(out,"bin", "cli.js")
-			}
-			module.exports= require(out)
+			out= Path.join(home,"Kawix", "${this.libname}")
+			out= Path.join(out,"mod")
+			_export(out)
 			return
 		}
-	}
+	}*/
 
 
 	if(fs.existsSync(verification)){
-		out= Path.join(home,"Kawix", corefolder)
-		if(process.env.KWCORE_EXECUTE == 1){
-			delete process.env.KWCORE_EXECUTE
-			out= Path.join(out,"bin", "cli.js")
-		}
-		module.exports= require(out)
+		out= Path.join(home,"Kawix", corefolder, "${this.libname}")
+		out= Path.join(out,"mod")
+		_export(out)
 		return
 	}
 
@@ -104,6 +137,11 @@ function main(){
 	}
 
 	out= Path.join(out, corefolder)
+	if(!fs.existsSync(out)){
+		fs.mkdirSync(out)
+	}
+
+	out= Path.join(out, "${this.libname}")
 	if(!fs.existsSync(out)){
 		fs.mkdirSync(out)
 	}
@@ -122,13 +160,10 @@ function main(){
 		content= Zlib.gunzipSync(content)
 		fs.writeFileSync(Path.join(out, file), content)
 	}
-
-	if(process.env.INSTALL_KWCORE){
-		//XXX
-	}
-
 	fs.writeFileSync(verification, ${JSON.stringify(this.version)})
 
+
+	/*
 	// make a junction or symlink
 	if(fs.existsSync(coredefault)){
 		fs.unlinkSync(coredefault)
@@ -138,14 +173,11 @@ function main(){
 	else
 		fs.symlinkSync(out, coredefault)
 
+	*/
 
 
-
-	if(process.env.KWCORE_EXECUTE == 1){
-		delete process.env.KWCORE_EXECUTE
-		out= Path.join(out,"bin", "cli.js")
-	}
-	module.exports= require(out)
+	out= Path.join(out, "mod")
+	_export(out)
 }
 
 function contentData(){
@@ -158,12 +190,11 @@ function contentData(){
 	async writeToFile(file) {
 		await fs.writeFileAsync(file, this.getString())
 	}
-
 }
 
 init()
 async function init() {
-	var generator = new Generator()
+	var generator = new Generator(__dirname + "/../gix", 'gix', 'Library')
 	await generator.read()
-	await generator.writeToFile(__dirname + "/../core/dist/kwcore.app.js")
+	await generator.writeToFile(__dirname + "/../gix/dist/register.js")
 }

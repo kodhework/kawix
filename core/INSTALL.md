@@ -3,7 +3,7 @@
 Universal Installer (32bit, 64bit, autoupdated)  available for Windows. Please go to [https://github.com/kodhework/kawix/releases/tag/universal-2](https://github.com/kodhework/kawix/releases/tag/universal-2)
 
 
-## Linux 
+## Linux
 
 Only x64 is supported. Install ```curl``` if is not installed
 
@@ -11,7 +11,7 @@ Only x64 is supported. Install ```curl``` if is not installed
 curl  -sL https://kwx.kodhe.com/x/std/install/linux.sh | bash
 ```
 
-## MacOs 
+## MacOs
 
 Only x64 is supported
 
@@ -19,7 +19,7 @@ Only x64 is supported
 curl  -sL https://kwx.kodhe.com/x/std/install/mac.sh | bash
 ```
 
-## Android 
+## Android
 
 
 Just now only TERMUX supported.
@@ -35,9 +35,9 @@ curl  -sL https://kwx.kodhe.com/x/std/install/android.sh | bash
 
 If you have installed ```@kawix/core```, you can get the latest version executing the same installer or executing this command on your terminal/cmd
 
-```bash 
+```bash
 kwcore --update
-``` 
+```
 
 
 
@@ -48,6 +48,3 @@ All installer create some file asociations, suitable for distribute executable f
 * ```.kwe``` Will be treat as ```.js``` file but will open a terminal GUI
 * ```.kwo``` Will be treat as ```.js``` file but will not open a terminal GUI. Ideal for GUI apps
 * ```.kwsh``` Is an special format, still not documented
-
-
-

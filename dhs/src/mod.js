@@ -1,10 +1,11 @@
 // enable coffeescript and cson
+
 import '../../std/coffeescript/register'
-import reg from '../../std/coffeescript/cson/register'
+import '../../std/coffeescript/cson/register'
 // this is specific of @kawix/core
 if(global.kawix ){
 	var redirs= kawix.KModule._virtualredirect
-	var a 
+	var a
 	a= redirs.filter(function(a){
 		return a.isdirectory && a.resolvedpath == "/virtual/@kawix/dhs"
 	})

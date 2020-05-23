@@ -1,8 +1,8 @@
-import Registry from '../../../std/package/registry'
-import Bundler from '../../../std/package/bundle'
-import KawixHttp from '../../../std/http/mod'
-import Exception from '../../../std/util/exception'
-import fs from '../../../std/fs/mod'
+import Registry from '/virtual/@kawix/std/package/registry'
+import Bundler from '/virtual/@kawix/std/package/bundle'
+import KawixHttp from '/virtual/@kawix/std/http/mod'
+import Exception from '/virtual/@kawix/std/util/exception'
+import fs from '/virtual/@kawix/std/fs/mod'
 import Path from 'path'
 
 
@@ -108,7 +108,7 @@ generate1= (params)->
 				options.ignoredependencies= yes
 			if params.cachedir and params.complete
 				options.output= params.cachedir
-				
+
 			reg= new Registry options
 
 
@@ -411,9 +411,9 @@ export invoke= (env,ctx)->
 		if res.static
 
 			if env.request.query?.dev is "1"
-				# server direct 
+				# server direct
 				env.reply.header("content-type","application/javascript;charset=utf8").send(await fs.readFileAsync(res.path))
-				return 
+				return
 
 
 			env.request.url= "/" + Path.basename(res.path)

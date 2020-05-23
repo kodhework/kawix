@@ -1,10 +1,10 @@
 
 
 
-import Registry from '../../../std/package/registry.yarn'
+import Registry from '/virtual/@kawix/std/package/registry.yarn'
 import Path from 'path'
-import Exception from '../../../std/util/exception'
-import uniqid from '../../../std/util/uniqid'
+import Exception from '/virtual/@kawix/std/util/exception'
+import uniqid from '/virtual/@kawix/std/util/uniqid'
 import {parse as parsex} from 'npm://@vue/component-compiler-utils@^2.6.0'
 
 var VueCompiler
@@ -88,7 +88,7 @@ var compile1= function(code,filename,options){
 
 			delete ast.options
 			delete ast.map
-			
+
 			//console.log("Vue filename:",filename)
 
 			kawixAsync.push(`
@@ -251,7 +251,7 @@ var compile1= function(code,filename,options){
 					a = a || function(){}
 					let v = a.apply(this,arguments)
 					b.apply(this,arguments)
-					return v 
+					return v
 				}
 			}
 			var injectStyles= function(styles){
@@ -329,10 +329,10 @@ var compile1= function(code,filename,options){
 				}
 			}
 			if(value.__class){
-				
-				
-				value.__class.options.template = value.template 
-				var fns = value.__fns 
+
+
+				value.__class.options.template = value.template
+				var fns = value.__fns
 				value = value.__class
 
 				var  _init = value.prototype._init
@@ -344,10 +344,10 @@ var compile1= function(code,filename,options){
 					this.$options.destroyed = mergeFuncs(this.$options.destroyed, fns.destroyed)
 				}
 
-				
+
 				//fns.destroyed
 			}
-			exports = module.exports = value 
+			exports = module.exports = value
 			return value
 
 		}`)

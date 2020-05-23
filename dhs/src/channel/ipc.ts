@@ -1,16 +1,16 @@
 
 
 import Path from 'path'
-import ipc from '../../../std/ipc/channel'
+import ipc from '/virtual/@kawix/std/ipc/channel'
 import Os from 'os'
-import fs from '../lib/_fs'
+import fs from '/virtual/@kawix/std/util/fs/mod'
 
 
 export class IPC extends ipc {
 
-	server : any 
-	_deferred: any 
-	_address: string 
+	server : any
+	_deferred: any
+	_address: string
 
 	constructor(server, id?: any) {
 		super(id)

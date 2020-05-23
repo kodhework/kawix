@@ -2,12 +2,12 @@
 // this get a remote instance of electron
 // capable of make anything like running a file in electron directly
 
-
-import Registry from '../../std/package/registry.yarn'
-import fs from '../../std/fs/mod'
-import Exception from '../../std/util/exception'
-import * as async from '../../std/util/async'
-import { Channel as RPAChannel } from '../../std/rpa/channel'
+import '../base_import'
+import Registry from '/virtual/@kawix/std/package/registry.yarn'
+import fs from '/virtual/@kawix/std/fs/mod'
+import Exception from '/virtual/@kawix/std/util/exception'
+import * as async from '/virtual/@kawix/std/util/async'
+import { Channel as RPAChannel } from '/virtual/@kawix/std/rpa/channel'
 
 
 import Path from 'path'

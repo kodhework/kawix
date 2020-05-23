@@ -1,3 +1,4 @@
-import def from '../../../std/fs/mod'
+import '../../base_import'
+import def from '/virtual/@kawix/std/fs/mod'
 export default def
-export * from '../../../std/fs/mod'
+export * from '/virtual/@kawix/std/fs/mod'

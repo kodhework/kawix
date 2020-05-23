@@ -1,5 +1,7 @@
-import Bundler from '../std/package/bundle.js'
-import Registry from '../std/package/registry.js'
+import './base_import'
+
+import Bundler from '/virtual/@kawix/std/package/bundle.js'
+import Registry from '/virtual/@kawix/std/package/registry.js'
 import Path from 'path'
 
 var init = async function () {

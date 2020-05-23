@@ -8,7 +8,7 @@ import parser from 'npm://pug-parser@^5.0.0'
 import codegen from 'npm://pug-code-gen@^2.0.1'
 
 
-import Exception from '../../../std/util/exception'
+import Exception from '/virtual/@kawix/std/util/exception'
 import Path from 'path'
 
 if (typeof kwcore != "object" || !kwcore) {

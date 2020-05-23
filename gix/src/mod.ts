@@ -1,5 +1,4 @@
 // enable coffeescript and cson
-import '../../std/coffeescript/register'
-import '../../std/coffeescript/cson/register'
-
-
+import '../base_import'
+import '/virtual/@kawix/std/coffeescript/register'
+import '/virtual/@kawix/std/coffeescript/cson/register'

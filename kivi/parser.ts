@@ -1,11 +1,10 @@
 //import parse5 from 'npm://parse5@^5.0.1'
 var Parser;
+import './base_import'
+import parse5 from './parse5'
 
-import parse5 from './parse5';
-
-import Exception from '../std/util/exception';
-
-import CoffeeScript from '../std/coffeescript/runtime';
+import Exception from '/virtual/@kawix/std/util/exception'
+import CoffeeScript from '/virtual/@kawix/std/coffeescript/runtime'
 
 Parser = class Parser {
 	_array_to_object(arr, o = {}) {
@@ -76,7 +75,7 @@ Parser = class Parser {
 		if (!exp) {
 			throw Exception.create(`Parsing: line ${rcode.line} - col ${rcode.col}. ${node.nodeName} need an attribute \`expression\``);
 		}
-		
+
 		//c= rcode.expressions[rcode.lang] ? (rcode.expressions[rcode.lang] = {})
 		//if not c[exp]
 		//	cid= Object.keys(c).length
@@ -127,7 +126,7 @@ Parser = class Parser {
 		cid = (await this._compile("coffee", "forexpression", exp, rcode, function(source) {
 			return source.replace("code();", `$helper.local.${inivar} = ${inivar};` + scode.str.join("\n"));
 		}));
-		
+
 		//rcode.str.push("$helper.expression($init#{cid})")
 		return parent != null ? parent._last = 'for' : void 0;
 	}
@@ -143,20 +142,20 @@ Parser = class Parser {
 
 	_getLastOpenNode(arr: Array<string>): any{
 		var y = arr.length - 1
-		var value: string 
-		
+		var value: string
+
 		while(true){
 			value = arr[y]
 			if(value == undefined){
-				break 
+				break
 			}
 			if(value && value.startsWith("$helper.openNode")){
 				return {
 					index: y,
 					value
-				} 
+				}
 			}
-			y-- 
+			y--
 		}
 		return {}
 	}
@@ -168,14 +167,14 @@ Parser = class Parser {
 			throw Exception.create(`Parsing: line ${rcode.line} - col ${rcode.col}. ${node.nodeName} need an attribute \`name\``);
 		}
 		res = this._getLastOpenNode(rcode.str)
-		
+
 		if (!res.value) {
 			throw Exception.create(`Parsing: line ${rcode.line} - col ${rcode.col}. ${node.nodeName} only can be present after a openNode`);
 		}
-		openNode = res.value 		
+		openNode = res.value
 		this._kvExpression(node, rcode, null, false);
-		
-		rcode.str[res.index] = `$node.attrs[${JSON.stringify(attrs.name)}] = ${rcode.str.pop()};` + res.value 
+
+		rcode.str[res.index] = `$node.attrs[${JSON.stringify(attrs.name)}] = ${rcode.str.pop()};` + res.value
 		//rcode.str.push(`$attrs[${JSON.stringify(attrs.name)}] = ${rcode.pop()}`);
 		//return rcode.str.push(openNode);
 	}
@@ -531,7 +530,7 @@ OwogICAgICAgICAgICAgICAgICAgIGNhc2UgJzwnOgogICAgICAgICAgICAgICAgICAgICAgICByZXR1
 JyInOgogICAgICAgICAgICAgICAgICAgICAgICByZXR1cm4gJyZxdW90Oyc7CiAgICAgICAgICAgICAgICAgICAgZGVmYXVsdDoKICAgICAgICAgICAgICAgICAgICAg
 ICAgcmV0dXJuICcmIzAzOTsnOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9KTsKICAgICAgICB9CQogICAgfQp9KQ==`;
 		helpFunc = Buffer.from(helpFunc.replace(/\n/g,''),'base64')
-		
+
 
 		helper = "(" + helpFunc.toString() + ")"
 		realCode = '';
@@ -550,7 +549,7 @@ ICAgcmV0dXJuICcmIzAzOTsnOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9KTsKICAgICAg
 		ast = {
 			code: realCode
 		};
-		
+
 		return ast;
 	}
 

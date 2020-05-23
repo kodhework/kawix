@@ -1,8 +1,8 @@
 
-import fs from './fs/mod'
+import fs from '../std/fs/mod'
 import Path from 'path'
 import Zlib from 'zlib'
-// empaquetar kwcore en un solo archivo que se auto extrae 
+// empaquetar kwcore en un solo archivo que se auto extrae
 
 class Generator {
 
@@ -16,7 +16,7 @@ class Generator {
 	constructor(dirname, libname, basename) {
 		this.libname = libname
 		this.dir = dirname
-		var pack = Path.resolve(Path.join(__dirname, "..", "std", "package.json"))
+		var pack = Path.resolve(Path.join(__dirname, "..", "kivi", "package.json"))
 		var config = require(pack)
 		this.version = config.version
 		this.corefolder = (basename || libname) + "." + config.version
@@ -56,13 +56,13 @@ class Generator {
 				await this.read(ufile)
 			} else {
 				rfile = Path.relative(this.dir, ufile)
-				
+
 				content = await fs.readFileAsync(ufile)
 				if(ufile.endsWith(".ts") || ufile.endsWith(".js")){
-					// TRANSPILE? 
+					// TRANSPILE?
 					content = content.toString('utf8')
 					let transpilerOptions = {
-						
+
 						sourceMaps: true,
 						comments: true,
 						filename: ufile
@@ -110,7 +110,7 @@ function _export(out){
 }
 
 function main(){
-	
+
 	/* this is commented, because the idea is load specific version
 
 	if(fs.existsSync(corevdefault)){
@@ -119,7 +119,7 @@ function main(){
 			out= Path.join(home,"Kawix", "${this.libname}")
 			out= Path.join(out,"mod")
 			_export(out)
-			return 
+			return
 		}
 	}*/
 
@@ -128,7 +128,7 @@ function main(){
 		out= Path.join(home,"Kawix", corefolder, "${this.libname}")
 		out= Path.join(out,"mod")
 		_export(out)
-		return 
+		return
 	}
 
 	out= Path.join(home, "Kawix")
@@ -164,13 +164,13 @@ function main(){
 
 
 	/*
-	// make a junction or symlink 
+	// make a junction or symlink
 	if(fs.existsSync(coredefault)){
 		fs.unlinkSync(coredefault)
 	}
 	if(Os.platform() == "win32")
 		fs.symlinkSync(out, coredefault,"junction")
-	else 
+	else
 		fs.symlinkSync(out, coredefault)
 
 	*/
@@ -194,22 +194,7 @@ function contentData(){
 
 init()
 async function init() {
-	var generator = new Generator(__dirname, 'std', 'stdlib')
+	var generator = new Generator(__dirname + "/../kivi", 'kivi', 'Library')
 	await generator.read()
-	await generator.writeToFile(__dirname + "/dist/stdlib.js")
-
-
-	generator = new Generator(__dirname + "/../dhs", 'dhs', 'stdlib')
-	await generator.read()
-	await generator.writeToFile(__dirname + "/../dhs/dist/dhs.js")
-
-
-	generator = new Generator(__dirname + "/../gix", 'gix', 'stdlib')
-	await generator.read()
-	await generator.writeToFile(__dirname + "/../gix/dist/gix.js")
-
-
-	generator = new Generator(__dirname + "/../kivi", 'kivi', 'stdlib')
-	await generator.read()
-	await generator.writeToFile(__dirname + "/../kivi/dist/kivi.js")
+	await generator.writeToFile(__dirname + "/../kivi/dist/register.js")
 }
