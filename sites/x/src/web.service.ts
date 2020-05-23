@@ -130,25 +130,27 @@ export async function invoke(env, ctx){
 
 				try{
 					let response = await axios({
-						method: 'GET',
+						method: 'HEAD',
 						url
 					})
+					/*
 					if(response.data){
 						env.reply.code(200)
 							.header("content-type","text/plain")
 							.header("etag", sha)
 							.header("cache-control","public,max-age=300")
 							.send(response.data)
-					}
+					}*/
 
 					// save cache
 					cached = {
 						time: Date.now(),
-						text: response.data,
+						redirect: url,
 						sha
 					}
 					publicVars[sha] = cached
 
+					env.reply.redirect(url)
 					return
 				}catch(e){}
 
