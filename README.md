@@ -9,7 +9,7 @@ This purpose is give the benefits of an advanced loader, will al the features of
 * [@kawix/dhs](./dhs) A HTTP/S server with dynamic code execution, hot reloading and much more features
 * [@kawix/sites/x](./sites/x) Webserver based on dhs for the https://kwx.kodhe.com/x/ service
 * [@kawix/gix](./gix) A standard library for interact with an Electron instance for GUI
-* [@kawix/gix](./kivi) A basic template based on HTMLs
+* [@kawix/kivi](./kivi) A basic template based on HTMLs
 * [@kawix/std](./std) A standard library with some basic utilities and sublibraries
 
 
