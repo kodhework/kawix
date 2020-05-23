@@ -2,6 +2,7 @@ import Path from 'path'
 import 'npm://axios@^0.19.0'
 import axios from 'axios'
 import crypto from 'crypto'
+import {publicVars} from './vars'
 
 let registryCache
 
@@ -89,46 +90,87 @@ export async function invoke(env, ctx){
 		}
 	}
 
-	if(libInfo.extensions){
+	let cached = publicVars[sha]
+	if(!cached || (Date.now() - cached.time < (24*3600000))){
+		// resolved url?
 
-		// verificar
-		let source = url, offset = 0
-		while(true){
+		if(libInfo.extensions){
 
-			try{
-				let response = await axios({
-					method: 'GET',
-					url
-				})
-				if(response.data){
-					env.reply.code(200)
-						.header("content-type","text/plain")
-						.header("etag", sha)
-						.header("cache-control","public,max-age=300")
-						.send(response.data)
-				}
-				return
-			}catch(e){}
+			// verificar
+			let source = url, offset = 0
+			while(true){
+
+				try{
+					let response = await axios({
+						method: 'GET',
+						url
+					})
+					if(response.data){
+						env.reply.code(200)
+							.header("content-type","text/plain")
+							.header("etag", sha)
+							.header("cache-control","public,max-age=300")
+							.send(response.data)
+					}
+
+					// save cache
+					cached = {
+						time: Date.now(),
+						text: response.data,
+						sha
+					}
+					publicVars[sha] = cached
+					
+					return
+				}catch(e){}
 
 
-			let ext = libInfo.extensions[offset]
-			offset++
-			if(!ext)break
-			url = source + ext
-			console.info("URL", url)
+				let ext = libInfo.extensions[offset]
+				offset++
+				if(!ext)break
+				url = source + ext
+				//console.info("URL", url)
 
+			}
+
+			return env.reply.code(404).send({
+				name: library,
+				version,
+				message: 'NOTFOUND',
+				code: 404,
+				file
+			})
+
+		}else{
+
+			// save cache
+			cached = {
+				time: Date.now(),
+				redirect: url,
+				sha
+			}
+			publicVars[sha] = cached
+
+			env.reply.redirect(url)
+			return
 		}
-
-		return env.reply.code(404).send({
-			name: library,
-			version,
-			message: 'NOTFOUND',
-			code: 404,
-			file
-		})
-
 	}else{
-		env.reply.redirect(url)
-		return
+		if(cached.text){
+			env.reply.code(200)
+				.header("content-type","text/plain")
+				.header("etag", sha)
+				.header("cache-control","public,max-age=300")
+				.send(cached.text)
+		}
+		else{
+			env.reply.redirect(cached.redirect)
+		}
 	}
+
+	// remove Cache excess
+	let keys = Object.keys(publicVars)
+	if(keys.length > 500){
+		delete publicVars[keys[0]]
+	}
+
 }
