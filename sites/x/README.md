@@ -23,9 +23,11 @@ See this examples:
 
 
 ```bash
-> git clone https://github.com/kodhework/kawix
-> cd kawix # main folder on this github repo
-> kwcore ./dhs/start.js # or ./dhs/start.clustered.js
+git clone https://github.com/kodhework/kawix
+# main folder on this github repo
+cd kawix
+# or ./dhs/start.clustered.js
+kwcore ./dhs/start.js
 ```
 
 Now you can go to browser and put for example:
