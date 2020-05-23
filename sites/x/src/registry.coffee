@@ -82,19 +82,18 @@ export database=
 		"url": "https://raw.githubusercontent.com/kodhework/kawix/${version}/std/${file}"
 		"version_prefix": "std/"
 		"versions": {
-			"url": "https://api.github.com/repos/kodhework/kawix/tags"
-			"filter": (a)-> a.name.startsWith("std/")
+			"url": "https://raw.githubusercontent.com/kodhework/kawix/master/releases/std.json"
 			"post": (arr)->
 				arr.push
-					id: 'master',
+					branch: 'master'
 					version: 'master'
 				arr
 			"map": (a)->
-				parts = a.name.substring(4).split(".")
+				parts = a.version.split(".")
 				number = (parseInt(parts[0])*10000)+(parseInt(parts[1])*100)+(parseInt(parts[2])*1)
 				return
-					id: a.node_id
-					version: a.name.substring(4)
+					version: a.version
+					branch: a.branch
 					number:number
 		}
 		"extensions": [

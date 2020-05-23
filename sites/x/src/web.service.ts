@@ -25,17 +25,28 @@ async function registry(){
 
 export async function versions( libInfo){
 
-	let response = await axios({
-		method: 'GET',
-		url:libInfo.versions.url
-	})
-	let data = response.data
-	if(libInfo.versions.filter) data = data.filter(libInfo.versions.filter)
-	if(libInfo.versions.map) data = data.map(libInfo.versions.map)
-	if(libInfo.versions.post_filter) data = data.filter(libInfo.versions.post_filter)
-	if(libInfo.versions.post) data = libInfo.versions.post(data)
+	// version cache
+	if(!libInfo.versionCache  || (Date.now() - libInfo.versionCache.time > 300000)){
+		// 5 minutos de caché para nuevas versiones
 
-	return data
+
+		let response = await axios({
+			method: 'GET',
+			url:libInfo.versions.url
+		})
+		let data = response.data
+		if(typeof data == "string") data = JSON.parse(data)
+		if(libInfo.versions.filter) data = data.filter(libInfo.versions.filter)
+		if(libInfo.versions.map) data = data.map(libInfo.versions.map)
+		if(libInfo.versions.post_filter) data = data.filter(libInfo.versions.post_filter)
+		if(libInfo.versions.post) data = libInfo.versions.post(data)
+		libInfo.versionCache = {
+			data,
+			time: Date.now()
+		}
+		return data
+	}
+	return libInfo.versionCache.data
 }
 
 export async function invoke(env, ctx){
@@ -50,6 +61,8 @@ export async function invoke(env, ctx){
 			library = library.substring(0, y)
 		}
 	}
+	if(env.params.version) version = env.params.version
+
 
 
 	let libInfo = repo.database[library]
@@ -74,8 +87,23 @@ export async function invoke(env, ctx){
 		return
 	}
 
+	/*
 	if(libInfo.version_prefix && version!="master")
 		version = libInfo.version_prefix + version
+	*/
+	if(version != "master"){
+		let vers = await versions(libInfo)
+		vers = vers.filter((a)=> a.version == version)
+		if(!vers.length){
+			return env.reply.code(404).send({
+				name: library,
+				version,
+				message: 'NOTFOUND',
+				code: 404
+			})
+		}
+		version = vers[0].branch
+	}
 
 
 	let file = env.params.file= env.params["*"]
@@ -120,7 +148,7 @@ export async function invoke(env, ctx){
 						sha
 					}
 					publicVars[sha] = cached
-					
+
 					return
 				}catch(e){}
 
