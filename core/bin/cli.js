@@ -122,12 +122,16 @@ if (process.env.KWCORE_FORCE_UI) {
 
 var InstallStd = function () {
 	var er = function (e) {
-		console.error(" > Failed loading stdlib")
+		console.error(" > Failed loading stdlib", e)
 	}
 	Kawix.KModule.import("https://kwx.kodhe.com/x/std/package.json", {
 		force: true
 	}).then(function (pack) {
-		let file = "https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/register"
+		let file = ''
+		if(parseInt(pack.version.split(":")[1]) >= 9)
+			file = "https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/register"
+		else
+			file = "https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/stdlib"
 		console.log(" > Loading stdlib")
 		Kawix.KModule.import(file).then(function () { }).catch(er)
 	}).catch(er)
