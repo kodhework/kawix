@@ -89,7 +89,7 @@ export class Runtime{
                 toremove.push(ifolder)
 				creations++
 				ifolder = Path.join(folder, creations.toString())
-            } else {				
+            } else {
                 break
             }
         }
