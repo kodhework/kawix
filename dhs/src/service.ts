@@ -854,14 +854,22 @@ export class Service extends EventEmitter implements Types.DhsServer{
 	}
 
 	async _handle(env) {
+
 		var config, conn_, defsite, e, func, host, id, j, k, l, len, len1, len2, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, site
-		// check routes
 		config = this.config.readCached()
+		if (((ref3 = env.request) != null ? ref3.url : void 0) === "/.status") {
+			return env.reply.code(200).send({
+				concurrent: this._concurrent,
+				connections: this._urlconns
+			});
+		}
+
 		if (config.maxconcurrent && (this._concurrent >= config.maxconcurrent)) {
 			env.reply.code(503).send("Max concurrent connections reached")
 			env = null
 			return
 		}
+		
 		defsite = null
 		this._concurrent++
 		id = this.__id++
@@ -871,17 +879,18 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			method: (ref1 = env.request) != null ? ref1.method : void 0,
 			id: id
 		}
+
+
+		let onclose = ()=>{
+			this._concurrent --
+			delete this._urlconns[id]
+		}
+
 		if (env.response) {
-			env.response.once("finish", () => {
-				this._concurrent--;
-				return delete this._urlconns[id];
-			})
+			env.response.socket.once("close", onclose)
 			conn_.end = env.response.end.bind(env.response)
 		} else if (env.socket) {
-			env.socket.once("finish", () => {
-				this._concurrent--;
-				return delete this._urlconns[id];
-			})
+			env.socket.once("close", onclose)
 			env.response = env.socket
 			conn_.end = env.response.close.bind(env.response)
 		}
@@ -889,12 +898,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			if (((ref2 = env.request) != null ? ref2.url : void 0) === "/.o./config") {
 				return env.reply.code(200).send(config);
 			}
-			if (((ref3 = env.request) != null ? ref3.url : void 0) === "/.status") {
-				return env.reply.code(200).send({
-					concurrent: this._concurrent,
-					connections: this._urlconns
-				});
-			}
+
 			if ((ref4 = env.request) != null ? ref4.url.startsWith("/.static.") : void 0) {
 				if (!env.response.finished) {
 					await this.api_kodhe(env);
