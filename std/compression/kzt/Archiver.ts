@@ -3,14 +3,14 @@
 // allow add files and other thinks 
 import fs from '../../fs/mod'
 import {Writable, Readable} from 'stream'
-import 'npm://zstd-codec@0.1.2'
-import {ZstdCodec} from 'zstd-codec'
+//import 'npm://zstd-codec@0.1.2'
+//import {ZstdCodec} from 'zstd-codec'
 import Path from 'path'
 import * as async from '../../util/async'
 import {FileStat} from './types'
 import { Stats } from 'fs'
 // import Glob from '../../../dhs/glob/mod'
-
+let ZstdCodec = null
 
 export class Archiver extends Readable{
     _zstd = null 
@@ -186,6 +186,9 @@ export class Archiver extends Readable{
     async _compressStreamToZstd(streamin){
         if(!this._zstd){
             let def = new async.Deferred<any>()
+            if(!ZstdCodec){
+                ZstdCodec = (await import("zstd-codec@0.1.2")).ZstdCodec
+            }
             ZstdCodec.run((a)=> def.resolve(a))
             this._zstd = await def.promise
             this._Streaming = new this._zstd.Streaming()

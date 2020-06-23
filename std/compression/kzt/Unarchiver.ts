@@ -1,12 +1,14 @@
 import fs from '../../fs/mod'
 import Exception from '../../util/exception'
-import 'npm://zstd-codec@0.1.2'
-import {ZstdCodec} from 'zstd-codec'
+//import 'npm://zstd-codec@0.1.2'
+//import {ZstdCodec} from 'zstd-codec'
 import * as async from  '/virtual/@kawix/std/util/async'
 import Path from 'path'
 import { Readable } from 'stream'
 import uniqid from '../../util/uniqid'
 import Os from 'os'
+
+let ZstdCodec = null
 
 export class Unarchiver{
 	file:string 
@@ -64,6 +66,9 @@ export class Unarchiver{
     async zstd(){
         if(!this._zstd){
             let def = new async.Deferred<any>()
+            if(!ZstdCodec){
+                ZstdCodec = (await import("npm://zstd-codec@0.1.2")).ZstdCodec
+            }
             ZstdCodec.run((a)=> def.resolve(a))
             this._zstd = await def.promise
             this._Streaming = new this._zstd.Streaming()

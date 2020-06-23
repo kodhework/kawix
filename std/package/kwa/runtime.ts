@@ -6,9 +6,9 @@ import Exception from '../../util/exception'
 import Os from 'os'
 import { Readable } from 'stream'
 import Url from 'url'
-//import { Unarchiver } from '../../compression/kzt/Unarchiver'
+import { Unarchiver } from '../../compression/kzt/Unarchiver'
 
-let Unarchiver
+
 
 var Id0 = 0
 declare var kawix
@@ -85,7 +85,7 @@ export class Runtime{
 
 				// TRY REMOVE OLD FOLDERS?
 				// maybe add this later
-		let toremove = []
+				let toremove = []
 				while (true) {
 						if (await fs.existsAsync(ifolder)) {
 								toremove.push(ifolder)
@@ -105,16 +105,14 @@ export class Runtime{
 				if(options.compression == "kzt"){
 
 						let unarchiver
-						if(!Unarchiver)
-							Unarchiver = await import(__dirname + '/../../compression/kzt/Unarchiver')
 						try{
-								unarchiver = await Unarchiver.fromStream(stream)
-								await unarchiver.extractAllTo(folder)
+							unarchiver = await Unarchiver.fromStream(stream)
+							await unarchiver.extractAllTo(folder)
 						}catch(e){
-								throw e
+							throw e
 						}
 						finally{
-								if(unarchiver) await unarchiver.dispose()
+							if(unarchiver) await unarchiver.dispose()
 						}
 
 				}

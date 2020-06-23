@@ -869,7 +869,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			env = null
 			return
 		}
-		
+
 		defsite = null
 		this._concurrent++
 		id = this.__id++
@@ -962,7 +962,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 				}
 			} else {
 				if (!env.response.finished) {
-					env.reply.code(404).send("NOT FOUND")
+					env.reply.code(404).send(JSON.stringify({error: {code: 'NOTFOUND', message: 'Host configuration not found for domain requested'}}))
 				}
 			}
 			return env = null
