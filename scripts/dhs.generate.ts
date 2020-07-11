@@ -16,7 +16,7 @@ class Generator {
 	constructor(dirname, libname, basename) {
 		this.libname = libname
 		this.dir = dirname
-		var pack = Path.resolve(Path.join(__dirname, "..", "kivi", "package.json"))
+		var pack = Path.resolve(Path.join(__dirname, "..", "dhs", "package.json"))
 		var config = require(pack)
 		this.version = config.version
 		this.corefolder = (basename || libname) + "." + config.version
