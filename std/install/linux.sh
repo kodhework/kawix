@@ -28,7 +28,7 @@ curl -L "https://kwx.kodhe.com/x/std/install/kwcore.install.js" -o "$_HOME/bin/k
 curl -L "https://kwx.kodhe.com/x/std/install/linux.sh" -o "$_HOME/bin/kwcore.install.sh"
 
 # download nodejs
-curl -L "https://raw.githubusercontent.com/voxsoftware/kwcore-static/master/linux/12.11.1.x64.tar.gz" -o "$_HOME/bin/node.tar.gz"
+curl -L "https://raw.githubusercontent.com/voxsoftware/kwcore-static/master/linux/12.18.3.x64.tar.gz" -o "$_HOME/bin/node.tar.gz"
 curl -L "https://kwx.kodhe.com/x/core/dist/kwcore.app.js" -o "$_HOME/bin/kwcore.app.js"
 
 
@@ -41,8 +41,10 @@ cd "$_HOME/bin"
 rm node 2> /dev/null
 
 tar xvf node.tar.gz
-chmod +x x64/12.11.1/node
-ln -s ./x64/12.11.1/node node
+
+rm ./node 
+chmod +x x64/12.18.3/node
+ln -s ./x64/12.18.3/node node
 rm node.tar.gz
 
 "$_HOME/bin/node" "$_HOME/bin/kwcore.app.js"
