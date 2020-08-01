@@ -17,8 +17,8 @@ import Os from 'os';
 
 //import IPC from './channel/ipc'
 
-import fs from '../../std/fs/mod'
-import * as async from '../../std/util/async'
+import fs from '/virtual/@kawix/std/fs/mod'
+import * as async from '/virtual/@kawix/std/util/async'
 
 import {
 	EventEmitter
