@@ -886,13 +886,14 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			delete this._urlconns[id]
 		}
 
-		if (env.response) {
-			env.response.socket.once("close", onclose)
-			conn_.end = env.response.end.bind(env.response)
-		} else if (env.socket) {
+		if (env.socket) {
 			env.socket.once("close", onclose)
 			env.response = env.socket
-			conn_.end = env.response.close.bind(env.response)
+			conn_.end = env.response.end.bind(env.response)
+		}
+		else if (env.response) {
+			env.response.socket.once("close", onclose)
+			conn_.end = env.response.end.bind(env.response)
 		}
 		try {
 			if (((ref2 = env.request) != null ? ref2.url : void 0) === "/.o./config") {
