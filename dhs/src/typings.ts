@@ -64,14 +64,39 @@ export interface Request{
     params?: any 
 }
 
-export interface DhsServer extends EventEmitter{
+export interface DhsChannel{
+    client: DhsServerProxied
+    plain(value:any): any
+}
 
+
+export interface DhsServerBase extends EventEmitter{
+
+    ipcmodule?: string
     config?: Config
     workers?: any[]
-    channel?: any
+    channel?: DhsChannel
     address?: AddressInfo
     http?: any
     started?: number
+
+    connections: any 
+    
+
+   
+}
+
+export interface DhsServerMaster extends EventEmitter{
+
+   
+    connections: any 
+    workerPIDs: string[]
+
+
+    findWorkerPID(worker: {purpose?: string | string[], env?: string | string[]}): Promise<string> 
+    attachToWorker(pid: string): Promise<DhsChannel>
+    dynamicRun(code: string): Promise<any>
+    dynamicImport(file: string): Promise<any>
 
 
     createIPC?(id?: string): IPC 
@@ -83,6 +108,32 @@ export interface DhsServer extends EventEmitter{
     reloadCluster(): Promise<void>
     buildRoutes(): Promise<void>
     getContext(site: string): Context
+}
+
+
+export interface DhsServer extends DhsServerBase{
+
+    connections(): Promise<any>
+    
+    findWorkerPID(worker: {purpose?: string | string[], env?: string | string[]}): Promise<string> 
+    attachToWorker(pid: string): Promise<DhsChannel>
+    dynamicRun(code: string): Promise<any>
+    dynamicImport(file: string): Promise<any>
+    
+    getDataPath(): Promise<string>
+    getConfig(): Promise<any> 
+    
+    closeAndExit(timeout: number): Promise<void>
+    
+    buildRoutes(): Promise<void>
+    getContext(site: string): Promise<Context>
+
+}
+
+export interface DhsServerProxied extends DhsServer{
+
+    workerPIDs(): Promise<string[]>
+
 }
 
 

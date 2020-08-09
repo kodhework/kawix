@@ -29,8 +29,9 @@ import * as Types from './typings'
 
 declare var kawix
 
+require('events').EventEmitter.prototype._maxListeners = 100
 
-export class Service extends EventEmitter implements Types.DhsServer{
+export class Service extends EventEmitter implements Types.DhsServerMaster{
 
 	_crons: any
 	_urlconns: any
@@ -56,6 +57,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 	workers: any[]
 
 	channel: Channel
+	channels = {}
 
 	address: AddressInfo
 	http: any
@@ -75,98 +77,307 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		this._concurrent = 0
 	}
 
-	/*
-	createIPC(id): IPC {
-		return new IPC(this, id)
-	}*/
+	async _accept() {
+		var env
+		while (true) {
+			env = (await this.http.accept())
+			if (!env) {
+				break
+			}
+			this._handle(env)
+			env = null
+		}
+	}
+	async _bundle(env) {
+		var bundle, ctx
+		ctx = {
+			server: this
+		}
+		bundle = (await import(__dirname +"/dynamic/bundle"))
+		return (await bundle.invoke(env, ctx))
+	}
 
-	parseAddress(address) : string {
-		var value
-		value = {}
-		if (typeof address === "string") {
-			if (address.indexOf(":") >= 0) {
-				value.host = address.split(":")
-				value.port = parseInt(value.host[1])
-				value.host = value.host[0];
+	_onclose(ids: string | string[]){
+
+		if(ids instanceof Array){
+			for(let id of ids){
+				if(this._urlconns[id]){
+					this._concurrent --
+					delete this._urlconns[id]
+				}
+			}
+		}
+		else{
+			let id = ids
+			if(this._urlconns[id]){
+				this._concurrent --
+				delete this._urlconns[id]
+			}
+		}
+
+	}
+
+	async _handle(env) {
+
+		var config, conn_, defsite, e, func, host, id, j, k, l, len, len1, len2, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, site
+		config = this.config.readCached()
+		if (((ref3 = env.request) != null ? ref3.url : void 0) === "/.status") {
+			return env.reply.code(200).send({
+				concurrent: this._concurrent,
+				connections: this._urlconns
+			});
+		}
+
+		if (config.maxconcurrent && (this._concurrent >= config.maxconcurrent)) {
+			env.reply.code(503).send("Max concurrent connections reached")
+			env = null
+			return
+		}
+
+		defsite = null
+		this._concurrent++
+		id = this.__id++
+		conn_ = this._urlconns[id] = {
+			url: (ref = env.request) != null ? ref.url : void 0,
+			created: Date.now(),
+			method: (ref1 = env.request) != null ? ref1.method : void 0,
+			id: id
+		}
+
+
+		
+		let onclose = this._onclose.bind(this, id)
+		if (env.socket) {
+			env.socket.once("close", onclose)
+			env.response = env.socket
+			conn_.end = env.response.end.bind(env.response)
+		}
+		else if (env.response) {
+			env.response.once("close", onclose)
+			env.response.socket.once("close", onclose)
+
+			
+			conn_.end = env.response.end.bind(env.response)
+		}
+
+
+		try {
+			if (((ref2 = env.request) != null ? ref2.url : void 0) === "/.o./config") {
+				return env.reply.code(200).send(config);
+			}
+
+			if ((ref4 = env.request) != null ? ref4.url.startsWith("/.static.") : void 0) {
+				if (!env.response.finished) {
+					await this.api_kodhe(env);
+				}
+			}
+
+			if (config.sites) {
+				// check global prefixes and hostnames
+				host = env.request.headers.host
+				ref5 = config.sites
+				for (j = 0, len = ref5.length; j < len; j++) {
+					site = ref5[j]
+					if ((ref6 = site._arouter) != null ? ref6.handle : void 0) {
+						await site._arouter.handle(env)
+						if (env.response.finished) {
+							return
+						}
+					}
+				}
+				ref7 = config.sites
+				for (k = 0, len1 = ref7.length; k < len1; k++) {
+					site = ref7[k]
+					if ((ref8 = site._hrouter) != null ? ref8.handle : void 0) {
+						func = site._hrouter.find("GET", "/" + host)
+						if (typeof (func != null ? func.handler : void 0) === "function") {
+							await site._hrouter.handle(env, func)
+						}
+						if (env.response.finished) {
+							return
+						}
+					} else if (!site._arouter && site.routes && site._urouter) {
+						await site._urouter.handle(env)
+						if (env.response.finished) {
+							return
+						}
+					}
+				}
+			}
+
+			ref9 = config.sites
+			for (l = 0, len2 = ref9.length; l < len2; l++) {
+				site = ref9[l]
+				if (((ref10 = site.hostnames) != null ? ref10.indexOf("DEFAULT") : void 0) >= 0) {
+					if(site._hrouter){
+						func = site._hrouter.find("GET", "/DEFAULT");
+						if (typeof (func != null ? func.handler : void 0) === "function") {
+							await site._hrouter.handle(env, func)
+						}
+						if (env.response.finished) {
+							return
+						}
+					}
+				}
+			}
+
+
+
+			if (env.socket) {
+				if (!env.handled) {
+					env.socket.end()
+				}
 			} else {
-				return address
+				if (!env.response.finished) {
+					env.reply.code(404).send(JSON.stringify({error: {code: 'NOTFOUND', message: 'Host configuration not found for domain requested'}}))
+				}
 			}
-		} else {
-			value.host = '127.0.0.1'
-			value.port = parseInt(address)
+			return env = null
+		} catch (error) {
+			e = error
+			if (!((ref11 = env.response) != null ? ref11.finished : void 0)) {
+				env.error = e
+				this.api_500(env)
+			} else {
+				console.error(`[kawix/dhs] Error in server handle: ${e.stack}`)
+			}
+			return env = null
+		} finally {
+			env = null
 		}
-		return value
 	}
 
-
-	async getDataPath(): Promise<string> {
-		var path
-		path = Path.join(Os.homedir(), ".kawi")
-		if (!(await fs.existsAsync(path))) {
-			await fs.mkdirAsync(path)
+	_addHost(host, site) {
+		var c, h, ref, ref1;
+		if (host != null ? host.middleware : void 0) {
+			h = this._createCallback(host.middleware, site)
+			c = async function(env, ctx) {
+				await h(env, ctx)
+				if (!env.response.finished) {
+					return (await site._urouter.handle(env, ctx))
+				}
+			};
 		}
-		return path
-	}
-
-	getConfig() {
-		return this.config.readCached()
-	}
-
-	getAddress(){
-		return this.address
+		return site._hrouter.get("/" + ((ref = (ref1 = host.host) != null ? ref1 : host.name) != null ? ref : host), c != null ? c : site._urouter)
 	}
 
 
-	async setWorkerService(pid: number, service: Service){
-		for(let i=0;i<this.workers.length;i++){
-			let worker = this.workers[i]
-			if(worker.process.pid == pid){
-
-				service.rpa_preserve()
-				worker.service = service
-
-
+	_addGlobalPrefix(prefix, site) {
+		var c, h, path, ref, ref1
+		if (prefix != null ? prefix.middleware : void 0) {
+			h = this._createCallback(prefix.middleware, site)
+			c = async function(env, ctx) {
+				await h(env, ctx)
+				if (!env.response.finished) {
+					return (await site._urouter.handle(env, ctx))
+				}
 			}
 		}
+		path = (ref = prefix.path) != null ? ref : prefix
+		if (!path.startsWith("/")) {
+			throw Exception.create(`Prefix ${path} is not valid`).putCode("INVALID_PREFIX")
+		}
+		return site._arouter.use((ref1 = prefix.path) != null ? ref1 : prefix, c != null ? c : site._urouter)
 	}
 
-	async attachToMaster(){
-		this.channel = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID)
-		this.channel.client.setWorkerService(process.pid, this)
-	}
 
-	async start() {
-		var config, e
 
-		if (Cluster.isMaster) {
-			config = (await this.config.read())
-
-			this.channel = await Channel.registerLocal("DHS." + config.id, this)
-			process.env.KAWIX_CHANNEL_ID = "DHS." + config.id
-            if(config.singleprocess){
-				return await this._start()
+	_createCallback(_route : string | Types.RouteDefinition, site) {
+		var g, h, par
+		var self = this
+		var route: Types.RouteDefinition
+		if(typeof _route == "string"){
+			route = {
+				file: _route
 			}
-			else{
-    			//this.config.on("change", this._config_to_workers.bind(this))
-    			return (await this._cluster())
-            }
-		} else {
-			this.config.stop()
-			delete this.config
+		}else{
+			route = _route
+		}
 
-			await this.attachToMaster()
-			let tclient = await this.channel.client.config()
-			this.config = new ConfigRPA(tclient)
-			await this.config.read()
 
-			//this.config._load()
-			//await this.config.read()
+		if (route.static) {
+			return this._createStaticCallback(route, site)
+		}
+		par = {
+			c: {}
+		}
+		if (route.folder) {
+			par.folder = this.config.resolvePath(route.folder, site)
+		}
+		if (route.file) {
+			par.file = this.config.resolvePath(route.file, site)
+		}
+		let ctx = this.getContext(site)
 
-			return (await this._start())
+		g = async function(env) {
+			var e, file, method, mod, name, ref, ref1
+			try {
+				if (par.folder) {
+					name = env.params.file || env.params["*"]
+					if (!name) {
+						Exception.create("Failed to get a file to execute").putCode("PARAM_NOT_FOUND")
+					}
+					file = Path.join(par.folder, name)
+				} else {
+					file = par.file
+				}
+				mod = par.c[file]
+				if (!mod || (mod.__expire && Date.now() >= mod.__expire)) {
+					mod = (await import(file))
+					if (mod.kawixDynamic) {
+						mod.__expire = Date.now() + ((ref = mod.kawixDynamic.time) != null ? ref : 30000)
+					}
+					par.c[file] = mod
+				}
+				env.server = self
+				method = env.request.method.toLowerCase()
+				if (typeof ((ref1 = mod.router) != null ? ref1.handle : void 0) === "function") {
+					return (await mod.router.handle(env, ctx))
+				} else if (typeof mod[method] === "function") {
+					return (await mod[method](env, ctx))
+				} else if (typeof mod.httpInvoke === "function") {
+					return (await mod.httpInvoke(env, ctx))
+				} else if (typeof mod.invoke === "function") {
+					return (await mod.invoke(env, ctx))
+				} else {
+					return env.response.end()
+				}
+			} catch (error) {
+				e = error
+				env.error = e
+				return self.api_500(env)
+			}
+		};
+		if (route.middleware) {
+			h = this._createCallback(route.middleware, site)
+			return async function(env, ctx) {
+				await h(env, ctx)
+				if (!env.response.finished) {
+					return (await g(env, ctx))
+				}
+			}
+		}
+		return g
+	}
+
+	_createStaticCallback(route, site) {
+		var g, h, path, ref
+		if (route.static) {
+			path = (ref = route.static.path) != null ? ref : route.static
+			path = this.config.resolvePath(path, site)
+			g = KawixHttp.staticServe(path, route.static.options)
+			if (route.middleware) {
+				h = this._createCallback(route.middleware, site)
+				return async function(env, ctx) {
+					await h(env, ctx)
+					if (!env.response.finished) {
+						return (await g(env, ctx))
+					}
+				}
+			}
+			return g
 		}
 	}
-
-
 
 	_cluster(name?: string) {
 		var cluster, clusters, config, i, j, len, ref, ref1, results, w
@@ -239,58 +450,53 @@ export class Service extends EventEmitter implements Types.DhsServer{
 			} else {
 				return console.info(`[kawix/dhs] Worker ${w.pid} fully closed`);
 			}
-		});
-
-		/*
-		w.process.stdout.on "data", (d)->
-			console.info("FROM WORKER STDOUT:", d)
-			self.emit("worker.stdout", w, d)
-		w.process.stderr.on "data", (d)->
-			console.info("FROM WORKER STDERR:", d)
-			self.emit("worker.stderr", w, d)
-		*/
+		})
 
 		return w;
 	}
 
-
-	async closeAndExit(timeout = 2 * 3600) {
-		var e, num
-		num = 0
+	async _executeCron(site, cron, ctx) {
+		var ccron, e, file, mod
 		try {
-			this._cronstop = true
-			try {
-				// wait crons
-				await this._waitcron()
-			} catch (error) {}
-			return (await this.http.close(timeout))
+			if (cron.id) {
+				ccron = this._crons[cron.id]
+			}
+			console.log("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" +`Starting cron ${cron.id}`)
+			cron._executing = true
+			if (ccron) {
+				ccron._executing = true
+			}
+			file = this.config.resolvePath(cron.file, site)
+			try{
+				mod = (await import(file))
+			}catch(e){
+				if(e.message.indexOf("Cannot resolve")>=0)
+					console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" +`No cron tasks configured for ${site.name}: ${e.message}`)
+				else 
+					throw e
+				return 
+			}
+			await mod.invoke({
+				server: this
+			}, ctx)
+			cron._executed = Date.now()
+			if (ccron) {
+				return ccron._executed = Date.now()
+			}
 		} catch (error) {
 			e = error
-			return num = 100
+			return console.error(`[kawix/dhs] Failed executing cron: ${cron.name || 'nodefined'} in site ${site.name}. Error: `, e.message)
 		} finally {
-			process.exit(num)
-			// ensure finish
-			setTimeout(function() {
-				return process.kill(process.pid, 'SIGKILL')
-			}, 4000)
+			cron._executing = false
+			if (ccron) {
+				ccron._executing = false
+			}
 		}
 	}
-
-
-	// reload workers gracefull, when main configuration changed
-	async reloadCluster() {
-
-		// This need be change, to fully use the new RPA
-
-	}
-
-
 
 	async _start() {
 		var addr, config, def : async.Deferred<any>
 		config = this.config.readCached()
-
-
 		addr =  config.address || process.env.DHS_ADDRESS || process.env.ADDRESS
 		if (!addr) {
 			return Exception.create("Listen address no specified").putCode("INVALID_ADDR").raise()
@@ -308,63 +514,50 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		if (Cluster.isMaster) {
 			this.emit("listen", this.address)
 		} else {
-
-
 			this.address.rpa_plain= true
 			this.channel.client.emit("listen", this.address)
-
 		}
-
-
 
 		// build Router for each Site
 		this.startbuildingRoutes()
-
-		// date integer when started
 		this.started = Date.now()
+
+
+		/*
 		if (parseInt(process.env.CRON_ENABLED) === 1) {
 			this._startCron()
-		}
+		}*/
+
 
 		// start accept
 		return this._accept()
 	}
 
 
+	async _startCrons() {
 
-	async _waitcron(timeout = 180000) {
-		var cron, executing, id, ref, results, time
-		time = Date.now()
-		results = []
+		await async.sleep(10000)
+		let worker = await this.findWorker({
+			purpose: ['cron', 'tasks']
+		})
 
-		while (true) {
-			if (Date.now() - time > timeout) {
-				throw Exception.create("Timedout waiting finishing crons").putCode("TIMEDOUT")
-			}
-			executing = false
-			ref = this._crons
-			for (id in ref) {
-				cron = ref[id]
-				if (cron._executing) {
-					executing = true
-					break
-				}
-			}
-			if (executing) {
-				results.push((await async.sleep(2000)))
-			} else {
-				break
-			}
+		if(worker){
+			// execute cron 
+			await worker.service.dynamicRun(`
+			let service = arguments[0]
+			service._startCron()
+		
+			`)
 		}
-		return results
+
+		await async.sleep(50000)
+		return setImmediate(this._startCrons.bind(this))
+
 	}
 
 	async _startCron() {
+
 		var c, ccron, config, cron, ctx, j, k, len, len1, ref, ref1, ref2, site
-		if (this._cronstop) {
-			return;
-		}
-		await async.sleep(60000)
 		if (this._cronstop) {
 			return
 		}
@@ -398,41 +591,285 @@ export class Service extends EventEmitter implements Types.DhsServer{
 				}
 			}
 		}
-		return setImmediate(this._startCron.bind(this))
+		
+	}
+
+
+	async _waitcron(timeout = 180000) {
+		var cron, executing, id, ref, results, time
+		time = Date.now()
+		results = []
+
+		while (true) {
+			if (Date.now() - time > timeout) {
+				throw Exception.create("Timedout waiting finishing crons").putCode("TIMEDOUT")
+			}
+			executing = false
+			ref = this._crons
+			for (id in ref) {
+				cron = ref[id]
+				if (cron._executing) {
+					executing = true
+					break
+				}
+			}
+			if (executing) {
+				results.push((await async.sleep(2000)))
+			} else {
+				break
+			}
+		}
+		return results
+	}
+
+	_siteimport() {
+		var self
+		self = this
+		return async function(file) {
+			var cached, ref
+			this.__mod = (ref = this.__mod) != null ? ref : {}
+			file = self.config.resolvePath(file, this)
+			cached = this.__mod[file]
+			if (cached && cached.__time && (Date.now() <= cached.__time)) {
+				// cache is good
+				void 0
+			} else {
+				cached = (await import(file))
+				if (cached.kawixDynamic) {
+					cached.__time = Date.now() + (cached.kawixDynamic.time || 10000)
+				}
+				this.__mod[file] = cached
+			}
+			return cached
+		}
 	}
 
 
 
-	async _executeCron(site, cron, ctx) {
-		var ccron, e, file, mod
+	async attachToMaster(){
+		this.channel = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID)
+		this.channel.client.setWorkerService(process.pid, this)
+	}
+
+	// added. Comunicate between al processes not only master
+	async attachToWorker(pid){
+		if(!this.channels[pid]){
+			this.channels[pid] = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID + "." + pid)
+		}
+		return this.channels[pid]
+	}
+
+
+	async closeAndExit(timeout = 2 * 3600) {
+		var e, num
+		num = 0
 		try {
-			if (cron.id) {
-				ccron = this._crons[cron.id]
-			}
-			console.log("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" +`Starting cron ${cron.id}`)
-			cron._executing = true
-			if (ccron) {
-				ccron._executing = true
-			}
-			file = this.config.resolvePath(cron.file, site)
-			mod = (await import(file))
-			await mod.invoke({
-				server: this
-			}, ctx)
-			cron._executed = Date.now()
-			if (ccron) {
-				return ccron._executed = Date.now()
-			}
+			this._cronstop = true
+			try {
+				// wait crons
+				await this._waitcron()
+			} catch (error) {}
+			return (await this.http.close(timeout))
 		} catch (error) {
 			e = error
-			return console.error(`[kawix/dhs] Failed executing cron: ${cron.name || 'nodefined'} in site ${site.name}. Error: `, e)
+			return num = 100
 		} finally {
-			cron._executing = false
-			if (ccron) {
-				ccron._executing = false
+			process.exit(num)
+		}
+	}
+
+	// should be called async 
+	findWorkerPID(worker: {purpose?: string | string[], env?: string | string[]}){
+		if(!Cluster.isMaster){
+			return this.channel.client.findWorkerPID({
+				rpa_plain: worker
+			})
+		}
+
+		let nworker = this.findWorker(worker)
+		return nworker && nworker.pid
+	}
+
+	get workerPIDs(){
+		return this.workers.map((a)=> a.pid)
+	}
+
+
+	findWorker(workerc: {purpose?: string | string[], env?: string | string[]}){
+
+		
+		let nworker = null
+		if(!Cluster.isMaster) return null 
+
+
+		if(workerc.purpose){
+			let p = (workerc.purpose instanceof Array) ? workerc.purpose : [workerc.purpose]	
+			for(let i=0;i<this.workers.length;i++){
+				let worker = this.workers[i]
+				if(worker.purpose){
+					let pdata = worker.purpose.split("|")
+					for(let p1 of pdata){
+						if(p.indexOf(p1)>=0){
+							nworker = worker 
+							break 
+						}
+					}
+					if(nworker) break
+				}
+			}
+		}
+
+		if(workerc.env){
+			let p = (workerc.env instanceof Array) ? workerc.env : [workerc.env]	
+			for(let i=0;i<this.workers.length;i++){
+				let worker = this.workers[i]
+				for(let e in p){
+					if(worker.env[e] == 1){
+						nworker = worker 
+						break
+					}
+				}
+			}
+		}
+
+		return nworker 
+	}
+
+	fork(cluster){
+		return this._fork(cluster)
+	}
+
+
+	getAddress(){
+		return this.address
+	}
+
+	getConfig() {
+		return this.config.readCached()
+	}
+
+	get connections(){
+		if(!this._urlconns.rpa_plain){
+			Object.defineProperty(this._urlconns,'rpa_plain', {
+				enumerable: false,
+				value: true
+			})
+		}
+		return this._urlconns
+	}
+
+	async getDataPath(): Promise<string> {
+		var path
+		path = Path.join(Os.homedir(), ".kawi")
+		if (!(await fs.existsAsync(path))) {
+			await fs.mkdirAsync(path)
+		}
+		return path
+	}
+
+	parseAddress(address) : string {
+		var value
+		value = {}
+		if (typeof address === "string") {
+			if (address.indexOf(":") >= 0) {
+				value.host = address.split(":")
+				value.port = parseInt(value.host[1])
+				value.host = value.host[0];
+			} else {
+				return address
+			}
+		} else {
+			value.host = '127.0.0.1'
+			value.port = parseInt(address)
+		}
+		return value
+	}
+
+
+	
+
+	
+
+
+	async setWorkerService(pid: number, service: Service){
+		for(let i=0;i<this.workers.length;i++){
+			let worker = this.workers[i]
+			if(worker.process.pid == pid){
+
+				service.rpa_preserve()
+				worker.service = service
+
+
 			}
 		}
 	}
+
+
+
+	
+
+
+	
+
+	async start() {
+		var config, e
+
+		if (Cluster.isMaster) {
+			config = (await this.config.read())
+
+			this.channel = await Channel.registerLocal("DHS." + config.id, this)
+			process.env.KAWIX_CHANNEL_ID = "DHS." + config.id
+            if(config.singleprocess){
+				await this._start()
+			}
+			else{
+    			(await this._cluster())
+			}
+			
+			this._startCrons()
+			return this 
+		} else {
+			this.config.stop()
+			delete this.config
+			// register a channel for each process, so can comunicate 
+
+			await this.attachToMaster()
+			let tclient = await this.channel.client.config()
+			this.config = new ConfigRPA(tclient)
+			let config1 = await this.config.read()
+			let id = "DHS." + config1.id + "." + process.pid
+			//console.info("Starting RPA Server: ", id)
+			await Channel.registerLocal(id, this)
+
+			//this.config._load()
+			//await this.config.read()
+
+			return (await this._start())
+		}
+	}
+
+
+
+	
+
+	
+
+
+	// reload workers gracefull, when main configuration changed
+	async reloadCluster() {
+
+		// This need be change, to fully use the new RPA
+
+	}
+
+
+	
+
+	
+
+
+
+	
 
 	startbuildingRoutes(){
 		if(this.startbuildingRoutes.timer){
@@ -569,27 +1006,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 	}
 
 
-	_siteimport() {
-		var self
-		self = this
-		return async function(file) {
-			var cached, ref
-			this.__mod = (ref = this.__mod) != null ? ref : {}
-			file = self.config.resolvePath(file, this)
-			cached = this.__mod[file]
-			if (cached && cached.__time && (Date.now() <= cached.__time)) {
-				// cache is good
-				void 0
-			} else {
-				cached = (await import(file))
-				if (cached.kawixDynamic) {
-					cached.__time = Date.now() + (cached.kawixDynamic.time || 10000)
-				}
-				this.__mod[file] = cached
-			}
-			return cached
-		}
-	}
+	
 
 
 	getContext(site) {
@@ -625,150 +1042,9 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		return ctx
 	}
 
+	
 
-	_createStaticCallback(route, site) {
-		var g, h, path, ref
-		if (route.static) {
-			path = (ref = route.static.path) != null ? ref : route.static
-			path = this.config.resolvePath(path, site)
-			g = KawixHttp.staticServe(path, route.static.options)
-			if (route.middleware) {
-				h = this._createCallback(route.middleware, site)
-				return async function(env, ctx) {
-					await h(env, ctx)
-					if (!env.response.finished) {
-						return (await g(env, ctx))
-					}
-				}
-			}
-			return g
-		}
-	}
-
-	_addHost(host, site) {
-		var c, h, ref, ref1;
-		if (host != null ? host.middleware : void 0) {
-			h = this._createCallback(host.middleware, site)
-			c = async function(env, ctx) {
-				await h(env, ctx)
-				if (!env.response.finished) {
-					return (await site._urouter.handle(env, ctx))
-				}
-			};
-		}
-		return site._hrouter.get("/" + ((ref = (ref1 = host.host) != null ? ref1 : host.name) != null ? ref : host), c != null ? c : site._urouter)
-	}
-
-
-	_addGlobalPrefix(prefix, site) {
-		var c, h, path, ref, ref1
-		if (prefix != null ? prefix.middleware : void 0) {
-			h = this._createCallback(prefix.middleware, site)
-			c = async function(env, ctx) {
-				await h(env, ctx)
-				if (!env.response.finished) {
-					return (await site._urouter.handle(env, ctx))
-				}
-			}
-		}
-		path = (ref = prefix.path) != null ? ref : prefix
-		if (!path.startsWith("/")) {
-			throw Exception.create(`Prefix ${path} is not valid`).putCode("INVALID_PREFIX")
-		}
-		return site._arouter.use((ref1 = prefix.path) != null ? ref1 : prefix, c != null ? c : site._urouter)
-	}
-
-
-
-	_createCallback(_route : string | Types.RouteDefinition, site) {
-		var g, h, par
-		var self = this
-		var route: Types.RouteDefinition
-		if(typeof _route == "string"){
-			route = {
-				file: _route
-			}
-		}else{
-			route = _route
-		}
-
-
-		if (route.static) {
-			return this._createStaticCallback(route, site)
-		}
-		par = {
-			c: {}
-		}
-		if (route.folder) {
-			par.folder = this.config.resolvePath(route.folder, site)
-		}
-		if (route.file) {
-			par.file = this.config.resolvePath(route.file, site)
-		}
-		let ctx = this.getContext(site)
-
-		g = async function(env) {
-			var e, file, method, mod, name, ref, ref1
-			try {
-				if (par.folder) {
-					name = env.params.file || env.params["*"]
-					if (!name) {
-						Exception.create("Failed to get a file to execute").putCode("PARAM_NOT_FOUND")
-					}
-					file = Path.join(par.folder, name)
-				} else {
-					file = par.file
-				}
-				mod = par.c[file]
-				if (!mod || (mod.__expire && Date.now() >= mod.__expire)) {
-					mod = (await import(file))
-					if (mod.kawixDynamic) {
-						mod.__expire = Date.now() + ((ref = mod.kawixDynamic.time) != null ? ref : 30000)
-					}
-					par.c[file] = mod
-				}
-				env.server = self
-				method = env.request.method.toLowerCase()
-				if (typeof ((ref1 = mod.router) != null ? ref1.handle : void 0) === "function") {
-					return (await mod.router.handle(env, ctx))
-				} else if (typeof mod[method] === "function") {
-					return (await mod[method](env, ctx))
-				} else if (typeof mod.httpInvoke === "function") {
-					return (await mod.httpInvoke(env, ctx))
-				} else if (typeof mod.invoke === "function") {
-					return (await mod.invoke(env, ctx))
-				} else {
-					return env.response.end()
-				}
-			} catch (error) {
-				e = error
-				env.error = e
-				return self.api_500(env)
-			}
-		};
-		if (route.middleware) {
-			h = this._createCallback(route.middleware, site)
-			return async function(env, ctx) {
-				await h(env, ctx)
-				if (!env.response.finished) {
-					return (await g(env, ctx))
-				}
-			}
-		}
-		return g
-	}
-
-	async _accept() {
-		var env
-		while (true) {
-			env = (await this.http.accept())
-			if (!env) {
-				break
-			}
-			this._handle(env)
-			env = null
-		}
-	}
+	
 
 	api_config(env) {
 		var config
@@ -794,14 +1070,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 	}
 
 
-	async _bundle(env) {
-		var bundle, ctx
-		ctx = {
-			server: this
-		}
-		bundle = (await import(__dirname +"/dynamic/bundle"))
-		return (await bundle.invoke(env, ctx))
-	}
+	
 
 	async api_kodhe(env) {
 		var bund, uri
@@ -853,133 +1122,7 @@ export class Service extends EventEmitter implements Types.DhsServer{
 		env = null
 	}
 
-	async _handle(env) {
-
-		var config, conn_, defsite, e, func, host, id, j, k, l, len, len1, len2, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, site
-		config = this.config.readCached()
-		if (((ref3 = env.request) != null ? ref3.url : void 0) === "/.status") {
-			return env.reply.code(200).send({
-				concurrent: this._concurrent,
-				connections: this._urlconns
-			});
-		}
-
-		if (config.maxconcurrent && (this._concurrent >= config.maxconcurrent)) {
-			env.reply.code(503).send("Max concurrent connections reached")
-			env = null
-			return
-		}
-
-		defsite = null
-		this._concurrent++
-		id = this.__id++
-		conn_ = this._urlconns[id] = {
-			url: (ref = env.request) != null ? ref.url : void 0,
-			created: Date.now(),
-			method: (ref1 = env.request) != null ? ref1.method : void 0,
-			id: id
-		}
-
-
-		let onclose = ()=>{
-			this._concurrent --
-			delete this._urlconns[id]
-		}
-
-		if (env.socket) {
-			env.socket.once("close", onclose)
-			env.response = env.socket
-			conn_.end = env.response.end.bind(env.response)
-		}
-		else if (env.response) {
-			env.response.socket.once("close", onclose)
-			conn_.end = env.response.end.bind(env.response)
-		}
-		try {
-			if (((ref2 = env.request) != null ? ref2.url : void 0) === "/.o./config") {
-				return env.reply.code(200).send(config);
-			}
-
-			if ((ref4 = env.request) != null ? ref4.url.startsWith("/.static.") : void 0) {
-				if (!env.response.finished) {
-					await this.api_kodhe(env);
-				}
-			}
-
-			if (config.sites) {
-				// check global prefixes and hostnames
-				host = env.request.headers.host
-				ref5 = config.sites
-				for (j = 0, len = ref5.length; j < len; j++) {
-					site = ref5[j]
-					if ((ref6 = site._arouter) != null ? ref6.handle : void 0) {
-						await site._arouter.handle(env)
-						if (env.response.finished) {
-							return
-						}
-					}
-				}
-				ref7 = config.sites
-				for (k = 0, len1 = ref7.length; k < len1; k++) {
-					site = ref7[k]
-					if ((ref8 = site._hrouter) != null ? ref8.handle : void 0) {
-						func = site._hrouter.find("GET", "/" + host)
-						if (typeof (func != null ? func.handler : void 0) === "function") {
-							await site._hrouter.handle(env, func)
-						}
-						if (env.response.finished) {
-							return
-						}
-					} else if (!site._arouter && site.routes && site._urouter) {
-						await site._urouter.handle(env)
-						if (env.response.finished) {
-							return
-						}
-					}
-				}
-			}
-
-			ref9 = config.sites
-			for (l = 0, len2 = ref9.length; l < len2; l++) {
-				site = ref9[l]
-				if (((ref10 = site.hostnames) != null ? ref10.indexOf("DEFAULT") : void 0) >= 0) {
-					if(site._hrouter){
-						func = site._hrouter.find("GET", "/DEFAULT");
-						if (typeof (func != null ? func.handler : void 0) === "function") {
-							await site._hrouter.handle(env, func)
-						}
-						if (env.response.finished) {
-							return
-						}
-					}
-				}
-			}
-
-
-
-			if (env.socket) {
-				if (!env.handled) {
-					env.socket.end()
-				}
-			} else {
-				if (!env.response.finished) {
-					env.reply.code(404).send(JSON.stringify({error: {code: 'NOTFOUND', message: 'Host configuration not found for domain requested'}}))
-				}
-			}
-			return env = null
-		} catch (error) {
-			e = error
-			if (!((ref11 = env.response) != null ? ref11.finished : void 0)) {
-				env.error = e
-				this.api_500(env)
-			} else {
-				console.error(`[kawix/dhs] Error in server handle: ${e.stack}`)
-			}
-			return env = null
-		} finally {
-			env = null
-		}
-	}
+	
 
 }
 
