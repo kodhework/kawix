@@ -540,7 +540,9 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		let worker = await this.findWorker({
 			purpose: ['cron', 'tasks']
 		})
-
+		if(!worker && (this.workers.length == 1)){
+			worker = this.workers[0]
+		}
 		if(worker){
 			// execute cron 
 			await worker.service.dynamicRun(`
@@ -556,6 +558,9 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 	}
 
 	async _startCron() {
+
+
+		//console.info("Cron process")
 
 		var c, ccron, config, cron, ctx, j, k, len, len1, ref, ref1, ref2, site
 		if (this._cronstop) {
@@ -654,7 +659,23 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 	// added. Comunicate between al processes not only master
 	async attachToWorker(pid){
 		if(!this.channels[pid]){
-			this.channels[pid] = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID + "." + pid)
+			if(Os.platform() == "win32"){
+
+				let client = await this.channel.client.dynamicRun(`
+				let works = this.workers.filter((a)=> a.pid == ${JSON.stringify(pid)})
+				if(!works.length) return null 
+				return works[0].service
+				`)
+				
+				this.channels[pid] = {
+					client,
+					plain: this.channel.plain.bind(this.channel)
+				}
+			}
+
+			else{
+				this.channels[pid] = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID + "." + pid)
+			}
 		}
 		return this.channels[pid]
 	}
@@ -838,8 +859,8 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			this.config = new ConfigRPA(tclient)
 			let config1 = await this.config.read()
 			let id = "DHS." + config1.id + "." + process.pid
-			//console.info("Starting RPA Server: ", id)
-			await Channel.registerLocal(id, this)
+			if(Os.platform() != "win32")
+				await Channel.registerLocal(id, this)
 
 			//this.config._load()
 			//await this.config.read()

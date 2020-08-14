@@ -32,11 +32,21 @@ export class Channel {
     autounref = true
 
     plain(obj) {
-        return {
-            rpa_plain: obj
+        if(obj){
+            if(typeof obj == "object"){
+                if(!obj.rpa_plain){
+                    Object.defineProperty(obj, 'rpa_plain', {
+                        enumerable: false,
+                        value: true
+                    })
+                }
+                obj.rpa_plain = true
+            }
         }
+        return obj
     }
 
+    
     proxy(obj) {
         return {
             rpa_proxied: obj
@@ -391,7 +401,7 @@ export class Channel {
                     narg.length = arg.length
                     if (main) {
                         narg.rpa_references = references
-                        console.info("references: ", references)
+                        //console.info("references: ", references)
                     }
                 }
                 if (!noproxy && !isarray_proto) {
