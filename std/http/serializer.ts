@@ -71,7 +71,7 @@ class Serializer{
             return ""
         }
         else{
-            str=  JSON.stringify(data)
+            let str=  JSON.stringify(data)
             if(!type)
                 reply.type("application/json;Charset=utf-8")
             return str

@@ -1,5 +1,14 @@
 import Serializer from './serializer'
+import {Env} from './server'
+import { ServerResponse } from 'http'
+import * as async from '../util/async'
+
 class Reply{
+    _h: any 
+    _serializer: any 
+    env: Env
+    sent: boolean
+
     constructor(env){
         Object.defineProperty(this, "env",{
             enumerable: false,
@@ -47,12 +56,16 @@ class Reply{
     }
 
     code(status){
-        this.res.statusCode= status
+        let r = this.res as ServerResponse
+        r.statusCode= status
         return this
     }
     header(name, value){
         this._h[name]= value
-        this.res.setHeader(name,value)
+
+        let r = this.res as ServerResponse
+        r.setHeader(name,value)
+
         return this
     }
     getHeader(name){
@@ -82,15 +95,10 @@ class Reply{
     }
 
     deferred(){
-        var def={}
-        def.promise= new Promise(function(a,b){
-            def.resolve= a
-            def.reject = b
-        })
-        return def
+        return new async.Deferred<any>()
     }
 
-    async send(payload){
+    send(payload){
         var str= this.serialize(payload), def
         if(str && typeof str.pipe == "function"){
 
@@ -103,7 +111,7 @@ class Reply{
         }else{
             this.res.end(str)
         }
-        this.sent= true
+        this.sent = true
         return this
     }
 
@@ -112,8 +120,8 @@ class Reply{
         return this.res.write(data,enc)
     }
 
-    end(data,enc){
-        return this.res.end(data,enc)
+    end(data = null,enc = null){
+        return this.res.end.apply(this.res, arguments)
     }
 
 }

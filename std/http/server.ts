@@ -1,14 +1,26 @@
 // Copyright 2018-2019 the kawix authors. All rights reserved. MIT license.
 
 import http from 'http'
-import Reply from './reply.ts'
+import Reply from './reply'
 import {EventEmitter} from 'events'
-import Net from 'net'
+import Net, { Socket } from 'net'
 import fs from '../fs/mod'
 
 
-class Env extends EventEmitter{
-	constructor(options){
+
+export class Env extends EventEmitter{
+
+	response: http.ServerResponse | Socket
+	reply : Reply
+	head 
+	request: http.IncomingMessage
+	socket: Socket
+	type: string
+
+	store?: any
+	
+
+	constructor(options = null){
 		super()
 		if(options){
 			for(var id in options){
@@ -68,9 +80,9 @@ class Server extends EventEmitter{
 
 				this.once("error", async function () {
 					try {
-						socket = new Net.Socket()
+						let socket = new Net.Socket()
 						socket.connect(addr)
-						def = this.deferred()
+						let def = this.deferred()
 						socket.once("connect", def.resolve)
 						socket.once("error", def.reject)
 						await def.promise
@@ -235,7 +247,7 @@ class Server extends EventEmitter{
 		if(!response){
 			env.response= env.socket
 		}
-		if(response )
+		if(response)
 			env.reply = new Reply(env)
 		env.type= type
 		env.head= head
@@ -263,7 +275,6 @@ class Server extends EventEmitter{
 		}
 		if(this._queue.length){
 			if(this.maxqueuecount && (this._queue.length >= this.maxqueuecount)){
-
 				//console.error(` > [kawix/std/http] Reaching the maxqueuecount ${this.maxqueuecount} Current count: ${this._queue.length}`)
 				env.response.statusCode= 503
 				env.response.end()
