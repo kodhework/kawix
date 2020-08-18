@@ -216,7 +216,7 @@ class Router {
 		return route
 	}
 
-	async handle(env, route) {
+	async handle(env, route?) {
 		var route, def
 		/*
 		if(this._router2){

@@ -5,7 +5,8 @@ import Reply from './reply'
 import {EventEmitter} from 'events'
 import Net, { Socket } from 'net'
 import fs from '../fs/mod'
-
+import * as async from '../util/async'
+import Router from './router'
 
 
 export class Env extends EventEmitter{
@@ -31,7 +32,7 @@ export class Env extends EventEmitter{
 
 	write(data,encoding,callback){
 		var socket= (this.response || this.socket)
-		return socket.write(data,encoding,callback)
+		return socket.write.apply(socket, arguments)
 	}
 	end(){
 		var socket= (this.response || this.socket)
@@ -39,6 +40,17 @@ export class Env extends EventEmitter{
 	}
 }
 class Server extends EventEmitter{
+
+	_queue: Array<any>
+	options: any 
+	_http: http.Server
+	_connectCallback: (...args)=>{}
+	_connectEnabled: boolean
+
+	_resolve:Function
+	_reject:Function
+	_router: Router
+	maxqueuecount = 30
 
 	constructor(){
 		super()
@@ -117,12 +129,7 @@ class Server extends EventEmitter{
 	}
 
 	deferred() {
-		var obj = {}
-		obj.promise = new Promise(function (resolve, reject) {
-			obj.resolve = resolve
-			obj.reject = reject
-		})
-		return obj
+		return new async.Deferred<any>()
 	}
 
 	/** close http server. Returns a promise */
@@ -166,7 +173,7 @@ class Server extends EventEmitter{
 				delete this._connectCallback
 			}
 		}
-		return this._connectEnabled= value
+		this._connectEnabled= value
 	}
 
 
@@ -179,7 +186,7 @@ class Server extends EventEmitter{
 	}
 
 	set maxHeadersCount(value) {
-		return this._http.maxHeadersCount = value
+		 this._http.maxHeadersCount = value
 	}
 
 	get headersTimeout() {
@@ -187,7 +194,7 @@ class Server extends EventEmitter{
 	}
 
 	set headersTimeout(value) {
-		return this._http.headersTimeout = value
+		this._http.headersTimeout = value
 	}
 
 	get timeout() {
@@ -195,7 +202,7 @@ class Server extends EventEmitter{
 	}
 
 	set timeout(value) {
-		return this._http.timeout = value
+		this._http.timeout = value
 	}
 
 	get keepAliveTimeout() {
@@ -203,7 +210,7 @@ class Server extends EventEmitter{
 	}
 
 	set keepAliveTimeout(value) {
-		return this._http.keepAliveTimeout = value
+		this._http.keepAliveTimeout = value
 	}
 
 
@@ -239,7 +246,7 @@ class Server extends EventEmitter{
 		return this._addQueue(env)
 	}
 
-	reuse(request, response, socket, head, type){
+	reuse(request, response, socket?, head?, type?){
 
 		var env= new Env()
 		env.response= response
@@ -260,7 +267,7 @@ class Server extends EventEmitter{
 	
 
 	_listener(req, res){
-		var env= this.reuse(req, res, undefined, undefined)
+		var env= this.reuse(req, res)
 		return this._addQueue(env)
 	}
 
