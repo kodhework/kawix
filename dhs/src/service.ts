@@ -543,7 +543,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		if(!worker && (this.workers.length == 1)){
 			worker = this.workers[0]
 		}
-		if(worker){
+		if(worker && worker.service){
 			// execute cron 
 			await worker.service.dynamicRun(`
 			let service = arguments[0]
@@ -662,10 +662,15 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			if(Os.platform() == "win32"){
 
 				let client = await this.channel.client.dynamicRun(`
-				let works = this.workers.filter((a)=> a.pid == ${JSON.stringify(pid)})
+				let works = arguments[0].workers.filter(function(a){
+					return a.pid == ${JSON.stringify(pid)}
+				})
 				if(!works.length) return null 
 				return works[0].service
 				`)
+
+				if(!client) return null
+
 				
 				this.channels[pid] = {
 					client,
