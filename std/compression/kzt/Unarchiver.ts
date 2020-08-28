@@ -67,7 +67,7 @@ export class Unarchiver{
         if(!this._zstd){
             let def = new async.Deferred<any>()
             if(!ZstdCodec){
-                ZstdCodec = (await import("npm://zstd-codec@0.1.2")).ZstdCodec
+                ZstdCodec = (await import(__dirname + "/../zstd")).ZstdCodec
             }
             ZstdCodec.run((a)=> def.resolve(a))
             this._zstd = await def.promise
