@@ -125,6 +125,21 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 		})
 
 	} else {
+
+		// saber si es KZT
+		options = options || {}		
+		let unan:Unarchiver = null
+		try{
+			unan = new Unarchiver(path)
+			let isKzt = await unan.isValid()
+			if(isKzt){
+				options.compression = "kzt"
+			}
+		}catch(e){
+			throw e 
+		}finally{
+			await (unan && unan.dispose())
+		}
 		
 		let start = -1
 		def = new async.Deferred<void>()
