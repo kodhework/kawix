@@ -120,22 +120,24 @@ if (process.env.KWCORE_FORCE_UI) {
 }
 
 
-var InstallStd = function () {
+var InstallStd = function (callback) {
 	var er = function (e) {
 		console.error(" > Failed loading stdlib", e)
 	}
-	Kawix.KModule.import("https://kwx.kodhe.com/x/std/package.json", {
-		force: true
+	
+	Kawix.KModule.import("gh+/kodhework/kawix/std/package.json", {
+		force: callback == null
 	}).then(function (pack) {
 		let file = ''
-		if(parseInt(pack.version.split(":")[1]) >= 9)
-			file = "https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/register"
-		else
-			file = "https://kwx.kodhe.com/x/v/" + pack.version + "/std/dist/stdlib"
+		file = "gh+/kodhework/kawix@std" + pack.version + "/std/dist/register.js"
 		console.log(" > Loading stdlib")
-		Kawix.KModule.import(file).then(function () { }).catch(er)
+		if(callback){
+			callback(Kawix.KModule.import(file))
+		}else{
+			Kawix.KModule.import(file).then(function(){}).catch(er)
+		}
 	}).catch(er)
-	return
+	
 }
 
 
@@ -406,6 +408,7 @@ for (var i = 2; i < args.length; i++) {
 				if (kwa) {
 
 					// LOAD THE KWA REGISTER
+					/*
 					Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.stdVersion + "/std/dist/stdlib.js")
 						.then(function () {
 
@@ -413,15 +416,27 @@ for (var i = 2; i < args.length; i++) {
 								.then(funcKwa).catch(erfunc)
 
 						}).catch(erfunc)
+					*/
+
+					InstallStd(function(promise){
+						promise.then(function(){
+							Kawix.KModule.import("/virtual/@kawix/std/package/kwa/register")
+								.then(funcKwa).catch(erfunc)
+						}).catch(erfunc)
+					})
 
 				}
 				else if (enableCoffee) {
-					pack = require("../package.json")
-					return Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.stdVersion + "/std/coffeescript/register", options)
-						.then(function () {
-							Kawix.KModule.import("https://kwx.kodhe.com/x/v/" + pack.stdVersion + "/std/coffeescript/cson/register", options)
+
+					InstallStd(function(promise){
+						promise.then(function(){
+							Kawix.KModule.import("/virtual/@kawix/std/coffeescript/register")
 								.then(func).catch(erfunc)
 						}).catch(erfunc)
+					})
+
+
+
 				} else {
 					return func()
 				}

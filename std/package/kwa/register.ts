@@ -130,7 +130,7 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 		options = options || {}		
 		let unan:Unarchiver = null
 		try{
-			unan = new Unarchiver(path)
+			unan = new Unarchiver(filename)
 			let isKzt = await unan.isValid()
 			if(isKzt){
 				options.compression = "kzt"
