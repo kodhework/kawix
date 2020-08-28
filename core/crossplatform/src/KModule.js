@@ -259,7 +259,7 @@ var builtinModules = _module.builtinModules;
 
 	virtualRedirection = function (file) {
 		var data, name, redir
-		for (var i = 0; i < Mod._virtualredirect.length; i++) {
+		for (var i = Mod._virtualredirect.length -1; i >= 0; i--) {
 			data = Mod._virtualredirect[i]
 
 			if (file.startsWith(data.resolvedpath)) {

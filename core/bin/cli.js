@@ -200,7 +200,7 @@ for (var i = 2; i < args.length; i++) {
 			console.error("")
 			console.error("Failed updating: ", e)
 		}
-		Kawix.KModule.import("https://kwx.kodhe.com/x/core/package.json", {
+		Kawix.KModule.import("gh+/kodhework/kawix/core/package.json", {
 			force: true
 		}).then(function (pack1) {
 
@@ -210,7 +210,7 @@ for (var i = 2; i < args.length; i++) {
 				//console.info("> kawix/core is up to date")
 			} else {
 				console.info("> kawix/core is not up to date. Please wait while is updated")
-				Kawix.KModule.import("https://kwx.kodhe.com/x/core/dist/kwcore.app.js", {
+				Kawix.KModule.import("gh+/kodhework/kawix@core"+pack.version+"/core/dist/kwcore.app.js", {
 					force: true
 				}).then(function (a) {
 
