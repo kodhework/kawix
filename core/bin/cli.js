@@ -203,21 +203,18 @@ for (var i = 2; i < args.length; i++) {
 		Kawix.KModule.import("gh+/kodhework/kawix/core/package.json", {
 			force: true
 		}).then(function (pack1) {
-
-			if (pack.stdVersion >= pack1.version) {
+			if (pack.version >= pack1.version) {
 				console.info(" > Core is up to date. Searching updates for stdlib")
 				InstallStd()
 				//console.info("> kawix/core is up to date")
 			} else {
 				console.info("> kawix/core is not up to date. Please wait while is updated")
-				Kawix.KModule.import("gh+/kodhework/kawix@core"+pack.version+"/core/dist/kwcore.app.js", {
+				Kawix.KModule.import("gh+/kodhework/kawix@core"+pack1.version+"/core/dist/kwcore.app.js", {
 					force: true
 				}).then(function (a) {
-
 					if (a) {
 						InstallStd()
 					}
-
 				}).catch(er)
 			}
 
