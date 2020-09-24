@@ -1,4 +1,4 @@
-var Next, fs, Os, Path, Module, Url, browser, _require, Mod, nd, npmResolver, _module, _next, MD5, allowCacheCompress, allowCacheCompressExt, Zlib
+var Next, fs, Os, Path, Module, Url, browser, _require, Mod, nd, npmResolver, _module, _next, MD5, allowCacheCompress, allowCacheCompressExt
 Os = require("os")
 Mod = function () { }
 
@@ -21,7 +21,7 @@ var deferred = function () {
 if (Os.platform() != 'browser') {
 	//allowCacheCompress = 'gzip'
 	//allowCacheCompressExt = '.cgz'
-	Zlib = require('zl' + 'ib')
+	//Zlib = require('zl' + 'ib')
 	MD5 = function (str) {
 		if (!MD5.crypt) {
 			MD5.t = "cryp" + "to"
@@ -258,12 +258,14 @@ var builtinModules = _module.builtinModules;
 
 
 	virtualRedirection = function (file) {
+		
+		if(Os.platform()=="win32")
+			file = file.replace(/\\/g,'/')
+		
 		var data, name, redir
 		for (var i = Mod._virtualredirect.length -1; i >= 0; i--) {
-			data = Mod._virtualredirect[i]
-
-			if (file.startsWith(data.resolvedpath)) {
-
+			data = Mod._virtualredirect[i]	
+			if (file.startsWith(data.platformResolvedpath) || file.startsWith(data.resolvedpath)) {
 				name = Path.relative(data.resolvedpath, file)
 				redir = data.redirect + (data.redirect.endsWith("/") ? "" : "/") + "default"
 				//console.info("File:", realResolve(redir, name), redir, name, file)
@@ -742,11 +744,8 @@ var builtinModules = _module.builtinModules;
 					resp.on("error", reject)
 					resp.on("end", function () {
 						buf = Buffer.concat(buf)
-						if(resp.headers["content-encoding"] == "gzip"){
-							buf = Zlib.gunzipSync(buf)
-						}
-
 						code = buf.toString('utf8')
+
 						return resolve({
 							code: code,
 							"type": resp.headers["content-type"],
@@ -756,14 +755,7 @@ var builtinModules = _module.builtinModules;
 				}
 			}
 
-			var ops = {
-				headers: {
-					"accept-encoding": "gzip"
-				}
-			}
-			if(Os.platform() == "browser") ops = {}
-			http.get(url, ops, callback).on("error", reject)
-
+			http.get(url, callback).on("error", reject)
 		})
 		return promise
 	}
@@ -1567,9 +1559,14 @@ Mod.removeCached = function (file) {
 
 
 Mod.addVirtualFile = function (file, data) {
-	var path = Path.join("/virtual", file)
+	var path = Path.join("/virtual", file)	
 	Mod._virtualfile[path] = data
-	data.resolvedpath = path
+	data.platformResolvedpath = path
+	
+	if(Os.platform() == "win32")
+		data.resolvedpath = path.replace(/\\/g,'/')
+	else 
+		data.resolvedpath = path	
 	if (data.redirect) {
 		Mod._virtualredirect.push(data)
 	}
