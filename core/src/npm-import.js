@@ -14,7 +14,7 @@ var load= async function(){
         //if(pack.version < pack1.stdVersion) pack.version = pack1.stdVersion
 
 		// LOADLIB FROM GITHUB
-        await KModule.import('gh+/kodhework/kawix@std'+pack.version+'/std/dist/register')
+        await KModule.import('gh+/kodhework/kawix@std'+pack.version+'/std/dist/register.js')
 
 		Registry= await KModule.import('/virtual/@kawix/std/package/registry.yarn')
         Registry= Registry.default || Registry
