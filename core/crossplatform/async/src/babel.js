@@ -8,7 +8,9 @@ ___Babel.__defaultTransform = function __defaultTransform(code, options = {}){
     if(!options.presets){
         options.presets = [___Babel._modules["typescript"],___Babel._modules["env"]]
     }
-
+    if(options.compact === undefined){
+        options.compact = false
+    }
     if(!options.plugins){
         options.plugins = [
             //dynamicImport,

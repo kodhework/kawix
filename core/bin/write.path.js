@@ -29,6 +29,4 @@ exports.write = function (dir) {
     if (content.indexOf(newline) < 0) {
         fs.writeFileSync(file, content + newline + "\"\n")
     }
-
-
 }
