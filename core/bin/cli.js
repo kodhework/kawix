@@ -14,6 +14,11 @@ for(let i=2;i<process.argv.length;i++){
         else if (arg == "--map") {
             Kawix.optionArguments.push(process.argv[++i])
         }
+        else if(arg == "--force"){
+            Kawix.KModule.defaultOptions = {
+                force: true
+            }
+        }
     }
     else{
         Kawix.appArguments.push(arg)
