@@ -15,15 +15,19 @@ export async function main() {
         }, null, '\t'))
         */
 
-        let loadStd = async function(){
-            let pack = await import("gh+/kodhework/kawix/std/package.json")
+        let loadStd = async function(force = false){
+            let pack = await Kawix.KModule.import("gh+/kodhework/kawix/std/package.json", {
+                force
+            })
             await Kawix.KModule.import("gh+/kodhework/kawix@std" + pack.version + "/std/dist/register.js")
         }
         Kawix.loadStd = loadStd
 
         let y = -1
         if (Kawix.optionArguments.indexOf("--update") >= 0) {
-            let pack = await import("gh+/kodhework/kawix/core/package.json")
+            let pack = await Kawix.KModule.import("gh+/kodhework/kawix/core/package.json", {
+                force: true
+            })
             let pack1 = require("../package.json")
             if (pack1.version < pack.version) {
                 console.info("> Updating kawix/core to version:" + pack.version)
@@ -35,7 +39,7 @@ export async function main() {
                 console.info("> kawix/core version " + pack.version + " is OK")
             }
 
-            await loadStd()
+            await loadStd(true)
             return
         }
 
