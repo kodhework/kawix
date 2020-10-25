@@ -21,7 +21,7 @@ export async function main() {
         }
         Kawix.loadStd = loadStd
 
-
+        let y = -1
         if (Kawix.optionArguments.indexOf("--update") >= 0) {
             let pack = await import("gh+/kodhework/kawix/core/package.json")
             let pack1 = require("../package.json")
@@ -39,7 +39,7 @@ export async function main() {
             return
         }
 
-        let y = Kawix.optionArguments.indexOf("--map")
+        y = Kawix.optionArguments.indexOf("--map")
         if (y >= 0) {
 
             let WritePath = await import(__dirname + "/write.path")
