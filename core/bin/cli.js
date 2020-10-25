@@ -3,22 +3,30 @@ let appArguments = []
 let optionArguments = []
 let force = false 
 let version = null 
+let useSplice = -1
+
+let originalArgv = [].concat(process.argv)
 
 for(let i=2;i<process.argv.length;i++){
     let arg = process.argv[i]    
     if(!appArguments.length && arg.startsWith("-")){
         optionArguments.push(arg)
+        process.argv[i] = undefined 
         if (arg == "--original-file") {
             optionArguments.push(process.argv[++i])
+            process.argv[i] = undefined 
         }
         else if (arg == "--map") {
             optionArguments.push(process.argv[++i])
+            process.argv[i] = undefined 
         }
         else if (arg == "--force") {
             force = true 
         }
         else if (arg == "--use") {
+            useSplice = i
             version = (process.argv[++i])
+            process.argv[i] = undefined 
         }
     }
     else{
@@ -27,11 +35,14 @@ for(let i=2;i<process.argv.length;i++){
 }
 
 if(version){
-    let newFile = __dirname + "/../../core." + version + "/bin/cli"
+    originalArgv.splice(useSplice, 2)
+    process.argv = originalArgv
+    let newFile = __dirname + "/../../core." + version + "/bin/cli.js"
     require(newFile)
     return 
 }
 
+process.argv = process.argv.filter((a)=>!!a)
 var Kawix = require("../main")
 if(force){
     Kawix.KModule.defaultOptions = {
@@ -41,6 +52,7 @@ if(force){
 
 
 Kawix.argv = argv
+Kawix.originalArgv = originalArgv
 Kawix.appArguments = appArguments
 Kawix.optionArguments = optionArguments
 Kawix.startupArguments = Kawix.appArguments.slice(1)
