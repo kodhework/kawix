@@ -64,11 +64,11 @@ export async function main() {
 
                 WritePath.write(Path.join(Os.homedir(), "Kawix", "bin"))
 
-
+                let clif = JSON.stringify(Path.join(__dirname, "cli.js"))
                 content0 = "#!" + process.execPath + "\n" +
                     "// kawix.originalFilename = __filename\n" +
-                    "process.argv = [process.execPath, " + JSON.stringify(__filename) + ", " + Kawix.appArguments[0] + "].concat(process.argv.slice(2))\n" +
-                    "require(" + JSON.stringify(__filename) + ")\n"
+                    "process.argv = [process.execPath, " + clif + ", " + JSON.stringify(Kawix.appArguments[0]) + "].concat(process.argv.slice(2))\n" +
+                    "require(" + clif + ")\n"
 
             }
             fs.writeFileSync(file, content0)
