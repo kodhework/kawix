@@ -7,7 +7,7 @@ main()
 
 export async function main() {
 
-    try{
+    try {
         /*
         fs.writeFileSync("xxxd", JSON.stringify({
             env: process.env,
@@ -15,7 +15,7 @@ export async function main() {
         }, null, '\t'))
         */
 
-        let loadStd = async function(force = false){
+        let loadStd = async function (force = false) {
             let pack = await Kawix.KModule.import("gh+/kodhework/kawix/std/package.json", {
                 force
             })
@@ -54,11 +54,11 @@ export async function main() {
             if (!fs.existsSync(file)) {
                 fs.mkdirSync(file)
             }
-            file = Path.join(file, Kawix.optionArguments[y+1])
+            file = Path.join(file, Kawix.optionArguments[y + 1])
 
             var content0 = ''
             if (Os.platform() == "win32") {
-                file = Path.join(Os.homedir(), "Kawix", "bin", Kawix.appArguments[y+1] + ".cmd")
+                file = Path.join(Os.homedir(), "Kawix", "bin", Kawix.optionArguments[y + 1] + ".cmd")
                 content0 = '@echo off\nset current=%~dp0\n"%current%\\kwcore.exe" --original-file "%~n0%~x0" "' + Kawix.appArguments[0] + '" %*'
             } else {
 
@@ -69,13 +69,13 @@ export async function main() {
                     "// kawix.originalFilename = __filename\n" +
                     "process.argv = [process.execPath, " + JSON.stringify(__filename) + ", " + Kawix.appArguments[0] + "].concat(process.argv.slice(2))\n" +
                     "require(" + JSON.stringify(__filename) + ")\n"
-                
+
             }
             fs.writeFileSync(file, content0)
             fs.chmodSync(file, "775")
             return
 
-            
+
         }
 
 
@@ -250,7 +250,7 @@ export async function main() {
             }
             await import(filename)
         }
-    }catch(e){
+    } catch (e) {
         console.error(e)
     }
 }
