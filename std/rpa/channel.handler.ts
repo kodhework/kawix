@@ -32,6 +32,7 @@ export class ChannelHandler {
             throw Exception.create("Seting " + prop + " is not valid through RPA").putCode("RPA_INVALID_OPERATION")
         }
 
+        return true
 
     }
 

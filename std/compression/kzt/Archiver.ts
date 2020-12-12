@@ -9,6 +9,7 @@ import Path from 'path'
 import * as async from '../../util/async'
 import {FileStat} from './types'
 import { Stats } from 'fs'
+import Zlib from 'zlib'
 // import Glob from '../../../dhs/glob/mod'
 let ZstdCodec = null
 
@@ -26,6 +27,7 @@ export class Archiver extends Readable{
     _uncompressedLength = 0
 
     filter: Function = null
+    method = "brotli"
 
     constructor(){
         super()
@@ -113,7 +115,7 @@ export class Archiver extends Readable{
         let fsr = fs.createReadStream(file)
         fsr.on("error", (e)=> this.emit("error",e))
         let offset = this._uncompressedLength
-        let info = await this._compressStreamToZstd(fsr)
+        let info = await this._compressStream(fsr)
 
         this._files.push({
             path,
@@ -139,7 +141,16 @@ export class Archiver extends Readable{
         let data = Buffer.from(json)
         this._buf = [data]
         this._gcompress()
-        this.push(Buffer.from("#kzst"))
+
+
+        this.push(Buffer.from("#2-kzst"))
+        
+        let bufmethod = Buffer.allocUnsafe(10)
+        bufmethod.fill(32)
+        bufmethod.write(this.method,0)
+        this.push(bufmethod)
+
+
         let len = Buffer.allocUnsafe(4)
         len.writeUInt32LE(this._blocks.pop().compressedLength,0)
         this.push(len)
@@ -166,6 +177,18 @@ export class Archiver extends Readable{
     }
 
     _gcompress(){
+        if(this.method == "zstd"){
+            return this._gcompressZstd()
+        }
+        else if(this.method == "brotli"){
+            return this._gcompressBrotli()
+        }
+        else if(this.method == "gzip"){
+            return this._gcompressGzip()
+        }
+    }
+
+    _gcompressZstd(){
         let data = this._Streaming.compress(Buffer.concat(this._buf), 5)
         //console.log("h: ", data)
         this._buf.splice(0, this._buf.length)
@@ -180,26 +203,73 @@ export class Archiver extends Readable{
         this._position += this._workingLength
         this._cposition += data.length
         this._workingLength = 0
-        
     }
 
-    async _compressStreamToZstd(streamin){
-        if(!this._zstd){
-            let def = new async.Deferred<any>()
-            if(!ZstdCodec){
-                ZstdCodec = (await import(__dirname + "/../zstd")).ZstdCodec
+    _gcompressBrotli(){
+        let bytes = Buffer.concat(this._buf.splice(0, this._buf.length))
+        let data = Zlib.brotliCompressSync(bytes)
+        
+        this.push(data)
+        this._blocks.push({
+            number: this._blocks.length,
+            offset: this._position,
+            length: this._workingLength,
+            compressedOffset: this._cposition,
+            compressedLength: data.length
+        })
+        this._position += this._workingLength
+        this._cposition += data.length
+        this._workingLength = 0
+    }
+
+    _gcompressGzip(){
+        let bytes = Buffer.concat(this._buf.splice(0, this._buf.length))
+        let data = Zlib.gzipSync(bytes)
+        
+        this.push(data)
+        this._blocks.push({
+            number: this._blocks.length,
+            offset: this._position,
+            length: this._workingLength,
+            compressedOffset: this._cposition,
+            compressedLength: data.length
+        })
+        this._position += this._workingLength
+        this._cposition += data.length
+        this._workingLength = 0
+    }
+
+    async _compressStream(streamin){
+        let gcompress = undefined 
+        if(this.method == "zstd"){
+            if(!this._zstd){
+                let def = new async.Deferred<any>()
+                if(!ZstdCodec){
+                    ZstdCodec = (await import(__dirname + "/../zstd")).ZstdCodec
+                }
+                ZstdCodec.run((a)=> def.resolve(a))
+                this._zstd = await def.promise
+                this._Streaming = new this._zstd.Streaming()
             }
-            ZstdCodec.run((a)=> def.resolve(a))
-            this._zstd = await def.promise
-            this._Streaming = new this._zstd.Streaming()
+            gcompress = this._gcompressZstd.bind(this)
+        }
+        else if(this.method == "brotli"){
+            gcompress = this._gcompressBrotli.bind(this)
+        }
+        else if(this.method == "gzip"){
+            gcompress = this._gcompressGzip.bind(this)
         }
 
-        
+        if(gcompress)
+            return this._compressStream_X(streamin, gcompress)
 
+    }
+
+
+    async _compressStream_X(streamin, gcompress){
         let compressedLength = 0, uncompressedLength = 0
         let portion = 5*1024*1024
         let buf = this._buf
-        let gcompress = this._gcompress.bind(this)
         streamin.on("data", (b)=>{   
             buf.push(b)
             this._workingLength += b.length 
@@ -209,7 +279,6 @@ export class Archiver extends Readable{
                 gcompress()
             }
         })
-
         let def = new async.Deferred<void>()
         streamin.on("error", (e)=>{   
             def.reject(e)
@@ -219,7 +288,6 @@ export class Archiver extends Readable{
             def.resolve()
         })
         await def.promise
-
         return {
             uncompressedLength
         }

@@ -1,7 +1,7 @@
 
 // 2019-10-09
 // New module for IPC, advanced and more stable
-import {Channel} from '/virtual/@kawix/std/rpa/channel'
+import { Channel } from '/virtual/@kawix/std/rpa/channel'
 
 
 import Exception from '/virtual/@kawix/std/util/exception'
@@ -10,7 +10,7 @@ import Url from 'url'
 import Path from 'path'
 import Cluster from 'cluster'
 
-import {Config, ConfigRPA, ConfigBase} from './config'
+import { Config, ConfigRPA, ConfigBase } from './config'
 //import ConfigIPC from './config.ipc';
 
 import Os from 'os';
@@ -31,7 +31,7 @@ declare var kawix
 
 require('events').EventEmitter.prototype._maxListeners = 100
 
-export class Service extends EventEmitter implements Types.DhsServerMaster{
+export class Service extends EventEmitter implements Types.DhsServerMaster {
 
 	_crons: any
 	_urlconns: any
@@ -93,24 +93,24 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		ctx = {
 			server: this
 		}
-		bundle = (await import(__dirname +"/dynamic/bundle"))
+		bundle = (await import(__dirname + "/dynamic/bundle"))
 		return (await bundle.invoke(env, ctx))
 	}
 
-	_onclose(ids: string | string[]){
+	_onclose(ids: string | string[]) {
 
-		if(ids instanceof Array){
-			for(let id of ids){
-				if(this._urlconns[id]){
-					this._concurrent --
+		if (ids instanceof Array) {
+			for (let id of ids) {
+				if (this._urlconns[id]) {
+					this._concurrent--
 					delete this._urlconns[id]
 				}
 			}
 		}
-		else{
+		else {
 			let id = ids
-			if(this._urlconns[id]){
-				this._concurrent --
+			if (this._urlconns[id]) {
+				this._concurrent--
 				delete this._urlconns[id]
 			}
 		}
@@ -145,7 +145,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		}
 
 
-		
+
 		let onclose = this._onclose.bind(this, id)
 		if (env.socket) {
 			env.socket.once("close", onclose)
@@ -156,7 +156,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			env.response.once("close", onclose)
 			env.response.socket.once("close", onclose)
 
-			
+
 			conn_.end = env.response.end.bind(env.response)
 		}
 
@@ -209,7 +209,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			for (l = 0, len2 = ref9.length; l < len2; l++) {
 				site = ref9[l]
 				if (((ref10 = site.hostnames) != null ? ref10.indexOf("DEFAULT") : void 0) >= 0) {
-					if(site._hrouter){
+					if (site._hrouter) {
 						func = site._hrouter.find("GET", "/DEFAULT");
 						if (typeof (func != null ? func.handler : void 0) === "function") {
 							await site._hrouter.handle(env, func)
@@ -229,7 +229,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 				}
 			} else {
 				if (!env.response.finished) {
-					env.reply.code(404).send(JSON.stringify({error: {code: 'NOTFOUND', message: 'Host configuration not found for domain requested'}}))
+					env.reply.code(404).send(JSON.stringify({ error: { code: 'NOTFOUND', message: 'Host configuration not found for domain requested' } }))
 				}
 			}
 			return env = null
@@ -251,7 +251,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		var c, h, ref, ref1;
 		if (host != null ? host.middleware : void 0) {
 			h = this._createCallback(host.middleware, site)
-			c = async function(env, ctx) {
+			c = async function (env, ctx) {
 				await h(env, ctx)
 				if (!env.response.finished) {
 					return (await site._urouter.handle(env, ctx))
@@ -266,7 +266,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		var c, h, path, ref, ref1
 		if (prefix != null ? prefix.middleware : void 0) {
 			h = this._createCallback(prefix.middleware, site)
-			c = async function(env, ctx) {
+			c = async function (env, ctx) {
 				await h(env, ctx)
 				if (!env.response.finished) {
 					return (await site._urouter.handle(env, ctx))
@@ -282,15 +282,15 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 
 
 
-	_createCallback(_route : string | Types.RouteDefinition, site) {
+	_createCallback(_route: string | Types.RouteDefinition, site) {
 		var g, h, par
 		var self = this
 		var route: Types.RouteDefinition
-		if(typeof _route == "string"){
+		if (typeof _route == "string") {
 			route = {
 				file: _route
 			}
-		}else{
+		} else {
 			route = _route
 		}
 
@@ -309,7 +309,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		}
 		let ctx = this.getContext(site)
 
-		g = async function(env) {
+		g = async function (env) {
 			var e, file, method, mod, name, ref, ref1
 			try {
 				if (par.folder) {
@@ -350,7 +350,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		};
 		if (route.middleware) {
 			h = this._createCallback(route.middleware, site)
-			return async function(env, ctx) {
+			return async function (env, ctx) {
 				await h(env, ctx)
 				if (!env.response.finished) {
 					return (await g(env, ctx))
@@ -368,7 +368,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			g = KawixHttp.staticServe(path, route.static.options)
 			if (route.middleware) {
 				h = this._createCallback(route.middleware, site)
-				return async function(env, ctx) {
+				return async function (env, ctx) {
 					await h(env, ctx)
 					if (!env.response.finished) {
 						return (await g(env, ctx))
@@ -403,7 +403,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			if (cluster.max) {
 				cluster.count = Math.max(cluster.count, cluster.max);
 			}
-			results.push((function() {
+			results.push((function () {
 				var k, ref2, results1;
 				results1 = [];
 				for (i = k = 0, ref2 = cluster.count; (0 <= ref2 ? k < ref2 : k > ref2); i = 0 <= ref2 ? ++k : --k) {
@@ -438,10 +438,10 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 
 
 
-		w.on("error", function(e) {
+		w.on("error", function (e) {
 			return console.error("[kawix/dhs] Error in worker: ", w.pid, e);
 		});
-		w.once("exit", function() {
+		w.once("exit", function () {
 			var i;
 			i = self.workers.indexOf(w);
 			self.workers.splice(i, 1);
@@ -461,20 +461,20 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			if (cron.id) {
 				ccron = this._crons[cron.id]
 			}
-			console.log("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" +`Starting cron ${cron.id}`)
+			console.log("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" + `Starting cron ${cron.id}`)
 			cron._executing = true
 			if (ccron) {
 				ccron._executing = true
 			}
 			file = this.config.resolvePath(cron.file, site)
-			try{
+			try {
 				mod = (await import(file))
-			}catch(e){
-				if(e.message.indexOf("Cannot resolve")>=0)
-					console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" +`No cron tasks configured for ${site.name}: ${e.message}`)
-				else 
+			} catch (e) {
+				if (e.message.indexOf("Cannot resolve") >= 0)
+					console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" + `No cron tasks configured for ${site.name}: ${e.message}`)
+				else
 					throw e
-				return 
+				return
 			}
 			await mod.invoke({
 				server: this
@@ -495,9 +495,9 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 	}
 
 	async _start() {
-		var addr, config, def : async.Deferred<any>
+		var addr, config, def: async.Deferred<any>
 		config = this.config.readCached()
-		addr =  config.address || process.env.DHS_ADDRESS || process.env.ADDRESS
+		addr = config.address || process.env.DHS_ADDRESS || process.env.ADDRESS
 		if (!addr) {
 			return Exception.create("Listen address no specified").putCode("INVALID_ADDR").raise()
 		}
@@ -510,11 +510,11 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 
 		def = new async.Deferred<any>()
 		this.address = (await this.http.listen(addr))
-		console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" +  "Listening on ", this.address)
+		console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" + "Listening on ", this.address)
 		if (Cluster.isMaster) {
 			this.emit("listen", this.address)
 		} else {
-			this.address.rpa_plain= true
+			this.address.rpa_plain = true
 			this.channel.client.emit("listen", this.address)
 		}
 
@@ -540,10 +540,10 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		let worker = await this.findWorker({
 			purpose: ['cron', 'tasks']
 		})
-		if(!worker && (this.workers.length == 1)){
+		if (!worker && (this.workers.length == 1)) {
 			worker = this.workers[0]
 		}
-		if(worker && worker.service){
+		if (worker && worker.service) {
 			// execute cron 
 			await worker.service.dynamicRun(`
 			let service = arguments[0]
@@ -596,7 +596,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 				}
 			}
 		}
-		
+
 	}
 
 
@@ -630,7 +630,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 	_siteimport() {
 		var self
 		self = this
-		return async function(file) {
+		return async function (file) {
 			var cached, ref
 			this.__mod = (ref = this.__mod) != null ? ref : {}
 			file = self.config.resolvePath(file, this)
@@ -651,15 +651,15 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 
 
 
-	async attachToMaster(){
+	async attachToMaster() {
 		this.channel = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID)
 		this.channel.client.setWorkerService(process.pid, this)
 	}
 
 	// added. Comunicate between al processes not only master
-	async attachToWorker(pid){
-		if(!this.channels[pid]){
-			if(Os.platform() == "win32"){
+	async attachToWorker(pid) {
+		if (!this.channels[pid]) {
+			if (Os.platform() == "win32") {
 
 				let client = await this.channel.client.dynamicRun(`
 				let works = arguments[0].workers.filter(function(a){
@@ -669,16 +669,16 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 				return works[0].service
 				`)
 
-				if(!client) return null
+				if (!client) return null
 
-				
+
 				this.channels[pid] = {
 					client,
 					plain: this.channel.plain.bind(this.channel)
 				}
 			}
 
-			else{
+			else {
 				this.channels[pid] = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID + "." + pid)
 			}
 		}
@@ -694,7 +694,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			try {
 				// wait crons
 				await this._waitcron()
-			} catch (error) {}
+			} catch (error) { }
 			return (await this.http.close(timeout))
 		} catch (error) {
 			e = error
@@ -705,8 +705,8 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 	}
 
 	// should be called async 
-	findWorkerPID(worker: {purpose?: string | string[], env?: string | string[]}){
-		if(!Cluster.isMaster){
+	findWorkerPID(worker: { purpose?: string | string[], env?: string | string[] }) {
+		if (!Cluster.isMaster) {
 			return this.channel.client.findWorkerPID({
 				rpa_plain: worker
 			})
@@ -716,57 +716,57 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		return nworker && nworker.pid
 	}
 
-	get workerPIDs(){
-		return this.workers.map((a)=> a.pid)
+	get workerPIDs() {
+		return this.workers.map((a) => a.pid)
 	}
 
 
-	findWorker(workerc: {purpose?: string | string[], env?: string | string[]}){
+	findWorker(workerc: { purpose?: string | string[], env?: string | string[] }) {
 
-		
+
 		let nworker = null
-		if(!Cluster.isMaster) return null 
+		if (!Cluster.isMaster) return null
 
 
-		if(workerc.purpose){
-			let p = (workerc.purpose instanceof Array) ? workerc.purpose : [workerc.purpose]	
-			for(let i=0;i<this.workers.length;i++){
+		if (workerc.purpose) {
+			let p = (workerc.purpose instanceof Array) ? workerc.purpose : [workerc.purpose]
+			for (let i = 0; i < this.workers.length; i++) {
 				let worker = this.workers[i]
-				if(worker.purpose){
+				if (worker.purpose) {
 					let pdata = worker.purpose.split("|")
-					for(let p1 of pdata){
-						if(p.indexOf(p1)>=0){
-							nworker = worker 
-							break 
+					for (let p1 of pdata) {
+						if (p.indexOf(p1) >= 0) {
+							nworker = worker
+							break
 						}
 					}
-					if(nworker) break
+					if (nworker) break
 				}
 			}
 		}
 
-		if(workerc.env){
-			let p = (workerc.env instanceof Array) ? workerc.env : [workerc.env]	
-			for(let i=0;i<this.workers.length;i++){
+		if (workerc.env) {
+			let p = (workerc.env instanceof Array) ? workerc.env : [workerc.env]
+			for (let i = 0; i < this.workers.length; i++) {
 				let worker = this.workers[i]
-				for(let e in p){
-					if(worker.env[e] == 1){
-						nworker = worker 
+				for (let e in p) {
+					if (worker.env[e] == 1) {
+						nworker = worker
 						break
 					}
 				}
 			}
 		}
 
-		return nworker 
+		return nworker
 	}
 
-	fork(cluster){
+	fork(cluster) {
 		return this._fork(cluster)
 	}
 
 
-	getAddress(){
+	getAddress() {
 		return this.address
 	}
 
@@ -774,9 +774,9 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		return this.config.readCached()
 	}
 
-	get connections(){
-		if(!this._urlconns.rpa_plain){
-			Object.defineProperty(this._urlconns,'rpa_plain', {
+	get connections() {
+		if (!this._urlconns.rpa_plain) {
+			Object.defineProperty(this._urlconns, 'rpa_plain', {
 				enumerable: false,
 				value: true
 			})
@@ -793,7 +793,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		return path
 	}
 
-	parseAddress(address) : string {
+	parseAddress(address): string {
 		var value
 		value = {}
 		if (typeof address === "string") {
@@ -812,15 +812,15 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 	}
 
 
-	
-
-	
 
 
-	async setWorkerService(pid: number, service: Service){
-		for(let i=0;i<this.workers.length;i++){
+
+
+
+	async setWorkerService(pid: number, service: Service) {
+		for (let i = 0; i < this.workers.length; i++) {
 			let worker = this.workers[i]
-			if(worker.process.pid == pid){
+			if (worker.process.pid == pid) {
 
 				service.rpa_preserve()
 				worker.service = service
@@ -832,10 +832,10 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 
 
 
-	
 
 
-	
+
+
 
 	async start() {
 		var config, e
@@ -845,15 +845,15 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 
 			this.channel = await Channel.registerLocal("DHS." + config.id, this)
 			process.env.KAWIX_CHANNEL_ID = "DHS." + config.id
-            if(config.singleprocess){
+			if (config.singleprocess) {
 				await this._start()
 			}
-			else{
-    			(await this._cluster())
+			else {
+				(await this._cluster())
 			}
-			
+
 			this._startCrons()
-			return this 
+			return this
 		} else {
 			this.config.stop()
 			delete this.config
@@ -864,7 +864,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 			this.config = new ConfigRPA(tclient)
 			let config1 = await this.config.read()
 			let id = "DHS." + config1.id + "." + process.pid
-			if(Os.platform() != "win32")
+			if (Os.platform() != "win32")
 				await Channel.registerLocal(id, this)
 
 			//this.config._load()
@@ -876,9 +876,9 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 
 
 
-	
 
-	
+
+
 
 
 	// reload workers gracefull, when main configuration changed
@@ -889,16 +889,16 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 	}
 
 
-	
-
-	
 
 
 
-	
 
-	startbuildingRoutes(){
-		if(this.startbuildingRoutes.timer){
+
+
+
+
+	startbuildingRoutes() {
+		if (this.startbuildingRoutes.timer) {
 			clearTimeout(this.startbuildingRoutes.timer)
 		}
 
@@ -913,18 +913,18 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		config = this.config.readCached()
 
 
-		if(!this.__time){
+		if (!this.__time) {
 			this.__time = config.__time
-		}else{
-			if(this.__time != config.__time){
+		} else {
+			if (this.__time != config.__time) {
 				this.__time = config.__time
 				// close for restart, only if multiprocess
-				if(!Cluster.isMaster){
+				if (!Cluster.isMaster) {
 					console.info("[kawix/dhs] Main config change detected, restarting cluster")
 					this.closeAndExit()
 					return
 				}
-			}else{
+			} else {
 				console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" + " Site change detected")
 			}
 		}
@@ -1022,17 +1022,17 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		return results
 	}
 
-	async dynamicImport(file: string){
+	async dynamicImport(file: string) {
 		return await import(file)
 	}
 
-	dynamicRun(code: string){
+	dynamicRun(code: string) {
 		let func = Function("", code)
 		return func(this)
 	}
 
 
-	
+
 
 
 	getContext(site) {
@@ -1068,9 +1068,9 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		return ctx
 	}
 
-	
 
-	
+
+
 
 	api_config(env) {
 		var config
@@ -1096,7 +1096,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 	}
 
 
-	
+
 
 	async api_kodhe(env) {
 		var bund, uri
@@ -1148,7 +1148,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster{
 		env = null
 	}
 
-	
+
 
 }
 

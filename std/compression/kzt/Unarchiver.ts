@@ -1,12 +1,11 @@
 import fs from '../../fs/mod'
 import Exception from '../../util/exception'
-//import 'npm://zstd-codec@0.1.2'
-//import {ZstdCodec} from 'zstd-codec'
-import * as async from  '/virtual/@kawix/std/util/async'
+import * as async from  '../../util/async'
 import Path from 'path'
 import { Readable } from 'stream'
 import uniqid from '../../util/uniqid'
 import Os from 'os'
+import Zlib from 'zlib'
 
 let ZstdCodec = null
 
@@ -20,6 +19,8 @@ export class Unarchiver{
     metadata = null 
     _tempfile = false 
     _cacheBlocks = {}
+
+    method = "zstd"
 
 	constructor(file:string){
 		this.file = file
@@ -63,6 +64,20 @@ export class Unarchiver{
 		}
     }
     
+    async $decompress(bytes: Buffer){
+        if(this.method == "zstd"){
+            let streaming = await this.zstd()
+            let content = streaming.decompress(bytes)
+            return Buffer.from(content)
+        }
+        else if(this.method == "brotli"){
+            return Zlib.brotliDecompressSync(bytes)
+        }
+        else if(this.method == "gzip"){
+            return Zlib.gunzipSync(bytes)
+        }
+    }
+
     async zstd(){
         if(!this._zstd){
             let def = new async.Deferred<any>()
@@ -80,8 +95,11 @@ export class Unarchiver{
         await this.open()
         let stat = await fs.fstatAsync(this._fd)
 		let buf = Buffer.allocUnsafe(9)
-		let response = await this._read_async(buf, 9, stat.size - 9)
-		if(buf.slice(0,5).toString() == "#kzst"){
+		let response = await this._read_async(buf, 21, stat.size - 21)
+		if(buf.slice(12,17).toString() == "#kzst"){
+            return true 
+        }
+        if(buf.slice(0,7).toString() == "#2-kzst"){
             return true 
         }
     }
@@ -97,25 +115,30 @@ export class Unarchiver{
         if(!this.metadata){
             await this.open()
             let stat = await fs.fstatAsync(this._fd)
-            let buf = Buffer.allocUnsafe(9)
-            let response = await this._read_async(buf, 9, stat.size -9)
-            if(buf.slice(0,5).toString() != "#kzst"){
-                throw Exception.create("The file format is not kzst").putCode("INVALID_FORMAT")
+            let buf = Buffer.allocUnsafe(21)
+            let response = await this._read_async(buf, 21, stat.size - 21)
+            let fixedCount = 9
+            if(buf.slice(12,17).toString() != "#kzst"){
+                if(buf.slice(0,7).toString() != "#2-kzst"){
+                    throw Exception.create("The file format is not kzst").putCode("INVALID_FORMAT")
+                }else{
+                    fixedCount = 21
+                    this.method = buf.slice(7, 17).toString().trim()
+                    console.info(this.method)
+                }
             }
 
-            let count = buf.readUInt32LE(5)
+            let count = buf.readUInt32LE(fixedCount - 4)
             buf = Buffer.allocUnsafe(count)
-            response = await this._read_async(buf, count, stat.size-9 - count) 
+            response = await this._read_async(buf, count, stat.size - fixedCount - count) 
             if(response.bytesRead != count)
                 throw Exception.create("The file format is not kzst. Failed to read metadata").putCode("INVALID_FORMAT")
             
 
             
-            let streaming = await this.zstd()
-            //buf = Buffer.from(streaming.compress(Buffer.from('xxxddd')))
-            let content = streaming.decompress(buf)
-        
-            this.metadata = JSON.parse(Buffer.from(content).toString())
+            
+            let content = await this.$decompress(buf)
+            this.metadata = JSON.parse(content.toString())
         }
         return this.metadata
     }
@@ -171,7 +194,7 @@ export class Unarchiver{
             let buf = Buffer.allocUnsafe(cached.compressedLength)
 
             await this._read_async(buf, cached.compressedLength, cached.compressedOffset)
-            let dec = Streaming.decompress(buf)
+            let dec = await this.$decompress(buf)
             if(!dec)
                 throw Exception.create("Failed to read block: " + number).putCode("FILE_ERROR")
             

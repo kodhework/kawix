@@ -32,9 +32,9 @@ export class Channel {
     autounref = true
 
     plain(obj) {
-        if(obj){
-            if(typeof obj == "object"){
-                if(!obj.rpa_plain){
+        if (obj) {
+            if (typeof obj == "object") {
+                if (!obj.rpa_plain) {
                     Object.defineProperty(obj, 'rpa_plain', {
                         enumerable: false,
                         value: true
@@ -46,7 +46,7 @@ export class Channel {
         return obj
     }
 
-    
+
     proxy(obj) {
         return {
             rpa_proxied: obj
