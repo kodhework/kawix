@@ -94,7 +94,7 @@ export class Unarchiver{
     async isValid(){
         await this.open()
         let stat = await fs.fstatAsync(this._fd)
-		let buf = Buffer.allocUnsafe(9)
+		let buf = Buffer.allocUnsafe(21)
 		let response = await this._read_async(buf, 21, stat.size - 21)
 		if(buf.slice(12,17).toString() == "#kzst"){
             return true 
@@ -124,7 +124,6 @@ export class Unarchiver{
                 }else{
                     fixedCount = 21
                     this.method = buf.slice(7, 17).toString().trim()
-                    console.info(this.method)
                 }
             }
 
