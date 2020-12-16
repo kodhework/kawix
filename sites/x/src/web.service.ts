@@ -11,7 +11,7 @@ export var kawixDynamic = {
 }
 
 async function registry(){
-	if(!registryCache || (Date.now() - registryCache.time > 1200000)){
+	if((!registryCache) || (Date.now() - registryCache.time > 1200000)){
 		// renew cache
 		let reg = await import(__dirname + "/registry")
 		registryCache = {
@@ -111,11 +111,11 @@ export async function invoke(env, ctx){
 	env.params.lib = library
 	env.params.version = version
 
-	let file = env.params.file= env.params["*"]
+	let file = env.params.file = env.params["*"]
 	let url = libInfo.url
 	url = url.replace(/\$\{(\w[\w|\d]*)\}/g, (a,b)=> env.params[b] || "")
 
-	let sha = "w/" + crypto.createHash('sha1').update(libInfo.url+">" + file).digest('hex')
+	let sha = "w/" + crypto.createHash('sha1').update(libInfo.url+ ">" + env.params.version + ">" + file).digest('hex')
 	if(env.request.headers["if-none-match"]){
 		let rsha = env.request.headers["if-none-match"]
 		if(rsha == sha){
