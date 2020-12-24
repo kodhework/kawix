@@ -155,8 +155,6 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 		else if (env.response) {
 			env.response.once("close", onclose)
 			env.response.socket.once("close", onclose)
-
-
 			conn_.end = env.response.end.bind(env.response)
 		}
 

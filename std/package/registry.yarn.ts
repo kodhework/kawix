@@ -24,6 +24,11 @@ export interface PackageJsonInfo{
     main?: string
 }
 
+export interface ModName{
+    name: string
+    version?: string 
+}
+
 export class Registry{
     static cache = {}
     static checked = {}
@@ -32,27 +37,32 @@ export class Registry{
     constructor(){}
 
 
-    async _modulePath(module: string, version: string){
-        var modtext = module + "@" + version 
+    async $modulePath(modules: ModName[], uid?: string, force = false){
+        if(!uid)
+            uid = modules.map((a)=> a.name + "@" + (a.version||"latest")).join(",") 
+
         var home = Path.join(Os.homedir(), ".kawi")
         var packages = Path.join(home, "packages")
         if(!await fs.existsAsync(packages)){
             await fs.mkdirAsync(packages)
         }
         this._packagesfolder  = packages
-        
-        var md5 = crypto.createHash("md5").update(modtext).digest('hex') // + "-" + module.replace(/[\@\?]/g,'')
+        var md5 = crypto.createHash("md5").update(uid).digest('hex') // + "-" + module.replace(/[\@\?]/g,'')
         var pack = Path.join(packages, md5)
         if (!await fs.existsAsync(pack)) {
             await fs.mkdirAsync(pack)
         }
         var jsonPack = Path.join(pack, "package.json")
-        if(!await fs.existsAsync(jsonPack)){
+        if(force || (!await fs.existsAsync(jsonPack))){
             let content  = {
                 name : 'test-0',
                 dependencies: {}
             }
-            content.dependencies[module] = version 
+            for(let i=0;i<modules.length;i++){
+                let mod = modules[i]
+                content.dependencies[mod.name] = mod.version || "latest"
+            }
+            //content.dependencies[module] = version 
             await fs.writeFileAsync(jsonPack, JSON.stringify(content, null, '\t'))
         }
         return pack 
@@ -135,16 +145,157 @@ export class Registry{
         return added   
     }
 
-    async require(module, version?: string): Promise<any>{
-        var moduleinfo = await this.resolve(module, version)
-        if(moduleinfo){
-            return require(moduleinfo.main)
-        }else{
-            throw Exception.create("Failed getting module: " + module + (version ? "@" + version : ""))
+    async require(mod: ModName | ModName[] | string, versionOrUid?: string): Promise<any>{
+        let info = await this.resolve(mod, versionOrUid)
+        if(info instanceof Array){
+            info = info[0]
         }
+        if(info) return require(info.main)
+        throw Exception.create("Failed getting module: " + String(mod) + " -- " + String(versionOrUid))
     }
 
-    async resolve(module, version?:string) : Promise<ModuleInfo>{
+
+    async resolve(mod: ModName | ModName[] | string, versionOrUid?: string): Promise<any>{
+
+        let uid = ''
+        let modname = (mod as ModName).name || (mod as string)
+        let version = (mod as ModName).version || versionOrUid
+        if(modname.indexOf("|")>=0){
+            if(modname.indexOf(">") >= 0){
+                let parts = modname.split(">")
+                modname = parts[0]
+                uid = parts[1]            
+            }
+            mod = modname.split("|").map((a)=> {
+                let i = a.lastIndexOf("@")
+                return {
+                    name: a.substring(0, i),
+                    version: a.substring(i+1)
+                }
+            })
+            if(!uid) uid = versionOrUid
+        }
+
+        if(mod instanceof Array){
+            return await this.resolveMany(mod as ModName[], uid)
+        }
+        else{
+            return await this.resolveSingle({
+                name: modname,
+                version
+            })
+        }
+
+        
+    }
+
+    async $yarnBin(){
+        var bin = ''
+        bin = Path.join(Os.homedir(), ".kawi", "npm-inst", "yarn@1.22.10", "package.json")
+        if(fs.existsSync(bin)){
+            // this avoid need internet for check project
+            bin = Path.join(Os.homedir(), ".kawi", "npm-inst", "yarn@1.22.10", "bin", "yarn.js")
+        }else{
+            var reg = new NormalRegistry({})
+            var moduledesc= await reg.resolve("yarn", "1.22.10")
+            bin = Path.join(moduledesc.folder, "bin/yarn.js")
+        }
+        return bin
+    }
+
+    async $yarnExecute(folder: string){
+        let bin = await this.$yarnBin()
+        var p = Child.spawn(process.execPath, [bin, "--mutex", "network"], {
+            env: Object.assign({}, process.env, {
+                NODE_REQUIRE: "1",
+                ELECTRON_RUN_AS_NODE: "1"
+            }),
+            cwd: folder
+        })
+
+        var def = new async.Deferred<void>()
+        var err = []
+        var received = function(data){
+            process.stdout.write(data)
+            var str = data.toString()
+            if(str.startsWith("ERR:")){
+                err.push(str)
+            }
+        }
+        p.stdout.on("data", received)
+        p.stderr.on("data", received)
+        p.on("error", def.reject)
+        p.on("exit", def.resolve)
+        await def.promise 
+
+        if(err.length){
+            throw Exception.create("Failed to install packages: "  + err.join(" ")).putCode("INSTALL_FAILED")
+        }
+
+
+    }
+
+    async resolveMany(modules: ModName[], uid?: string, force = false): Promise<ModuleInfo[]>{
+        let text = modules.map((a)=> a.name + "@" + a.version).join(",")
+        if(!uid)
+            uid = text
+
+        let ruid = uid + "." + text
+        if(Registry.cache[ruid])
+            return Registry.cache[ruid]
+
+        var out = await this.$modulePath(modules, uid, force)
+        var verif = Path.join(out, "__kwcore_verification")
+        if(await fs.existsAsync(verif)){
+
+            let content = await fs.readFileAsync(verif,'utf8')
+            if(content.indexOf(text+".") < 0){
+                await fs.unlinkAsync(verif)
+                return await this.resolveMany(modules,uid, true)
+            }
+
+            let mods = []
+            for(let i=0;i<modules.length;i++){
+                let modInfo = await this.getModuleInfoFromFolder(Path.join(out, "node_modules", modules[i].name))
+                mods.push(modInfo)
+            }   
+            return mods
+        }
+        await this.$yarnExecute(out)
+        try{
+            // get all cache 
+            let modfolder = Path.join(out, "node_modules")
+            if(!fs.existsSync(modfolder))
+                throw Exception.create("Yarn install nothing").putCode("INSTALL_FAILED")
+            //await this.getCacheFromFolder(mods)
+
+        }catch(e){
+            throw Exception.create("Failed to install packages: " + e.message).putCode("INSTALL_FAILED")
+        }
+        await fs.writeFileAsync(verif, text + "." + Date.now())
+        
+        let mods = []
+        for(let i=0;i<modules.length;i++){
+            let modInfo = await this.getModuleInfoFromFolder(Path.join(out, "node_modules", modules[i].name))
+            mods.push(modInfo)
+        }   
+
+        Registry.cache[ruid] = mods 
+        return mods 
+    }
+
+    async resolveSingle(modName: ModName) : Promise<ModuleInfo>{
+
+        let version = modName.version 
+        let module = modName.name 
+        if(typeof modName == "string"){
+            module = modName
+            version = arguments[1]
+            modName = {
+                name:module,
+                version 
+            }
+        }
         if(!version){
             // extract from module 
             let i= module.lastIndexOf("@")
@@ -154,6 +305,7 @@ export class Registry{
             }else{
                 version = "latest"
             }
+            modName.version = version
         }
         var cache = [].concat(Registry.cache[module] || [])
         if(cache.length){
@@ -163,17 +315,13 @@ export class Registry{
             for(let i=0;i<cache.length;i++){
                 let mod = cache[i]
                 if(mod.version == version)
-                    return mod 
-                
-                
+                    return mod                 
                 if(Semver.satisfies(mod.version, version))
                     return mod 
             }
         }
-
-
         // execute yarn
-        var out = await this._modulePath(module, version)
+        var out = await this.$modulePath([modName])
         var verif = Path.join(out, "__kwcore_verification")
         if(await fs.existsAsync(verif)){
             if(!Registry.checked[Path.join(out, "node_modules")]){
@@ -182,47 +330,8 @@ export class Registry{
             return await this.getModuleInfoFromFolder(Path.join(out, "node_modules", module))
         }
 
-        var bin = ''
-        bin = Path.join(Os.homedir(), ".kawi", "npm-inst", "yarn@1.17.3", "package.json")
         
-        if(fs.existsSync(bin)){
-            // this avoid need internet for check project
-            bin = Path.join(Os.homedir(), ".kawi", "npm-inst", "yarn@1.17.3", "bin", "yarn.js")
-        }else{
-            var reg = new NormalRegistry({})
-            var moduledesc= await reg.resolve("yarn", "1.17.3")
-            bin = Path.join(moduledesc.folder, "bin/yarn.js")
-        }
-        var p = Child.spawn(process.execPath, [bin, "install", "--mutex", "network"], {
-            env: Object.assign({}, process.env, {
-                NODE_REQUIRE: "1",
-                ELECTRON_RUN_AS_NODE: "1"
-            }),
-            cwd: out
-        })
-
-        var def = new async.Deferred<void>()
-        var err = []
-        var received = function(data){
-            process.stdout.write(data)
-            var str = data.toString()
-            if(str.startsWith("error:")){
-                err.push(str)
-            }
-        }
-
-        p.stdout.on("data", received)
-        p.stderr.on("data", received)
-        p.on("error", def.reject)
-        p.on("exit", def.resolve)
-        await def.promise 
-
-
-        if(err.length){
-            throw Exception.create("Failed to install packages: "  + err.join(" ")).putCode("INSTALL_FAILED")
-        }
-
-
+        await this.$yarnExecute(out)
         try{
             // get all cache 
             var mods = Path.join(out, "node_modules")
@@ -232,7 +341,6 @@ export class Registry{
         }catch(e){
             throw Exception.create("Failed to install packages: " + e.message).putCode("INSTALL_FAILED")
         }
-
         await fs.writeFileAsync(verif, Date.now().toString())
         return await this.getModuleInfoFromFolder(Path.join(out, "node_modules", module))
     }

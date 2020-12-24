@@ -162,7 +162,7 @@ export class Archiver extends Readable{
     }
 
     _addBuffer(content){
-        let portion = 5*1024*1024
+        let portion = 4*1024*1024
         while(content.length){
             let b = content.slice(0,4096) 
             this._buf.push(b)
@@ -206,8 +206,14 @@ export class Archiver extends Readable{
     }
 
     _gcompressBrotli(){
+
+
         let bytes = Buffer.concat(this._buf.splice(0, this._buf.length))
-        let data = Zlib.brotliCompressSync(bytes)
+        let data = Zlib.brotliCompressSync(bytes,{
+            params: {
+                [Zlib.constants.BROTLI_PARAM_QUALITY]: 7
+            }
+        })
         
         this.push(data)
         this._blocks.push({
@@ -268,7 +274,7 @@ export class Archiver extends Readable{
 
     async _compressStream_X(streamin, gcompress){
         let compressedLength = 0, uncompressedLength = 0
-        let portion = 5*1024*1024
+        let portion = 4*1024*1024
         let buf = this._buf
         streamin.on("data", (b)=>{   
             buf.push(b)
