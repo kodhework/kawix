@@ -157,6 +157,7 @@ export class Registry{
 
     async resolve(mod: ModName | ModName[] | string, versionOrUid?: string): Promise<any>{
 
+
         let uid = ''
         let modname = (mod as ModName).name || (mod as string)
         let version = (mod as ModName).version || versionOrUid
@@ -166,24 +167,20 @@ export class Registry{
                 modname = parts[0]
                 uid = parts[1]            
             }
-            mod = modname.split("|").map((a)=> {
-                let i = a.lastIndexOf("@")
-                return {
-                    name: a.substring(0, i),
-                    version: a.substring(i+1)
-                }
-            })
-            if(!uid) uid = versionOrUid
         }
-
-        if(mod instanceof Array){
+        mod = modname.split("|").map((a)=> {
+            let i = a.lastIndexOf("@")
+            return {
+                name: a.substring(0, i),
+                version: a.substring(i+1)
+            }
+        })
+        if(!uid) uid = versionOrUid
+        if(mod.length > 1){
             return await this.resolveMany(mod as ModName[], uid)
         }
         else{
-            return await this.resolveSingle({
-                name: modname,
-                version
-            })
+            return await this.resolveSingle(mod[0])
         }
 
         
@@ -284,29 +281,8 @@ export class Registry{
         return mods 
     }
 
-    async resolveSingle(modName: ModName) : Promise<ModuleInfo>{
-
-        let version = modName.version 
-        let module = modName.name 
-        if(typeof modName == "string"){
-            module = modName
-            version = arguments[1]
-            modName = {
-                name:module,
-                version 
-            }
-        }
-        if(!version){
-            // extract from module 
-            let i= module.lastIndexOf("@")
-            if(i > 0){
-                version = module.substring(i+1)
-                module = module.substring(0,i)
-            }else{
-                version = "latest"
-            }
-            modName.version = version
-        }
+    async resolveSingle(module: ModName) : Promise<ModuleInfo>{
+        
         var cache = [].concat(Registry.cache[module] || [])
         if(cache.length){
             cache.sort(function(a,b){
@@ -314,20 +290,20 @@ export class Registry{
             })
             for(let i=0;i<cache.length;i++){
                 let mod = cache[i]
-                if(mod.version == version)
+                if(mod.version == module.version)
                     return mod                 
-                if(Semver.satisfies(mod.version, version))
+                if(Semver.satisfies(mod.version, module.version))
                     return mod 
             }
         }
         // execute yarn
-        var out = await this.$modulePath([modName])
+        var out = await this.$modulePath([module])
         var verif = Path.join(out, "__kwcore_verification")
         if(await fs.existsAsync(verif)){
             if(!Registry.checked[Path.join(out, "node_modules")]){
                 await this.getCacheFromFolder(Path.join(out, "node_modules"))
             }
-            return await this.getModuleInfoFromFolder(Path.join(out, "node_modules", module))
+            return await this.getModuleInfoFromFolder(Path.join(out, "node_modules", module.name))
         }
 
         
@@ -342,7 +318,7 @@ export class Registry{
             throw Exception.create("Failed to install packages: " + e.message).putCode("INSTALL_FAILED")
         }
         await fs.writeFileAsync(verif, Date.now().toString())
-        return await this.getModuleInfoFromFolder(Path.join(out, "node_modules", module))
+        return await this.getModuleInfoFromFolder(Path.join(out, "node_modules", module.name))
     }
 }
 
