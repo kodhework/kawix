@@ -1,9 +1,11 @@
 // Copyright 2018-2019 the kawix authors. All rights reserved. MIT license.
 
 import http from 'http'
+import https from 'https'
+
 import Reply from './reply'
 import {EventEmitter} from 'events'
-import Net, { Socket } from 'net'
+import Net, { AddressInfo, Socket } from 'net'
 import fs from '../fs/mod'
 import * as async from '../util/async'
 import Router from './router'
@@ -39,11 +41,12 @@ export class Env extends EventEmitter{
 		return socket.end()
 	}
 }
-class Server extends EventEmitter{
+export class Server extends EventEmitter{
 
 	_queue: Array<any>
 	options: any 
 	_http: http.Server
+
 	_connectCallback: (...args)=>{}
 	_connectEnabled: boolean
 
@@ -58,15 +61,29 @@ class Server extends EventEmitter{
 		this._queue= []
 	}
 
-
-	/** Listen http server. Returns a promise */
-	async listen(addr){
-		if(!this._http){
+	async listen(addr: string | number, options = null){
+		if(options && options.ssl){
+			this.options = Object.assign(this.options, options)
+			this._http = https.createServer(this.options, this._listener.bind(this))
+			this._http.on("error", (e) => {
+				this.emit("error", e)
+			})
+		}
+		else{
+			this.options = Object.assign(this.options, options || {})
 			this._http = http.createServer(this.options, this._listener.bind(this))
 			this._http.on("error", (e) => {
 				this.emit("error", e)
 			})
 		}
+
+		return await this.$listen(addr)
+	}
+
+
+	/** Listen http server. Returns a promise */
+	async $listen(addr: string | number): Promise<AddressInfo>{
+		
 
 		var host,port, self, r1, r2
 		self= this

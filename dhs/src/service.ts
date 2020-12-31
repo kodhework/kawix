@@ -6,6 +6,8 @@ import { Channel } from '/virtual/@kawix/std/rpa/channel'
 
 import Exception from '/virtual/@kawix/std/util/exception'
 import KawixHttp from '/virtual/@kawix/std/http/mod'
+import {Server as KawixHttpServer} from '/virtual/@kawix/std/http/server'
+
 import Url from 'url'
 import Path from 'path'
 import Cluster from 'cluster'
@@ -38,17 +40,13 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 	__id: number
 	_router
 	_cronstop: any
-
 	_contexts: any
 	_concurrent: number
 	__time: number
 	__reloadtimeout: any
-
 	__ks0: any
 	__ks1: any
 	__ks2: any
-
-
 	ipcmodule = 'RPA'
 
 
@@ -60,7 +58,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 	channels = {}
 
 	address: AddressInfo
-	http: any
+	http: KawixHttpServer
 	started: number
 
 	constructor(config1) {
@@ -426,6 +424,9 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 		env = Object.assign({}, process.env, (ref = cluster.env) != null ? ref : {})
 		env.ADDRESS = cluster.address
 		env.KAWIX_PURPOSE = cluster.purpose
+		if(cluster.httpOptions)
+			env.DHS_HTTP_CONFIG= JSON.stringify(cluster.httpOptions)
+
 		w = Cluster.fork(env)
 		this.workers.push(w)
 		w.env = env
@@ -500,33 +501,54 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 			return Exception.create("Listen address no specified").putCode("INVALID_ADDR").raise()
 		}
 
+		if(process.env.DHS_SSL || process.env.DHS_SSL_KEY){
+			let key, cert;
+			if(process.env.DHS_SSL_KEY){
+				key = await fs.readFileAsync(process.env.DHS_SSL_KEY)
+			}
+			if(process.env.DHS_SSL_CERT){
+				cert = await fs.readFileAsync(process.env.DHS_SSL_CERT)
+			}
+			config.httpOptions = Object.assign({},config.httpOptions||{}, {
+				ssl: true,
+				key,
+				cert			
+			})
+		}else{
+			if(process.env.DHS_HTTP_CONFIG){
+				config.httpOptions = JSON.parse(process.env.DHS_HTTP_CONFIG)
+			}
+			else{
+				config.httpOptions = config.httpOptions || {}
+			}
+		}
+
+		if(config.httpOptions.keyFile){
+			config.httpOptions.key =  await fs.readFileAsync(config.httpOptions.keyFile)
+			delete config.httpOptions.keyFile
+		}
+		if(config.httpOptions.certFile){
+			config.httpOptions.cert =  await fs.readFileAsync(config.httpOptions.certFile)
+			delete config.httpOptions.certFile
+		}
+
 		// create the server
 		this.http = new KawixHttp.server()
 		if (config.maxqueuecount) {
 			this.http.maxqueuecount = config.maxqueuecount
 		}
-
 		def = new async.Deferred<any>()
-		this.address = (await this.http.listen(addr))
-		console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" + "Listening on ", this.address)
+		this.address = (await this.http.listen(addr, config.httpOptions))
+		console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" + "Listening on", this.address, "SSL =", !!config.httpOptions.ssl)
 		if (Cluster.isMaster) {
 			this.emit("listen", this.address)
 		} else {
 			this.address.rpa_plain = true
 			this.channel.client.emit("listen", this.address)
 		}
-
 		// build Router for each Site
 		this.startbuildingRoutes()
 		this.started = Date.now()
-
-
-		/*
-		if (parseInt(process.env.CRON_ENABLED) === 1) {
-			this._startCron()
-		}*/
-
-
 		// start accept
 		return this._accept()
 	}
@@ -839,8 +861,8 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 		var config, e
 
 		if (Cluster.isMaster) {
+			
 			config = (await this.config.read())
-
 			this.channel = await Channel.registerLocal("DHS." + config.id, this)
 			process.env.KAWIX_CHANNEL_ID = "DHS." + config.id
 			if (config.singleprocess) {
@@ -909,8 +931,6 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 
 		var config, e, host, hostnames, id, j, k, l, len, len1, len2, len3, len4, len5, m, mod, n, o, prefix, preload, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, results, route, site, val;
 		config = this.config.readCached()
-
-
 		if (!this.__time) {
 			this.__time = config.__time
 		} else {

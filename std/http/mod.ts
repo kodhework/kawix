@@ -1,4 +1,4 @@
-import Server from './server'
+import {Server} from './server'
 import Router from './router'
 import Reply from './reply'
 import Serializer from './serializer'
