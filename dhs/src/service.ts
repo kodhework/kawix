@@ -1,9 +1,6 @@
-
 // 2019-10-09
 // New module for IPC, advanced and more stable
 import { Channel } from '/virtual/@kawix/std/rpa/channel'
-
-
 import Exception from '/virtual/@kawix/std/util/exception'
 import KawixHttp from '/virtual/@kawix/std/http/mod'
 import {Server as KawixHttpServer} from '/virtual/@kawix/std/http/server'
@@ -12,7 +9,6 @@ import Url from 'url'
 import Path from 'path'
 import Cluster from 'cluster'
 import Child from 'child_process'
-
 import { Config, ConfigRPA, ConfigBase } from './config'
 //import ConfigIPC from './config.ipc';
 
@@ -389,42 +385,24 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 		}
 	}
 
-	_cluster(name?: string) {
-		var cluster, clusters, config, i, j, len, ref, ref1, results, w
 
-
-		config = this.config.readCached()
-		clusters = (ref = config.cluster) != null ? ref : [
-			{
-				purpose: 'default',
-				address: config.address
+	async _cluster(name?: string){		
+		let config = this.config.readCached()
+		let clusters = config.cluster || [{
+			purpose:'default',
+			address: config.address
+		}]
+		for(let i=0;i<clusters.length;i++){
+			let cluster = clusters[i]
+			if(cluster.count == "all") cluster.count = Os.cpus().length 
+			if(cluster.min) cluster.count = Math.min(cluster.count, cluster.min)
+			if(cluster.max) cluster.count = Math.max(cluster.count, cluster.max)
+			for(let y=0;y<cluster.count;y++){
+				let w = this._fork(cluster)
+				if(name)w._cid = name 				
 			}
-		];
-		results = [];
-		for (j = 0, len = clusters.length; j < len; j++) {
-			cluster = clusters[j];
-			cluster.count = (ref1 = cluster.count) != null ? ref1 : 1;
-			if (cluster.count === 'all') {
-				cluster.count = Os.cpus().length;
-			}
-			if (cluster.min) {
-				cluster.count = Math.min(cluster.count, cluster.min);
-			}
-			if (cluster.max) {
-				cluster.count = Math.max(cluster.count, cluster.max);
-			}
-			results.push((function () {
-				var k, ref2, results1;
-				results1 = [];
-				for (i = k = 0, ref2 = cluster.count; (0 <= ref2 ? k < ref2 : k > ref2); i = 0 <= ref2 ? ++k : --k) {
-					// create cluster
-					w = this._fork(cluster);
-					results1.push(w._cid = name);
-				}
-				return results1;
-			}).call(this));
+			await async.sleep(200)
 		}
-		return results;
 	}
 
 
@@ -606,19 +584,21 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 				let ctx = this.getContext(site)
 				let crons = site.crons
 
-				for(let y=0;y<crons.length;y++){
-					let cron = crons[y]
-					let c = cron.worker || "CRON_ENABLED"
-					if(!cron.name) cron.name = 'default'
-					cron.id = site.name + "." + cron.name 
-					let ccron = this._crons[cron.id]
-					if(ccron){
-						cron._executing = ccron._executing
-						cron._executed = ccron._executed
-					}
-					if(c == "all" || (parseInt(process.env[c]) == 1)){
-						if((cron.interval || 120000) >= (Date.now() - (cron._executed || Date.now()))){
-							if(!cron._executing) this._executeCron(site, cron, ctx)
+				if(crons){
+					for(let y=0;y<crons.length;y++){
+						let cron = crons[y]
+						let c = cron.worker || "CRON_ENABLED"
+						if(!cron.name) cron.name = 'default'
+						cron.id = site.name + "." + cron.name 
+						let ccron = this._crons[cron.id]
+						if(ccron){
+							cron._executing = ccron._executing
+							cron._executed = ccron._executed
+						}
+						if(c == "all" || (parseInt(process.env[c]) == 1)){
+							if((cron.interval || 120000) >= (Date.now() - (cron._executed || Date.now()))){
+								if(!cron._executing) this._executeCron(site, cron, ctx)
+							}
 						}
 					}
 				}
