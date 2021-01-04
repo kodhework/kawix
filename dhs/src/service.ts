@@ -146,15 +146,27 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 
 
 
-		let onclose = this._onclose.bind(this, id)
-		if (env.socket) {
-			env.socket.once("close", onclose)
-			env.response = env.socket
+		//let onclose = this._onclose.bind(this, id)
+		let socket = env.socket, r = false
+		if(socket){
+			r = true 
+			env.response = env.socket 
 			conn_.end = env.response.end.bind(env.response)
 		}
-		else if (env.response) {
-			env.response.once("close", onclose)
-			env.response.socket.once("close", onclose)
+		if(!socket && env.response){
+			socket = env.response.socket
+		}
+		if(socket) {
+			if(socket.$ids){
+				socket.$ids.push(id)
+			}
+			else{
+				socket.$ids = []
+				socket.on("close", this._onclose.bind(this, socket.$ids))
+			}
+		}
+		if (env.response && !r) {
+			env.response.once("close", this._onclose.bind(this, id))
 			conn_.end = env.response.end.bind(env.response)
 		}
 
