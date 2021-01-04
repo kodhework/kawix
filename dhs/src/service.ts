@@ -11,6 +11,7 @@ import {Server as KawixHttpServer} from '/virtual/@kawix/std/http/server'
 import Url from 'url'
 import Path from 'path'
 import Cluster from 'cluster'
+import Child from 'child_process'
 
 import { Config, ConfigRPA, ConfigBase } from './config'
 //import ConfigIPC from './config.ipc';
@@ -28,10 +29,11 @@ import {
 
 import { AddressInfo } from 'net'
 import * as Types from './typings'
-
 declare var kawix
+require('events').EventEmitter.prototype._maxListeners = 1000
 
-require('events').EventEmitter.prototype._maxListeners = 100
+
+let isMaster = Cluster.isMaster && !process.env.NO_MASTER
 
 export class Service extends EventEmitter implements Types.DhsServerMaster {
 
@@ -414,10 +416,6 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 	}
 
 
-
-
-
-
 	_fork(cluster) {
 		var env, ref, self, u, w
 		self = this
@@ -427,16 +425,24 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 		if(cluster.httpOptions)
 			env.DHS_HTTP_CONFIG= JSON.stringify(cluster.httpOptions)
 
-		w = Cluster.fork(env)
+		if(env.MEMSHARING){
+			env.NO_MASTER = "1"			
+			w = Child.spawn(process.argv[0], process.argv.slice(1), {
+				stdio:'inherit',
+				env
+			})
+			w.child = true
+		}
+		else{
+			w = Cluster.fork(env)
+			w.child = false 
+			w.pid = w.process.pid
+		}		
 		this.workers.push(w)
 		w.env = env
 		w.info = cluster
 		w.purpose = cluster.purpose
-		w.pid = w.process.pid
 		self = this
-
-
-
 		w.on("error", function (e) {
 			return console.error("[kawix/dhs] Error in worker: ", w.pid, e);
 		});
@@ -450,7 +456,6 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 				return console.info(`[kawix/dhs] Worker ${w.pid} fully closed`);
 			}
 		})
-
 		return w;
 	}
 
@@ -540,7 +545,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 		def = new async.Deferred<any>()
 		this.address = (await this.http.listen(addr, config.httpOptions))
 		console.info("\x1b[32m[kawix/dhs] Info:", "\x1b[0m" + "Listening on", this.address, "SSL =", !!config.httpOptions.ssl)
-		if (Cluster.isMaster) {
+		if (isMaster) {
 			this.emit("listen", this.address)
 		} else {
 			this.address.rpa_plain = true
@@ -568,7 +573,6 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 			await worker.service.dynamicRun(`
 			let service = arguments[0]
 			service._startCron()
-		
 			`)
 		}
 
@@ -577,46 +581,37 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 
 	}
 
-	async _startCron() {
 
-
-		//console.info("Cron process")
-
-		var c, ccron, config, cron, ctx, j, k, len, len1, ref, ref1, ref2, site
+	async _startCron(){
 		if (this._cronstop) {
 			return
 		}
 
-		config = this.config.readCached()
-		if (config.sites) {
-			ref = config.sites
-			for (j = 0, len = ref.length; j < len; j++) {
-				site = ref[j]
-				if (site.crons) {
-					ctx = this.getContext(site)
-					ref1 = site.crons
-					for (k = 0, len1 = ref1.length; k < len1; k++) {
-						cron = ref1[k]
-						c = (ref2 = cron.worker) != null ? ref2 : "CRON_ENABLED";
-						if (!cron.name) {
-							cron.name = 'default'
-						}
-						cron.id = site.name + "." + cron.name
-						ccron = this._crons[cron.id]
-						if (ccron) {
-							cron._executing = ccron._executing
-							cron._executed = ccron._executed
-						}
-						if (c === "all" || (parseInt(process.env[c]) === 1)) {
-							if (((cron.interval || 120000) >= (Date.now() - (cron._executed || Date.now()))) && !cron._executing) {
-								this._executeCron(site, cron, ctx)
-							}
+		let config = this.config.readCached()
+		if(config.sites){
+			for(let i=0;i<config.sites.length;i++){
+				let site = config.sites[i]
+				let ctx = this.getContext(site)
+				let crons = site.crons
+
+				for(let y=0;y<crons.length;y++){
+					let cron = crons[y]
+					let c = cron.worker || "CRON_ENABLED"
+					if(!cron.name) cron.name = 'default'
+					cron.id = site.name + "." + cron.name 
+					let ccron = this._crons[cron.id]
+					if(ccron){
+						cron._executing = ccron._executing
+						cron._executed = ccron._executed
+					}
+					if(c == "all" || (parseInt(process.env[c]) == 1)){
+						if((cron.interval || 120000) >= (Date.now() - (cron._executed || Date.now()))){
+							if(!cron._executing) this._executeCron(site, cron, ctx)
 						}
 					}
 				}
 			}
 		}
-
 	}
 
 
@@ -686,18 +681,21 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 					return a.pid == ${JSON.stringify(pid)}
 				})
 				if(!works.length) return null 
+				if(works[0].child) return "child"
 				return works[0].service
 				`)
-
-				if (!client) return null
-
-
-				this.channels[pid] = {
-					client,
-					plain: this.channel.plain.bind(this.channel)
+				console.info("SERVICE:", client)
+				if(client == "child"){
+					this.channels[pid] = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID + "." + pid)	
+				}
+				else{
+					if (!client) return null
+					this.channels[pid] = {
+						client,
+						plain: this.channel.plain.bind(this.channel)
+					}
 				}
 			}
-
 			else {
 				this.channels[pid] = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID + "." + pid)
 			}
@@ -726,7 +724,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 
 	// should be called async 
 	findWorkerPID(worker: { purpose?: string | string[], env?: string | string[] }) {
-		if (!Cluster.isMaster) {
+		if (!isMaster) {
 			return this.channel.client.findWorkerPID({
 				rpa_plain: worker
 			})
@@ -745,7 +743,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 
 
 		let nworker = null
-		if (!Cluster.isMaster) return null
+		if (!isMaster) return null
 
 
 		if (workerc.purpose) {
@@ -840,12 +838,9 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 	async setWorkerService(pid: number, service: Service) {
 		for (let i = 0; i < this.workers.length; i++) {
 			let worker = this.workers[i]
-			if (worker.process.pid == pid) {
-
+			if (worker.pid == pid) {
 				service.rpa_preserve()
 				worker.service = service
-
-
 			}
 		}
 	}
@@ -860,7 +855,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 	async start() {
 		var config, e
 
-		if (Cluster.isMaster) {
+		if (isMaster) {
 			
 			config = (await this.config.read())
 			this.channel = await Channel.registerLocal("DHS." + config.id, this)
@@ -884,36 +879,23 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 			this.config = new ConfigRPA(tclient)
 			let config1 = await this.config.read()
 			let id = "DHS." + config1.id + "." + process.pid
-			if (Os.platform() != "win32")
+			if (Os.platform() != "win32"){
 				await Channel.registerLocal(id, this)
-
+			}
+			else if(process.env.NO_MASTER == "1"){
+				await Channel.registerLocal(id, this)
+			}
 			//this.config._load()
 			//await this.config.read()
-
 			return (await this._start())
 		}
 	}
 
 
-
-
-
-
-
-
 	// reload workers gracefull, when main configuration changed
 	async reloadCluster() {
-
 		// This need be change, to fully use the new RPA
-
 	}
-
-
-
-
-
-
-
 
 
 
@@ -921,10 +903,8 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 		if (this.startbuildingRoutes.timer) {
 			clearTimeout(this.startbuildingRoutes.timer)
 		}
-
 		// Previous 200ms, now wait about 1.5 second, maybe is better
 		this.startbuildingRoutes.timer = setTimeout(this.buildRoutes.bind(this), 1500)
-
 	}
 
 	async buildRoutes() {
@@ -937,7 +917,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 			if (this.__time != config.__time) {
 				this.__time = config.__time
 				// close for restart, only if multiprocess
-				if (!Cluster.isMaster) {
+				if (!isMaster) {
 					console.info("[kawix/dhs] Main config change detected, restarting cluster")
 					this.closeAndExit()
 					return
