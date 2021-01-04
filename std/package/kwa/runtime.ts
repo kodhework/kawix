@@ -106,9 +106,13 @@ export class Runtime {
 		if(!sym.endsWith(".kwa")) sym += ".kwa"
 		let files = await fs.readdirAsync(folder)
 		files = files.filter((a)=> (!a.endsWith(".kwa")) && /^\d/.test(a))
-    let lastfile = Number(files.pop() || 0)
-    let toremove = files.map((a)=> Path.join(folder,a))
-    
+		files.sort(function(a,b){
+			let c = Number(a)
+			let d = Number(b)
+			return c - d 
+		})
+    	let lastfile = Number(files.pop() || 0)
+    	let toremove = files.map((a)=> Path.join(folder,a))
 		let ifolder = Path.join(folder, (lastfile+1).toString())
 
 

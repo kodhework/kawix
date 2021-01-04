@@ -421,6 +421,14 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 				stdio:'inherit',
 				env
 			})
+			process.on('SIGINT', () => {
+				w.finished = true 
+				w.kill('SIGINT')
+			})	
+			process.on('SIGTERM', () => {
+				w.finished = true 
+				w.kill('SIGTERM')
+			})			
 			w.child = true
 		}
 		else{
