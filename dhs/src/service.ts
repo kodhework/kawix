@@ -403,6 +403,23 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 			}
 			await async.sleep(200)
 		}
+
+		let self = this
+		let m = function(code){
+			return function(){
+				for(let i=0;i<self.workers.length;i++){
+					let worker = self.workers[i]
+					if(worker.child){
+						worker.kill(code)
+					}
+				}
+				setTimeout(function(){
+					process.exit(1)
+				}, 500)
+			}
+		}
+		process.on('SIGINT', m("SIGINT"))
+		process.on('SIGTERM', m("SIGTERM"))
 	}
 
 
@@ -420,14 +437,6 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 			w = Child.spawn(process.argv[0], process.argv.slice(1), {
 				stdio:'inherit',
 				env
-			})
-			process.on('SIGINT', () => {
-				w.finished = true 
-				w.kill('SIGINT')
-			})	
-			process.on('SIGTERM', () => {
-				w.finished = true 
-				w.kill('SIGTERM')
 			})			
 			w.child = true
 		}
