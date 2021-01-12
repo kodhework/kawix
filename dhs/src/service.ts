@@ -410,7 +410,8 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 				for(let i=0;i<self.workers.length;i++){
 					let worker = self.workers[i]
 					if(worker.child){
-						worker.kill(code)
+						//worker.kill(code)
+						process.kill(worker.pid, code)
 					}
 				}
 				setTimeout(function(){
@@ -418,6 +419,11 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 				}, 500)
 			}
 		}
+
+
+		process.on('exit', m("SIGINT"))
+		process.on('SIGUSR1', m("SIGINT"))
+		process.on('SIGUSR2', m("SIGINT"))
 		process.on('SIGINT', m("SIGINT"))
 		process.on('SIGTERM', m("SIGTERM"))
 	}
