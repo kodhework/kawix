@@ -1,6 +1,6 @@
 ## Windows
 
-Universal Installer (32bit, 64bit, autoupdated)  available for Windows. Please go to [https://github.com/kodhework/kawix/releases/tag/universal-2](https://github.com/kodhework/kawix/releases/tag/universal-2)
+Universal Installer (32bit, 64bit, autoupdated)  available for Windows. Please go to the [Windows Installer download page](https://github.com/kodhework/kawix/releases/tag/universal-3)
 
 
 ## Linux
