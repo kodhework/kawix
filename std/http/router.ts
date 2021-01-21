@@ -3,7 +3,7 @@ import {EventEmitter} from 'events'
 import Path from 'path'
 import Url from 'url'
 import QueryString from 'querystring'
-class Router {
+export class Router {
 	constructor() {
 		this._router = FindMyWay()
 		this._routes= {}

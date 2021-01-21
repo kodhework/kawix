@@ -17,7 +17,7 @@ interface RPATarget {
 }
 
 
-export class Channel {
+export class Channel extends EventEmitter {
     cid: string
     service: any
     client: any
@@ -252,7 +252,7 @@ export class Channel {
 
 
     constructor(service?: any) {
-
+        super()
         this._store = new Map<any, any>()
         this._map = new Map<any, any>()
         if (service) {
@@ -630,9 +630,7 @@ export class Channel {
 
 
         socket.on("close", () => {
-
             // reject all tasks
-
             let store = this.getStoreForSocket(socket)
             if (store) {
 
@@ -681,6 +679,7 @@ export class Channel {
             }
         }
         this._net = socket
+        this._net.on("close", ()=> this.emit("close"))
         this._connection(socket)
 
         try {
@@ -748,6 +747,7 @@ export class Channel {
     async connectLocal() {
         let socket = await this.getSocket()
         this._net = socket
+        this._net.on("close", ()=> this.emit("close"))
         this._connection(socket)
         this.client = this.getArgument(socket, {
             rpa_id: "R>0",

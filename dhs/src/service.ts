@@ -702,6 +702,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 				console.info("SERVICE:", client)
 				if(client == "child"){
 					this.channels[pid] = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID + "." + pid)	
+					this.channels[pid].on("close", ()=> delete this.channels[pid])
 				}
 				else{
 					if (!client) return null
@@ -713,6 +714,7 @@ export class Service extends EventEmitter implements Types.DhsServerMaster {
 			}
 			else {
 				this.channels[pid] = await Channel.connectLocal(process.env.KAWIX_CHANNEL_ID + "." + pid)
+				this.channels[pid].on("close", ()=> delete this.channels[pid])
 			}
 		}
 		return this.channels[pid]
