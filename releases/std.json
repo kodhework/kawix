@@ -118,6 +118,10 @@
 	{
 		"version": "0.9.9",
 		"branch": "std0.9.9"
+	},
+	{
+		"version": "0.9.10",
+		"branch": "std0.9.10"
 	}
 
 ]
