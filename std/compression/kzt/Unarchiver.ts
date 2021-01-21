@@ -71,7 +71,8 @@ export class Unarchiver{
             return Buffer.from(content)
         }
         else if(this.method == "brotli"){
-            return Zlib.brotliDecompressSync(bytes)
+            let buf = Zlib.brotliDecompressSync(bytes)            
+            return buf 
         }
         else if(this.method == "gzip"){
             return Zlib.gunzipSync(bytes)
@@ -198,6 +199,7 @@ export class Unarchiver{
                 throw Exception.create("Failed to read block: " + number).putCode("FILE_ERROR")
             
             cached.data = Buffer.from(dec)
+            this._cacheBlocks[number] = cached
         }
         return cached 
     }

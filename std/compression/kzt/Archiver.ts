@@ -207,8 +207,9 @@ export class Archiver extends Readable{
 
     _gcompressBrotli(){
 
-
+        
         let bytes = Buffer.concat(this._buf.splice(0, this._buf.length))
+        //console.info(bytes.length)
         let data = Zlib.brotliCompressSync(bytes,{
             params: {
                 [Zlib.constants.BROTLI_PARAM_QUALITY]: 7
