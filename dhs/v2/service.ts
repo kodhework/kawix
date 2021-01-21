@@ -886,7 +886,7 @@ export class Service extends EventEmitter{
     }
 
     $catchErrorCallback(func){
-        return async function(env){
+        return async (env)=>{
             try{
                 await func(env)
             }catch(e){
