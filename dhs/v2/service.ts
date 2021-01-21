@@ -25,6 +25,7 @@ import Os from 'os'
 import fs from '/virtual/@kawix/std/fs/mod'
 
 import {Watcher} from './watcher'
+import URL from 'url'
 
 export class Service extends EventEmitter{
 
@@ -442,7 +443,9 @@ export class Service extends EventEmitter{
             if(!env.response.finished){
                 let hostname = env.request.headers["host"]
                 if(hostname){
-                    env.request.url = "/HOST_" + hostname + env.request.url             
+                    env.request.url = "/HOST_" + hostname + env.request.url
+                    env.request.uri = URL.parse(env.request.url)     
+                    //console.info("URL....", env.request.url)        
                     await this.$router.handle(env)
                 }
             }
@@ -584,6 +587,10 @@ export class Service extends EventEmitter{
             console.log("Nuevo archivo agregado:", path)
             this.$addFile(path)
         })
+        watcher.on("change", (path)=>{
+            console.log("Archivo cambiado:", path)
+            this.$addFile(path)
+        })
         watcher.on("remove", (path)=>{
             console.log("Archivo eliminado:", path)
             this.$deleteFile(path)
@@ -591,11 +598,9 @@ export class Service extends EventEmitter{
 
 
         if(process.env.CRON_ENABLED){
-
             // start executing cron
             setTimeout(this.$startCrons.bind(this), 8000)
             //this.$startCrons()
-
         }
 
     }
@@ -637,12 +642,12 @@ export class Service extends EventEmitter{
         let current = this.$sites.get(path)
         if(current){
             // delete 
-            await this.$deleteFile(path)
+            //await this.$deleteFile(path)
         }
         mod = mod.site || mod 
         let site = {
             id: mod.id,
-            name: mod.site,
+            name: mod.name,
             config: mod,
             source: path,
             resolvedSource: src,
@@ -710,6 +715,8 @@ export class Service extends EventEmitter{
 
 
     async $add(path, site){
+
+        //console.info("Adding on:",process.pid,path,site)
         this.$sites.set(path, site)
         this.$sitesb.set(site.id, site)
         this.$sitesb.set(site.name, site)
@@ -789,6 +796,7 @@ export class Service extends EventEmitter{
                         if(middle) await middle(env)
                         return site.$router.handle(env)
                     }
+                    //console.info("/HOST_" + h.name)
                     this.$router.use("/HOST_" + h.name, genFunc)
                 })(middle, h, site);
 

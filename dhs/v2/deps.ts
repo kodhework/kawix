@@ -1,8 +1,12 @@
-if(global.kawix ){
 
-	let redirs = {}
-	if(process.env.DHS_LIBRARY_LOCATIONS)
-		redirs = JSON.parse(process.env.DHS_LIBRARY_LOCATIONS)
+if(process.env.DHS_LIBRARY_LOCATIONS){
+	let redirs = JSON.parse(process.env.DHS_LIBRARY_LOCATIONS)
+	for(let redir of redirs){
+		kawix.KModule.addVirtualFile(redir.path, redir.data)
+	}
+}
+
+else{
 
 	let dhs = module.realPathResolve("..")
 	if(!dhs.startsWith("/virtual")){ 
@@ -18,12 +22,7 @@ if(global.kawix ){
 			}
 			kawix.KModule.addVirtualFile("@kawix/dhs", r)
 		}
-		else{
-			redirs["@kawix/dhs"] = {
-				redirect: a[0].redirect,
-				isdirectory: true
-			}
-		}
+		
 
 		a = redirs0.filter(function (a) {
 			return a.isdirectory && a.resolvedpath == "/virtual/@kawix/std"
@@ -35,12 +34,6 @@ if(global.kawix ){
 			}
 			kawix.KModule.addVirtualFile("@kawix/std", r)
 		}
-		else{
-			redirs["@kawix/std"] = {
-				redirect: a[0].redirect,
-				isdirectory: true
-			}
-		}
 
 		a = redirs0.filter(function (a) {
 			return a.isdirectory && a.resolvedpath == "/virtual/@kawix/kivi"
@@ -51,13 +44,7 @@ if(global.kawix ){
 				isdirectory: true
 			}
 			kawix.KModule.addVirtualFile("@kawix/kivi", r)
-		}else{
-			redirs["@kawix/kivi"] = {
-				redirect: a[0].redirect,
-				isdirectory: true
-			}
 		}
-
 
 		a = redirs0.filter(function (a) {
 			return a.isdirectory && a.resolvedpath == "/virtual/@kawix/gix"
@@ -68,13 +55,20 @@ if(global.kawix ){
 				isdirectory: true
 			}
 			kawix.KModule.addVirtualFile("@kawix/gix", r)
-		}else{
-			redirs["@kawix/gix"] = {
-				redirect: a[0].redirect,
-				isdirectory: true
-			}
 		}
 
-		process.env.DHS_LIBRARY_LOCATIONS = JSON.stringify(redirs)
+		
 	}
 }
+
+
+let redirs = kawix.KModule._virtualredirect.map(function(a){
+	return {
+		path: a.resolvedpath.substring(8),
+		data: {
+			redirect: a.redirect,
+			isdirectory: a.isdirectory
+		}
+	}
+})
+process.env.DHS_LIBRARY_LOCATIONS = JSON.stringify(redirs)
