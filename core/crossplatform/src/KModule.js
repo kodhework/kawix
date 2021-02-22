@@ -1439,11 +1439,11 @@ Mod._import = function (file, options) {
 	}
 
 	filename = this.filename || "/default.js"
+	
 	var getBetter = function (a) {
 		if (a) file = a
-
+		var ids = Object.keys(Mod.extensions).filter(Boolean)
 		promise = new Promise(function (resolve, reject) {
-			var ids = Object.keys(Mod.extensions)
 			var i = -1
 			var f = function (file, ext) {
 				var cfile = file
@@ -1453,11 +1453,9 @@ Mod._import = function (file, options) {
 
 				fs.access(cfile, fs.constants.F_OK, function (err) {
 					if (err) {
-						// test next
-						i++
-						ext = ids[i]
+						ext = ids[++i]
 						if (!ext)
-							return reject(new Error("Cannot resolve " + original + " from " + filename))
+							return reject(new Error("Cannot resolve " + original + " from " + filename + ". Resolved file: " + file + ". Available extensions=" + ids.toString()))
 
 						return f(file, ext)
 					}
@@ -1470,6 +1468,8 @@ Mod._import = function (file, options) {
 		return promise
 	}
 
+	//resolved = file 
+	//if(!Path.isAbsolute(resolved))
 	resolved = Mod._resolveFilename(file, options.parent, Mod._resolveFilename)
 	if (resolved) {
 		if (isVirtualFile(resolved))
