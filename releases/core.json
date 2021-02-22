@@ -94,6 +94,14 @@
 	{
 		"version": "0.9.4",
 		"branch": "core0.9.4"
+	},
+	{
+		"version": "0.9.8",
+		"branch": "core0.9.8"
+	},
+	{
+		"version": "0.9.9",
+		"branch": "core0.9.9"
 	}
 
 ]
