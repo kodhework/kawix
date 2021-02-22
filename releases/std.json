@@ -122,6 +122,14 @@
 	{
 		"version": "0.9.10",
 		"branch": "std0.9.10"
+	},
+	{
+		"version": "0.9.11",
+		"branch": "std0.9.11"
+	},
+	{
+		"version": "0.9.12",
+		"branch": "std0.9.12"
 	}
 
 ]

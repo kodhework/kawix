@@ -122,6 +122,18 @@
 	{
 		"version": "0.9.9",
 		"branch": "dhs0.9.9"
+	},
+	{
+		"version": "0.9.10",
+		"branch": "dhs0.9.10"
+	},
+	{
+		"version": "0.9.11",
+		"branch": "dhs0.9.11"
+	},
+	{
+		"version": "0.9.12",
+		"branch": "dhs0.9.12"
 	}
 
 ]
