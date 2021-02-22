@@ -159,7 +159,7 @@ export class Runtime {
 			}
 			try {
 				fs.symlinkSync(folder, sym, Os.platform() == "win32" ? "junction" : "dir")
-				folder = sym
+				//folder = sym
 			} catch (e) {}
 		} catch (e) {}
 

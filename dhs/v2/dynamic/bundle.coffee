@@ -1,4 +1,4 @@
-import Registry from '/virtual/@kawix/std/package/registry'
+import Registry from '/virtual/@kawix/std/package/registry.yarn'
 import Bundler from '/virtual/@kawix/std/package/bundle'
 import KawixHttp from '/virtual/@kawix/std/http/mod'
 import Exception from '/virtual/@kawix/std/util/exception'

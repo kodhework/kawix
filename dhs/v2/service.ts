@@ -635,9 +635,13 @@ export class Service extends EventEmitter{
         let src = path 
         mod = mod.config || mod.default  || mod
         if(mod.configfile){
-            
             src = mod.configfile
-            mod = await import(mod.configfile)
+            let dir = Path.dirname(src)
+            if(Path.isAbsolute(dir)){
+                dir = await fs.realpathAsync(dir)
+                src = Path.join(dir, Path.basename(src))
+            }
+            mod = await import(src)
         }
         let current = this.$sites.get(path)
         if(current){
@@ -942,6 +946,7 @@ export class Service extends EventEmitter{
             let middle 
             if(route.middleware){
                 /// TODO 
+                middle = this.$createCallback(route.middleware, site)
             }
             return async  function(env, ctx){
                 if(middle) await middle(env,ctx)
@@ -964,9 +969,17 @@ export class Service extends EventEmitter{
         let ctx = this.getContext(site)
         let server = this 
         //let resolver = this.$resolve.bind(this)
+
+        let middle 
+        if(route.middleware){
+            /// TODO 
+            middle = this.$createCallback(route.middleware, site)
+        }
+        
         let g = async function(env){
 
-            
+            if(middle) await middle(env)
+            if(env.response && env.response.finished) return     
             let file = params.file 
             if(params.folder){
                 let name = env.params.file || env.params["*"]
