@@ -258,13 +258,13 @@ var builtinModules = _module.builtinModules;
 
 
 	virtualRedirection = function (file) {
-		
+
 		if(Os.platform()=="win32")
 			file = file.replace(/\\/g,'/')
-		
+
 		var data, name, redir
 		for (var i = Mod._virtualredirect.length -1; i >= 0; i--) {
-			data = Mod._virtualredirect[i]	
+			data = Mod._virtualredirect[i]
 			if (file.startsWith(data.platformResolvedpath) || file.startsWith(data.resolvedpath)) {
 				name = Path.relative(data.resolvedpath, file)
 				redir = data.redirect + (data.redirect.endsWith("/") ? "" : "/") + "default"
@@ -326,16 +326,16 @@ var builtinModules = _module.builtinModules;
 		//o = options.mask || uri.pathname  || Url.format(uri)
 		//o = Path.basename(o).replace(/\//g, '_').substring(0, 50) + "-"
 		let md = o + MD5(options.mask || Url.format(uri))
-		
+
 		if (allowCacheCompress) {
 			md += allowCacheCompressExt
 		}
 		parts = ["gen", md]
 		full = parts.join(Path.sep)
-		
+
 		kawi_dir = process.env.KAWIX_CACHE_DIR || Path.join(Os.homedir(), ".kawi")
 		file_dir = Path.join(kawi_dir, full)
-		
+
 		cache_dir = Path.dirname(file_dir)
 		return {
 			kawi_dir: kawi_dir,
@@ -714,7 +714,7 @@ var builtinModules = _module.builtinModules;
 
 	}
 
-	readHttp = function (url) {
+	readHttp = function (url, options, possibles, offset, originalUrl) {
 		var xhttp = url.startsWith("http://") ? "http" : "https"
 		var http = httpr[xhttp]
 		if (!http)
@@ -730,6 +730,27 @@ var builtinModules = _module.builtinModules;
 						loc = Url.resolve(url, loc)
 					}
 					return resolve(readHttp(loc))
+				}
+				else if(resp.statusCode == 404){
+
+					if(possibles && possibles.length){
+						offset++
+						var u = possibles[offset]
+
+						if(!u)
+							return reject(new Error("Status code 404 response from " + (originalUrl||url)))
+
+						return resolve(readHttp(u, options, possibles, offset, originalUrl))
+					}
+					else if(possibles == undefined){
+						possibles = []
+						for (var ext in Mod.extensions) {
+							possibles.push(url + ext)
+						}
+						return resolve(readHttp(possibles[0], options, possibles, 0, url))
+					}
+					return reject(new Error("Status code 404 response from " + (originalUrl || url)))
+
 				}
 				else if (resp.statusCode != 200) {
 					return reject(new Error("Invalid response from " + url))
@@ -810,7 +831,7 @@ var builtinModules = _module.builtinModules;
 			else {
 
 				transpilerOptions = {
-					
+
 					sourceMaps: true,
 					comments: true,
 					filename: file
@@ -1439,7 +1460,7 @@ Mod._import = function (file, options) {
 	}
 
 	filename = this.filename || "/default.js"
-	
+
 	var getBetter = function (a) {
 		if (a) file = a
 		var ids = Object.keys(Mod.extensions).filter(Boolean)
@@ -1468,7 +1489,7 @@ Mod._import = function (file, options) {
 		return promise
 	}
 
-	//resolved = file 
+	//resolved = file
 	//if(!Path.isAbsolute(resolved))
 	resolved = Mod._resolveFilename(file, options.parent, Mod._resolveFilename)
 	if (resolved) {
@@ -1559,14 +1580,14 @@ Mod.removeCached = function (file) {
 
 
 Mod.addVirtualFile = function (file, data) {
-	var path = Path.join("/virtual", file)	
+	var path = Path.join("/virtual", file)
 	Mod._virtualfile[path] = data
 	data.platformResolvedpath = path
-	
+
 	if(Os.platform() == "win32")
 		data.resolvedpath = path.replace(/\\/g,'/')
-	else 
-		data.resolvedpath = path	
+	else
+		data.resolvedpath = path
 	if (data.redirect) {
 		Mod._virtualredirect.push(data)
 	}
