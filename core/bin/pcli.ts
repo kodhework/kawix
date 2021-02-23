@@ -15,6 +15,16 @@ export async function main() {
         }, null, '\t'))
         */
 
+        let numberVersion = function(ver){
+            let parts = ver.split(".")
+            let unit = 1, num = 0
+            for(let i=parts.length-1;i>=0;i--){
+                let part = Number(parts[i])
+                num += (part * unit)
+                unit*= 1000
+            }
+            return num
+        }
         let loadStd = async function (force = false) {
             let pack = await Kawix.KModule.import("gh+/kodhework/kawix/std/package.json", {
                 force
@@ -29,7 +39,7 @@ export async function main() {
                 force: true
             })
             let pack1 = require("../package.json")
-            if (pack1.version < pack.version) {
+            if (numberVersion(pack1.version) != numberVersion(pack.version)) {
                 console.info("> Updating kawix/core to version:" + pack.version)
                 await Kawix.KModule.import("gh+/kodhework/kawix@core" + pack.version + "/core/dist/kwcore.app.js", {
                     force: true
@@ -230,7 +240,7 @@ export async function main() {
 
 
 
-        // Load the file 
+        // Load the file
         if (filename.toUpperCase().endsWith(".KWA")) {
             await loadStd()
             await import("/virtual/@kawix/std/package/kwa/register")

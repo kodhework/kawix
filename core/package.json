@@ -13,8 +13,8 @@
     "kawi",
     "kodhe"
   ],
-  "version": "0.9.11",
-  "stdVersion": "0.9.3",
+  "version": "1.0.0",
+  "stdVersion": "0.9.12",
   "main": "main.js",
   "directories": {
     "example": "example",
