@@ -31,7 +31,7 @@ export class Service extends EventEmitter{
 
     $start = function(){}
     $router: Router
-    $config: any 
+    $config: any
     $sites: Map<string,any> = new Map()
     $sitesb: Map<string,any> = new Map()
     $http: Server
@@ -39,34 +39,34 @@ export class Service extends EventEmitter{
     $current = new Map()
     $rid = 0
     $customId= Date.now().toString(36).toUpperCase()
-    $erCallback = null 
+    $erCallback = null
     $name = "dhs.service.v2-" + (process.env.KOWIX_SOCKET_NAME|| "default") + "+"
-    $clusters = new Map() 
-    $main = null 
+    $clusters = new Map()
+    $main = null
     $configClients = new Map()
-    $useHttp = false 
+    $useHttp = false
 
     ipcmodule = "RPA"
     address: any
-    enableOutput = true 
-    notFoundCallback = null 
+    enableOutput = true
+    notFoundCallback = null
     errorCallback = null
-    restartOnControlExit = true  
-    
+    restartOnControlExit = true
+
 
     constructor(config){
         super()
         this.$config = config
-        this.$router = new Router()        
+        this.$router = new Router()
     }
 
 
     setConfig(config){
-        this.$config = config 
+        this.$config = config
     }
 
     getContext(sitename){
-        let site = sitename 
+        let site = sitename
         if(typeof sitename == "string"){
             site = this.$sitesb.get(sitename)
         }
@@ -77,13 +77,13 @@ export class Service extends EventEmitter{
             site: site && site.config,
             siteData: site
         }
-        return ctx 
+        return ctx
     }
 
     async dynamicImport(file: string) {
 		return await import(file)
     }
-    
+
     dynamicRun(code: string) {
 		let func = Function("", code)
 		return func(this)
@@ -105,7 +105,7 @@ export class Service extends EventEmitter{
         for(let p of purpose){
             let c = this.$clusters.get(p)
             if(c){
-                return c.pid 
+                return c.pid
             }
         }
     }
@@ -114,10 +114,10 @@ export class Service extends EventEmitter{
 
         let c = this.$clusters.get(pid)
         if(c){
-            return c.channel 
+            return c.channel
         }
 
-        // attach 
+        // attach
         let channel = await this.$connect(pid)
         this.$clusters.set(pid, {
             channel,
@@ -141,9 +141,10 @@ export class Service extends EventEmitter{
 		return path
 	}
 
-    
+
 
     async start(){
+
 
         let m = function(code){
             let workers = this.$clusters
@@ -165,14 +166,14 @@ export class Service extends EventEmitter{
                 return function(){process.exit(0)}
             }
         }
-        
+
 
 		process.on('exit', m("SIGINT"))
 		process.on('SIGUSR1', m("SIGINT"))
 		process.on('SIGUSR2', m("SIGINT"))
 		process.on('SIGINT', m("SIGINT"))
         process.on('SIGTERM', m("SIGTERM"))
-        
+
 
         let pid = this.findWorkerPID("control")
         if(!pid){
@@ -194,13 +195,13 @@ export class Service extends EventEmitter{
             purpose = "control"
 
 
-        // start another process 
-        let def = new async.Deferred<void>(), ok = false        
+        // start another process
+        let def = new async.Deferred<void>(), ok = false
         let cdesc= {
             channel:undefined,
             pid: 0,
             stdout: [],
-            finished: false,   
+            finished: false,
             type,
             stderr: []
         }
@@ -218,7 +219,7 @@ export class Service extends EventEmitter{
             pro = worker.process
         }
         else if(type == "fork"){
-            
+
             let args = [process.argv[1], Path.join(__dirname, "start.1")]
             let p = Child.spawn(process.argv[0], args, {
                 env: Object.assign({}, process.env, (config && config.env)||{}, {
@@ -230,18 +231,18 @@ export class Service extends EventEmitter{
         }
 
 
-        let onstd = null , onstd1 = null 
+        let onstd = null , onstd1 = null
         onstd1 = function(std, b){
             let o = cdesc[std]
             o.push(b)
-            if(o.length > 200)  o.shift()            
+            if(o.length > 200)  o.shift()
             if(this.enableOutput)
                 this.$writeStd(std, b)
         }
         onstd = (b)=>{
             if(!ok){
                 if(b.toString().startsWith("Cluster started")){
-                    ok = true 
+                    ok = true
                     pro.stdout.removeListener("data",onstd)
                     pro.stdout.on("data", onstd1.bind(this,"stdout"))
                     def.resolve()
@@ -251,7 +252,7 @@ export class Service extends EventEmitter{
 
         if(type == "cluster"){
             worker.once("message", function(msg){
-                ok = true 
+                ok = true
                 def.resolve()
             })
 
@@ -263,27 +264,27 @@ export class Service extends EventEmitter{
                 if(cdesc.finished) return
                 setTimeout(()=>{
                     this.fork(purpose, type, config)
-                }, 100)                
+                }, 100)
                 def.resolve()
             })
         }
         else{
-            pro.stdout.on("data", onstd)        
+            pro.stdout.on("data", onstd)
             pro.stderr.on("data", onstd1.bind(this,"stderr"))
             process.on('uncaughtException', function (err) {
                 console.log(err)
             })
-            
+
             pro.on("exit", ()=>{
 
                 console.info(`Process with PID:${pro.pid} finished.`)
-                
+
                 this.$clusters.delete(pro.pid)
                 this.$clusters.delete(purpose)
                 // reopen?
                 if(cdesc.finished) return
 
-                
+
                 setTimeout(()=>{
                     if(purpose == "control" && this.restartOnControlExit){
                         this.restart()
@@ -291,36 +292,36 @@ export class Service extends EventEmitter{
                     else{
                         this.fork(purpose, type, config)
                     }
-                }, 100)                
+                }, 100)
                 def.resolve()
             })
             pro.on("error", def.reject)
 
         }
-        await def.promise 
+        await def.promise
         if(!ok)
             throw Exception.create("Failed starting child process").putCode("CHILD_FORK_FAILED")
 
 
         let channel = await this.$connect(pro.pid)
-        cdesc.pid = pro.pid 
+        cdesc.pid = pro.pid
         cdesc.channel = channel
         await channel.client.setConfig(channel.plain(this.$config))
         await channel.client.$setMain(this)
         if(purpose.indexOf("control") >= 0){
             this.$clusters.set(purpose, cdesc)
-            if(config && config.address){                
+            if(config && config.address){
                 channel.client.$startHttp(config)
             }
         }else{
             await channel.client.$startClientManager()
-            channel.client.$startHttp(config)        
+            channel.client.$startHttp(config)
         }
         this.$clusters.set(cdesc.pid, cdesc)
     }
 
     configureStart(start){
-        this.$start = start 
+        this.$start = start
     }
 
 
@@ -330,12 +331,12 @@ export class Service extends EventEmitter{
         for(let key of keys){
             let c = this.$clusters.get(key)
             if(c){
-                c.finished = true 
+                c.finished = true
                 process.kill(c.pid,'SIGTERM')
             }
         }
 
-        // start again? 
+        // start again?
         if(this.$start){
             await async.sleep(1000)
             await this.$start()
@@ -361,8 +362,8 @@ export class Service extends EventEmitter{
 
     $setMain(service){
         this.$main = service
-        this.$main.rpa_preserve()        
-        return 
+        this.$main.rpa_preserve()
+        return
     }
 
 
@@ -372,10 +373,21 @@ export class Service extends EventEmitter{
         if (this.$config.maxqueuecount) {
 			this.$http.maxqueuecount = this.$config.maxqueuecount
         }
-
         config = config || {}
+        if(config.httpOptions){
+            if(config.httpOptions.keyFile){
+                config.httpOptions.key = await fs.readFileAsync(config.httpOptions.keyFile)
+                //delete config.httpOptions.keyFile
+            }
+            if(config.httpOptions.certFile){
+                config.httpOptions.cert = await fs.readFileAsync(config.httpOptions.certFile)
+                //delete config.httpOptions.certFile
+            }
+        }
+
+        //console.info(config.httpOptions)
         this.address = (await this.$http.listen(config.address || "0.0.0.0:8081", config.httpOptions))
-        console.info("Started:", this.address)
+        console.info("Started:", this.address, "SSL=", Boolean(config.httpOptions && config.httpOptions.ssl))
         this.$started= Date.now()
         await this.$accept()
     }
@@ -415,7 +427,7 @@ export class Service extends EventEmitter{
 		}
 
     }
-    
+
 
     async $handle(env){
         env.request.id = this.$customId + (this.$rid++)
@@ -428,8 +440,8 @@ export class Service extends EventEmitter{
             if(env.socket)
                 env.socket.on("error",(e)=> console.error("Error in socket:",e.message))
 
-            let socket = env.socket 
-            if(!socket) socket= env.response.socket 
+            let socket = env.socket
+            if(!socket) socket= env.response.socket
             if(socket){
                 if(socket.$ids){
                     socket.$ids.push(env.request.id)
@@ -444,8 +456,8 @@ export class Service extends EventEmitter{
                 let hostname = env.request.headers["host"]
                 if(hostname){
                     env.request.url = "/HOST_" + hostname + env.request.url
-                    env.request.uri = URL.parse(env.request.url)     
-                    //console.info("URL....", env.request.url)        
+                    env.request.uri = URL.parse(env.request.url)
+                    //console.info("URL....", env.request.url)
                     await this.$router.handle(env)
                 }
             }
@@ -479,7 +491,7 @@ export class Service extends EventEmitter{
         }else{
             env.DHS_CONFIG_FILE = this.$config
         }
-        
+
         let p1 = await Child.spawn(process.argv[0], [process.argv[1], __filename], {
             env
         })
@@ -492,16 +504,16 @@ export class Service extends EventEmitter{
 
         let pid = await this.findWorkerPID("control")
         let channel = await this.attachToWorker(pid)
-        
+
         let sites = await channel.client.$getNaturalSites()
         this.$backwardFuncs()
 
         for(let site of sites){
             await this.$add(site.source, site)
-        }        
+        }
         this.$buildMain()
         await channel.client.$addManagerClient(process.pid, this)
-        
+
     }
 
     $addManagerClient(id, service){
@@ -514,7 +526,7 @@ export class Service extends EventEmitter{
     }
 
     $backwardFuncs(){
-        // BACKWARD FUNCTIONS 
+        // BACKWARD FUNCTIONS
         this.$config.resolvePath = (path, siteDesc)=>{
             let site = this.$sitesb.get(siteDesc.id)
             if(site){
@@ -533,11 +545,11 @@ export class Service extends EventEmitter{
         this.$config.readCached = function(){
             return this
         }
-        // BACKWARD FUNCTIONS 
+        // BACKWARD FUNCTIONS
     }
 
     async $startManager(){
-        let config = null, base = null 
+        let config = null, base = null
         if(typeof this.$config == "object"){
             config = this.$config
         }else{
@@ -545,13 +557,13 @@ export class Service extends EventEmitter{
             config = await import(this.$config)
             config = config.config || config.default || config
         }
-        this.$config = config 
-        this.$backwardFuncs()        
+        this.$config = config
+        this.$backwardFuncs()
 
         if(process.env.PROJECTS_DIR) base = process.env.PROJECTS_DIR
         if(process.env.DHS_BASE_DIR) base = process.env.DHS_BASE_DIR
         if(!base) base = Path.join(__dirname, "..", "..", "..", "sites")
-    
+
         let include = config.include.map(function(path){
             if(path.startsWith(".")){
                 return Path.join(base, path)
@@ -559,7 +571,7 @@ export class Service extends EventEmitter{
             return path
         })
         if(!include.length) return;
-        
+
 
         /*
         let watcher = chokidar.watch(include[0],{
@@ -568,7 +580,7 @@ export class Service extends EventEmitter{
             awaitWriteFinish: true,
             ignorePermissionErrors : true
         })
-        
+
         console.info(include)
         watcher.add(include.slice(1))
         watcher.on("add", (path)=>{
@@ -606,7 +618,7 @@ export class Service extends EventEmitter{
     }
 
     async $startCrons(){
-        let sites = this.$config.sites 
+        let sites = this.$config.sites
         //console.info("executing crons:")
         for(let site of sites){
             let ctx = this.getContext(site)
@@ -632,7 +644,7 @@ export class Service extends EventEmitter{
 
     async $addFile(path){
         let mod = await import(path)
-        let src = path 
+        let src = path
         mod = mod.config || mod.default  || mod
         if(mod.configfile){
             src = mod.configfile
@@ -645,10 +657,10 @@ export class Service extends EventEmitter{
         }
         let current = this.$sites.get(path)
         if(current){
-            // delete 
+            // delete
             //await this.$deleteFile(path)
         }
-        mod = mod.site || mod 
+        mod = mod.site || mod
         let site = {
             id: mod.id,
             name: mod.name,
@@ -671,8 +683,8 @@ export class Service extends EventEmitter{
                         this.$configClients.delete(key)
                 }
             }
-            
-            
+
+
         }
         //else{
         if(this.$http){
@@ -686,8 +698,8 @@ export class Service extends EventEmitter{
     }
 
     async $deleteFile(path){
-        if(this.$main){        
-            
+        if(this.$main){
+
             let keys = this.$configClients.keys()
             for(let key of keys){
                 let s = this.$configClients.get(key)
@@ -734,7 +746,7 @@ export class Service extends EventEmitter{
             this.$sitesb.delete(site.id)
             if(site.id != site.name) this.$sitesb.delete(site.name)
             this.$buildMain()
-        }   
+        }
     }
 
 
@@ -770,30 +782,30 @@ export class Service extends EventEmitter{
         let kwStatic_2 = staticServe(Path.join(Path.dirname(kawix.__file),"crossplatform","async","dist"))
         this.$router.get("/.static./js/kawix.core.js", (env)=>{
             env.request.url = "/main.js"
-            return kwStatic(env)           
+            return kwStatic(env)
         })
         this.$router.get("/.static./js/kawix.async.js", (env)=>{
             env.request.url = "/main.js"
-            return kwStatic_2(env)           
+            return kwStatic_2(env)
         })
         this.$router.get("/.static./js/kawix.core.async.js", (env)=>{
             env.request.url = "/main.js"
-            return kwStatic_2(env)           
+            return kwStatic_2(env)
         })
-        
+
 
 
 
         let keys = this.$sites.keys()
         for(let key of keys){
-            let site = this.$sites.get(key)            
+            let site = this.$sites.get(key)
             for(let h of site.$hosts){
-                let middle 
+                let middle
                 if(h.middleware){
                     middle = this.$createCallback(h.middleware, site)
                 }
-                
-                
+
+
                 ((middle, h, site)=>{
                     let genFunc = async function(env){
 
@@ -808,7 +820,7 @@ export class Service extends EventEmitter{
 
 
             for(let h of site.$prefixes){
-                let middle 
+                let middle
                 if(h.middleware){
                     middle = this.$createCallback(h.middleware, site)
                 }
@@ -823,7 +835,7 @@ export class Service extends EventEmitter{
         }
     }
 
-    // buildRoutes? 
+    // buildRoutes?
     async $buildRoutes(site){
         site.$router = new Router()
         site.$hosts = []
@@ -834,7 +846,7 @@ export class Service extends EventEmitter{
                         name: a
                     }
                 }else{
-                    return a 
+                    return a
                 }
             })
             site.$hosts = hosts
@@ -847,7 +859,7 @@ export class Service extends EventEmitter{
                         name: a
                     }
                 }else{
-                    return a 
+                    return a
                 }
             })
             site.$prefixes = hosts
@@ -862,7 +874,7 @@ export class Service extends EventEmitter{
         }
 
         if (site.config.defaultroute) {
-            
+
             let route = site.config.defaultroute
             if (typeof route === "string") {
                 route = {
@@ -883,13 +895,13 @@ export class Service extends EventEmitter{
                     await mod.invoke(ctx)
                 }
             }
-            site.$preloaded = true 
+            site.$preloaded = true
         }
     }
 
     $resolve(path, site){
 
-        
+
 
         if(!Path.isAbsolute(path)){
             path = Path.join(site.resolvedPath, path)
@@ -904,23 +916,23 @@ export class Service extends EventEmitter{
             }catch(e){
                 await this.$onerror(env, e)
             }
-        } 
+        }
     }
 
     async $onerror(env, e){
         if(this.errorCallback){
             await this.errorCallback(env)
         }
-        
+
         if(env.response){
             if(!env.response.finished){
                 try{
                     let pretty = {
-                        message: e.message, 
-                        code: e.code, 
+                        message: e.message,
+                        code: e.code,
                         stack: e.stack
                     }
-                    let code = 500 
+                    let code = 500
                     if(e.code && (e.code.indexOf("NOT_FOUND")>=0)) code = 404
                     env.reply.code(code)
                     if(!env.response.finished){
@@ -941,11 +953,11 @@ export class Service extends EventEmitter{
         if(route.static){
             let folder = this.$resolve(route.static .path || route.static, site)
             let options = route.static.options || route.options || {}
-            
+
             let h_static = HttpStatic(folder, options)
-            let middle 
+            let middle
             if(route.middleware){
-                /// TODO 
+                /// TODO
                 middle = this.$createCallback(route.middleware, site)
             }
             return async  function(env, ctx){
@@ -964,34 +976,34 @@ export class Service extends EventEmitter{
             params.folder = this.$resolve(route.folder, site)
         if(route.file)
             params.file = this.$resolve(route.file, site)
-        
+
 
         let ctx = this.getContext(site)
-        let server = this 
+        let server = this
         //let resolver = this.$resolve.bind(this)
 
-        let middle 
+        let middle
         if(route.middleware){
-            /// TODO 
+            /// TODO
             middle = this.$createCallback(route.middleware, site)
         }
-        
+
         let g = async function(env){
 
             if(middle) await middle(env)
-            if(env.response && env.response.finished) return     
-            let file = params.file 
+            if(env.response && env.response.finished) return
+            let file = params.file
             if(params.folder){
                 let name = env.params.file || env.params["*"]
                 if (!name) {
                     throw Exception.create("Failed to get a file to execute").putCode("PARAM_NOT_FOUND")
                 }
-                file = Path.join(params.folder, name)              
+                file = Path.join(params.folder, name)
             }
             let mod = params.c.get(file)
             if(mod){
                 if(mod.$expires > Date.now()){
-                    mod = null 
+                    mod = null
                 }
             }
             if(!mod){
@@ -1002,9 +1014,9 @@ export class Service extends EventEmitter{
                 }
                 params.c.set(file, mod)
             }
-            
 
-            env.server = server 
+
+            env.server = server
             let method = env.request.method.toLowerCase()
             if (mod.router) {
                 return (await mod.router.handle(env, ctx))
@@ -1016,9 +1028,9 @@ export class Service extends EventEmitter{
                 return (await mod.invoke(env, ctx))
             } else {
                 throw Exception.create("Failed to get a handler to execute").putCode("HANDLER_NOT_FOUND")
-            }        
+            }
         }
-        
+
         return this.$catchErrorCallback(g)
 
     }
@@ -1035,4 +1047,3 @@ export class Service extends EventEmitter{
 
 
 }
-
