@@ -255,24 +255,29 @@ var compile1= function(code,filename,options){
 				}
 			}
 			var injectStyles= function(styles){
-				var ds = []
+				//var ds = {}
+
 				return {
 					created: function(){
+						this.$ds = []
+						let time = Date.now().toString(32)
 						for(var i=0;i<styles.length;i++){
 							let style= styles[i]
-							if(style._good) continue
+							//if(style._good) continue
 
 							if(style.generated){
 								d= document.createElement("div")
 								d.innerHTML= style.generated
 								d.style.display= 'none'
+								d.id = ModInfo.cid + "-" + time + "-" + i
 								document.body.appendChild(d)
-								ds.push(d)
+								this.$ds.push(d)
 							}
 						}
 					},
 					destroyed: function(){
-						if(ds.length){
+						var ds = this.$ds
+						if(ds && ds.length){
 							for(var i=0;i<ds.length;i++){
 								ds[i].remove()
 							}
@@ -303,6 +308,7 @@ var compile1= function(code,filename,options){
 				for(var i=0;i<value.styles.length;i++){
 					if(value.styles[i].scoped) scoped= true
 					let n= value.styles[i].style
+					value.styles[i].id = ModInfo.cid
 					value.styles[i].rules= rulesFromStyle(n)
 					value.styles[i].generated= generateCode(value.styles[i])
 				}
