@@ -323,7 +323,7 @@ export class Channel extends EventEmitter{
                 
                 let obj = this.$getArgument(socket, cmd.target)
                 if(obj == response){
-                    console.info("Same object:", cmd.target)
+                    
                     response = {
                         rpa_id: cmd.target.rpa_id,
                         rpa_from: true 
