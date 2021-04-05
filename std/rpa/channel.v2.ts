@@ -76,6 +76,7 @@ export class Channel extends EventEmitter{
 
     $vars = new Map()
     $id = 0
+    $sockid = 0
     taskid = Date.now()
 
     $net: Net.Server
@@ -236,11 +237,14 @@ export class Channel extends EventEmitter{
         readline.createInterface({
             input: socket
         }).on("line", (command) => {
-
             this.$executeCommand(socket, command)
         })
 
-        socket.store = {}
+        socket.store = {
+            id: "S" + this.$sockid++,
+            count: 0,
+            refs: {}
+        }
         socket.on("close", () => {
             // reject all tasks 
             let tasks = socket.store.tasks
@@ -262,13 +266,17 @@ export class Channel extends EventEmitter{
         socket.on("error", function () { })
     }
 
-    unRef(){
-
+    unRef(id){
+        this.$vars.delete(id)
     }
 
-    $addVariable(object){
-        let id = "R>" + this.$id++
+    $addVariable(object, store = null){
+        let id = (store ? store.id : "") + "R>" + (store ? store.count++ : this.$id++)
         this.$vars.set(id, object)
+        if(store){
+            store.refs[id] = true 
+            store.count ++ 
+        }
         return id
     }
 
@@ -287,13 +295,14 @@ export class Channel extends EventEmitter{
             }
             //console.info(obj)
             if(obj.apply){
-                return obj.apply(main, args)    
+                return obj.apply(main, args)
+                
             }
             else{
                 if(args.length){
                     throw Exception.create(`Object ${JSON.stringify({target,props})} is not a function`).putCode("RPA_OBJECT_NOT_A_FUNCTION")
                 }
-                return obj 
+                return obj
             }
             
         }
@@ -311,7 +320,18 @@ export class Channel extends EventEmitter{
                 if(response instanceof Promise){
                     response = await response
                 }
-                response = this.$convertArgument(response, this.serialization)
+                
+                let obj = this.$getArgument(socket, cmd.target)
+                if(obj == response){
+                    console.info("Same object:", cmd.target)
+                    response = {
+                        rpa_id: cmd.target.rpa_id,
+                        rpa_from: true 
+                    }
+                }
+                else{
+                    response = this.$convertArgument(response , this.serialization, socket.store)
+                }
             }catch(e){
                 er= true 
                 response = {
@@ -439,11 +459,8 @@ export class Channel extends EventEmitter{
         return args 
     }
 
-    $convertArgument(arg, serialization = 'mixed'){
+    $convertArgument(arg, serialization = 'mixed', store = null){
 
-        
-
-        
 
         if(arg instanceof Date){
             return {
@@ -461,7 +478,7 @@ export class Channel extends EventEmitter{
 
         if(serialization == "plain") return arg 
         if(serialization == "proxy"){
-            let id = this.$addVariable(arg)
+            let id = this.$addVariable(arg, store)
             return {
                 rpa_id: id,
                 rpa_from: true
@@ -469,7 +486,7 @@ export class Channel extends EventEmitter{
         }
 
         if(typeof arg == "function"){
-            return this.$convertArgument(arg, "proxy")
+            return this.$convertArgument(arg, "proxy", store)
         }
 
         if(typeof arg != "object"){
@@ -495,10 +512,10 @@ export class Channel extends EventEmitter{
                 let narg = {}
                 for(let id in arg){
                     if(typeof arg[id] == "function"){
-                        return this.$convertArgument(arg, "proxy")
+                        return this.$convertArgument(arg, "proxy", store)
                     }
                     else{
-                        narg[id] = this.$convertArgument(arg[id], serialization)
+                        narg[id] = this.$convertArgument(arg[id], serialization, store)
                     }
                 }
                 return narg 
@@ -506,13 +523,13 @@ export class Channel extends EventEmitter{
             else if(Object.getPrototypeOf(arg) == Array.prototype){
                 let narg = []
                 for(let i=0;i<arg.length;i++){
-                    narg[i] = this.$convertArgument(arg[i], serialization)
+                    narg[i] = this.$convertArgument(arg[i], serialization, store)
                 }
                 return narg 
             }
         
 
-            return this.$convertArgument(arg, "proxy")
+            return this.$convertArgument(arg, "proxy", store)
         }
         
         return arg
