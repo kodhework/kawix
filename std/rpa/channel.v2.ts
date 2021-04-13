@@ -229,6 +229,78 @@ export class Channel extends EventEmitter{
         def = null
     }
 
+    async registerRemote(port: number, hostname?: string) {
+
+        let def = new async.Deferred<void>()
+        let net = Net.createServer(this.$connection.bind(this))
+        net.on("error", function (e) {
+            if (def) def.reject(e)
+        })
+        net.once("listening", def.resolve)
+        net.listen(port, hostname || "0.0.0.0")
+        this.$net = net
+        await def.promise
+        def = null
+
+        let thiscid = this.cid
+        let service = this.$vars.get("R>0")
+        let newservice = {
+            get(cid: string) {
+                if (cid == thiscid) {
+                    return service
+                }
+                return null
+            }
+        }
+        this.$vars.delete("R>0")
+        this.$vars.set("R>0", newservice)
+        
+    }
+
+    async connectRemote(port: number, host: string) {
+
+        let socket: Net.Socket = null
+        try {
+            socket = new Net.Socket()
+            let def = new async.Deferred<void>()
+            socket.on("error", function (e) {
+                if (def) def.reject(e)
+            })
+            socket.once("connect", def.resolve)
+            socket.connect(port, host)
+            await def.promise
+            def = null
+        } catch (e) {
+            if (e.code == "ECONNREFUSED") {
+                throw Exception.create(`The RPA service with id ${this.cid} was not found`).putCode("RPA_UNAVAILABLE")
+            }
+            else {
+                throw e
+            }
+        }
+        this.$net = socket
+        this.$net.on("close", ()=> this.emit("close"))
+        this.$connection(socket)
+
+        try {
+
+            
+            let cl = this.$getArgument(socket, {
+                rpa_id: "R>0",
+                rpa_from: true
+            })
+            this.client = await cl.get(this.cid)
+            if (!this.client) {
+                throw Exception.create(`The RPA service with id ${this.cid} was not found in this remote server. `).putCode("RPA_UNAVAILABLE")
+            }
+        } catch (e) {
+
+            // close ...
+            if(this.$net) this.$net.close()
+            throw e
+        }
+
+    }
 
 
 
@@ -550,6 +622,8 @@ export class Channel extends EventEmitter{
         return channel
 
     }
+
+    
 
 
     static async registerRemote(cid: string, service: any, port: number, hostname?: string) {
