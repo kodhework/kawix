@@ -146,44 +146,45 @@ export class Service extends EventEmitter{
     async start(){
 
 
-        let m = function(code){
-            let workers = this.$clusters
-            if(workers){
-                return function(){
-                    let keys = workers.keys()
-                    for(let i=0;i<keys.length;i++){
-                        let worker = workers.get(keys[i])
-                        if(worker.type == "fork"){
-                            process.kill(worker.pid, code)
+            let m = function(code){
+                let workers = this.$clusters
+                if(workers){
+                    return function(){
+                        let keys = workers.keys()
+                        for(let i=0;i<keys.length;i++){
+                            let worker = workers.get(keys[i])
+                            if(worker.type == "fork"){
+                                process.kill(worker.pid, code)
+                            }
                         }
+                        setTimeout(function(){
+                            process.exit(1)
+                        }, 500)
                     }
-                    setTimeout(function(){
-                        process.exit(1)
-                    }, 500)
+                }
+                else{
+                    return function(){process.exit(0)}
                 }
             }
-            else{
-                return function(){process.exit(0)}
+
+
+    		process.on('exit', m("SIGINT"))
+    		process.on('SIGUSR1', m("SIGINT"))
+    		process.on('SIGUSR2', m("SIGINT"))
+    		process.on('SIGINT', m("SIGINT"))
+            process.on('SIGTERM', m("SIGTERM"))
+
+
+            let pid = this.findWorkerPID("control")
+            if(!pid){
+                await this.$startManager()
+                await this.$startHttp(this.$config)
             }
-        }
+            else{
+                let worker = await this.attachToWorker(pid)
+                await worker.client.$startManager()
+            }
 
-
-		process.on('exit', m("SIGINT"))
-		process.on('SIGUSR1', m("SIGINT"))
-		process.on('SIGUSR2', m("SIGINT"))
-		process.on('SIGINT', m("SIGINT"))
-        process.on('SIGTERM', m("SIGTERM"))
-
-
-        let pid = this.findWorkerPID("control")
-        if(!pid){
-            await this.$startManager()
-            await this.$startHttp(this.$config)
-        }
-        else{
-            let worker = await this.attachToWorker(pid)
-            await worker.client.$startManager()
-        }
     }
 
 
@@ -303,19 +304,27 @@ export class Service extends EventEmitter{
             throw Exception.create("Failed starting child process").putCode("CHILD_FORK_FAILED")
 
 
-        let channel = await this.$connect(pro.pid)
-        cdesc.pid = pro.pid
-        cdesc.channel = channel
-        await channel.client.setConfig(channel.plain(this.$config))
-        await channel.client.$setMain(this)
-        if(purpose.indexOf("control") >= 0){
-            this.$clusters.set(purpose, cdesc)
-            if(config && config.address){
-                channel.client.$startHttp(config)
+        try{
+            let channel = await this.$connect(pro.pid)
+            cdesc.pid = pro.pid
+            cdesc.channel = channel
+            await channel.client.setConfig(channel.plain(this.$config))
+            await channel.client.$setMain(this)
+            if(purpose.indexOf("control") >= 0){
+                this.$clusters.set(purpose, cdesc)
+                if(config && config.address){
+                    await channel.client.$startHttp(config)
+                }
+            }else{
+                await channel.client.$startClientManager()
+                await channel.client.$startHttp(config)
             }
-        }else{
-            await channel.client.$startClientManager()
-            channel.client.$startHttp(config)
+        }
+        catch(e){
+            console.error("[kawix/dhs] Fork failed:", e.message)
+            setTimeout(()=>{
+                pro.kill()
+            }, 2500)
         }
         this.$clusters.set(cdesc.pid, cdesc)
     }
@@ -386,10 +395,14 @@ export class Service extends EventEmitter{
         }
 
         //console.info(config.httpOptions)
+
         this.address = (await this.$http.listen(config.address || "0.0.0.0:8081", config.httpOptions))
+
         console.info("Started:", this.address, "SSL=", Boolean(config.httpOptions && config.httpOptions.ssl))
         this.$started= Date.now()
-        await this.$accept()
+
+        this.$accept()
+        //await this.$accept()
     }
 
 
