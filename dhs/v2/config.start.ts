@@ -7,17 +7,38 @@ if(process.env.DHS_CONFIG_FILE){
     start(process.env.DHS_CONFIG_FILE)
 }
 
+let service = null
 
-export async function start(config){
+
+export async function create(config){
 
     if(typeof config == "string"){
         config = await import(config)
         config = config.default || config.config || config
     }
 
-    // start from config.
-    // generate forks
-    let service = new Service(config)
+    return {
+        service: new Service(config),
+        config
+    }
+}
+
+
+export async function start(config, service){
+
+
+    if(typeof config == "string"){
+        process.env.DHS_CONFIG_FILE = config
+        config = await import(config)
+        config = config.default || config.config || config
+    }
+
+    if(!service){
+        let props = await create(config)
+        service = props.config
+    }
+
+
     let init = async function(){
         try{
 
@@ -45,8 +66,8 @@ export async function start(config){
     }
 
     service.configureStart(init)
-    await init()
-
+    init()
+    console.info("HERE...")
     /*
     setTimeout(() => {
         return service.restart()
