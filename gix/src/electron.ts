@@ -22,6 +22,7 @@ export class Electron extends EventEmitter {
     electron: any
     channel: RPAChannel
     bridge: any
+    version: "6.0.11"
 
     _electron: any
     id: string
@@ -33,6 +34,10 @@ export class Electron extends EventEmitter {
     constructor(id){
         super()
         this.id = "ELECTRON>" + id
+    }
+
+    setVersion(v){
+        this.version = v
     }
 
     async _createBootFile() {
@@ -115,7 +120,8 @@ export class Electron extends EventEmitter {
 
 
             let reg = new Registry()
-            let wantedversion = "6.0.11"
+            let wantedversion = this.version  //"6.0.11"
+            console.info("ELECTRON VERSION", wantedversion)
             let mod = await reg.resolve("electron@" + wantedversion)
             dist = Path.join(mod.folder, "dist")
 
@@ -143,7 +149,7 @@ export class Electron extends EventEmitter {
                     currentVer = currentVer.trim()
                 }
 
-                if (currentVer < wantedversion) {
+                if (currentVer != wantedversion) {
                     let files = await fs.readdirAsync(gelectronFolder)
                     for (let i = 0; i < files.length; i++) {
                         await fs.unlinkAsync(Path.join(gelectronFolder, files[i]))
