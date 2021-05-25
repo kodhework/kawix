@@ -3,9 +3,6 @@
 import {Service} from './service'
 import Os from 'os'
 
-if(process.env.DHS_CONFIG_FILE){
-    start(process.env.DHS_CONFIG_FILE)
-}
 
 let service = null
 
@@ -35,7 +32,7 @@ export async function start(config, service){
 
     if(!service){
         let props = await create(config)
-        service = props.config
+        service = props.service
     }
 
 
@@ -73,4 +70,8 @@ export async function start(config, service){
         return service.restart()
     }, 20000)
     */
+}
+
+if(process.env.DHS_CONFIG_FILE){
+    start(process.env.DHS_CONFIG_FILE)
 }
