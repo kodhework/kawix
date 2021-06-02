@@ -150,5 +150,9 @@
 	{
 		"version": "0.9.16",
 		"branch": "dhs0.9.16"
+	},
+	{
+		"version": "1.0.1",
+		"branch": "dhs1.0.1"
 	}
 ]
