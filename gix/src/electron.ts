@@ -22,7 +22,7 @@ export class Electron extends EventEmitter {
     electron: any
     channel: RPAChannel
     bridge: any
-    version: "6.0.11"
+    version = "6.0.11"
 
     _electron: any
     id: string
@@ -120,7 +120,7 @@ export class Electron extends EventEmitter {
 
 
             let reg = new Registry()
-            let wantedversion = this.version  //"6.0.11"
+            let wantedversion = this.version  || "6.0.11"
             console.info("ELECTRON VERSION", wantedversion)
             let mod = await reg.resolve("electron@" + wantedversion)
             dist = Path.join(mod.folder, "dist")
