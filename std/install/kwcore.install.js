@@ -199,13 +199,13 @@ var init= async function(){
 					fs.mkdirSync(iconpaths[i])
 				if (!fs.existsSync(Path.join(iconpaths[i],"apps")))
 					fs.mkdirSync(Path.join(iconpaths[i], "apps"))
-				fs.copyFileSync(srcicons[i], Path.join(iconpaths[i], "apps", id + ".png"))
+				fs.copyFileSync(srcicons[i], Path.join(iconpaths[i], "apps", id + "_0.png"))
 			}
 
 			// now create desktop file
 			var t = `[Desktop Entry]
 		Terminal=false
-		Icon=${id}
+		Icon=${id}_0
 		Type=Application
 		Categories=Application;Network;
 		Exec="${dir}/kwcore" --ui %F
