@@ -42,7 +42,7 @@ rm node 2> /dev/null
 
 tar xvf node.tar.gz
 
-rm ./node 
+rm ./node
 chmod +x x64/12.18.3/node
 ln -s ./x64/12.18.3/node node
 rm node.tar.gz
@@ -104,3 +104,6 @@ rm kwcore.icons.tar.gz
 
 cd "$_HOME/bin"
 ./kwcore kwcore.install.js
+
+# Install AppDemon
+./kwcore gh+/voxsoftware/packages/appdemon/0.1.4.kwa --install

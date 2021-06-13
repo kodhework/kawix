@@ -3,7 +3,7 @@ var Os= require("os")
 var fs= require("fs")
 var Child= require("child_process")
 
-var dir= __dirname 
+var dir= __dirname
 var dir2 = Path.normalize(Path.join(__dirname, ".."))
 
 
@@ -70,15 +70,15 @@ kawix.KModule.import("https://kwx.kodhe.com/x/v/" + global.kawix.version + "/std
 	})
 
 
-// install the icons 
+// install the icons
 var id="kawixcoreapp"
 var init= async function(){
 	try{
 		if(Os.platform() == "darwin"){
 
-			
+
 			/*
-			// add extension handler 
+			// add extension handler
 			var cmd= "defaults"
 			var args=[
 				[
@@ -103,17 +103,17 @@ var init= async function(){
 					"<dict><key>LSHandlerContentTag</key><string>kwo</string><key>LSHandlerContentTagClass</key><string>public.filename-extension</string><key>LSHandlerRoleAll</key><string>org.kodhe.kawix</string></dict>"
 				]
 			]
-			var p1, def 
+			var p1, def
 			for(var i=0;i<args.length;i++){
 				def= {}
 				def.promise= new Promise(function(a,b){
-					def.resolve= a 
+					def.resolve= a
 					def.reject = b
 				})
 				p1= Child.spawn(cmd, args)
 				p1.on("error", def.reject)
 				p1.on("exit", def.resolve)
-				await def.promise 
+				await def.promise
 			}
 
 
@@ -122,8 +122,8 @@ var init= async function(){
 				def.resolve = a
 				def.reject = b
 			})
-			
-			
+
+
 			p1= Child.spawn("/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister", [
 				"-kill",
 				"-domain",
@@ -141,10 +141,10 @@ var init= async function(){
 		else if(Os.platform() == "linux"){
 			var iconpaths, paths={}, srcicons
 			if (process.getuid() == 0) {
-				paths.icon = "/usr/share/icons/hicolor"		
-				paths.apps = "/usr/share/applications"		
-				paths.mime = "/usr/share/mime/packages"	
-				paths.mimeo = "/usr/share/mime"		
+				paths.icon = "/usr/share/icons/hicolor"
+				paths.apps = "/usr/share/applications"
+				paths.mime = "/usr/share/mime/packages"
+				paths.mimeo = "/usr/share/mime"
 			}
 			else{
 				paths.icon = Path.join(Os.homedir(), ".local/share/icons/hicolor")
@@ -152,8 +152,8 @@ var init= async function(){
 				paths.mime = Path.join(Os.homedir(), ".local/share/mime/packages")
 				paths.mimeo = Path.join(Os.homedir(), ".local/share/mime")
 			}
-			
-			
+
+
 			if(!fs.existsSync(paths.apps)){
 				fs.mkdirSync(paths.apps)
 			}
@@ -194,7 +194,7 @@ var init= async function(){
 			]
 
 			for(var i=0;i<srcicons.length;i++){
-				
+
 				if (!fs.existsSync(iconpaths[i]))
 					fs.mkdirSync(iconpaths[i])
 				if (!fs.existsSync(Path.join(iconpaths[i],"apps")))
@@ -202,7 +202,7 @@ var init= async function(){
 				fs.copyFileSync(srcicons[i], Path.join(iconpaths[i], "apps", id + ".png"))
 			}
 
-			// now create desktop file 
+			// now create desktop file
 			var t = `[Desktop Entry]
 		Terminal=false
 		Icon=${id}
@@ -215,18 +215,22 @@ var init= async function(){
 			fs.writeFileSync(Path.join(paths.apps, id + ".desktop"), t)
 
 
-			// now mime types 
+			// now mime types
 			fs.writeFileSync(Path.join(paths.mime, id + ".xml"), `<?xml version="1.0" encoding="UTF-8"?>
 		<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-			<mime-type type="application/kawix-core">
-				<comment xml:lang="en">KawixCore script</comment>
-				<glob pattern="*.kwe" />
-				<glob pattern="*.kwsh" />
-				<glob pattern="*.kwo" />
-				<glob pattern="*.kwa" />
-				<icon name="${id}"/>
-			</mime-type>
-
+		<mime-type type="application/kawix-core">
+			<comment xml:lang="en">KawixCore script</comment>
+			<glob pattern="*.kwe" />
+			<glob pattern="*.kwsh" />
+			<glob pattern="*.kwo" />
+			<glob pattern="*.kwa" />
+			<icon name="${id}"/>
+		</mime-type>
+		<mime-type type="application/kawix-package">
+			<comment xml:lang="en">KawixCore Package</comment>
+			<glob pattern="*.kwi"/>
+			<icon name="${id}"/>
+		</mime-type>
 		</mime-info>
 			`)
 
@@ -236,14 +240,14 @@ var init= async function(){
 				console.error("[Warning] Cannot execute update-icon-cache. You can ignore if your have a server distro", e)
 			})
 			p.on("exit", function () { c++; d() })
-			
+
 			p = Child.spawn("update-desktop-database", [paths.apps])
 			p.on("error", function (e) {
 				er= true
 				console.error("[Warning] Cannot execute update-desktop-database. You can ignore if your have a server distro")
 			})
 			p.on("exit", function(){c++; d()})
-			
+
 			var p1 = Child.spawn("update-mime-database", [paths.mimeo])
 			p1.on("error", function (e) {
 				er= true
@@ -251,7 +255,7 @@ var init= async function(){
 			})
 			p1.on("exit", function () { c++; d()})
 			d= function(){
-				if(er) return 
+				if(er) return
 				if(c==3){
 					console.info("")
 					console.info("")
