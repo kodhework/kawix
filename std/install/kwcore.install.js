@@ -193,19 +193,20 @@ var init= async function(){
 				Path.join(__dirname, "icons", "512x512.png")
 			]
 
+			let iconid = id + "_0"
 			for(var i=0;i<srcicons.length;i++){
 
 				if (!fs.existsSync(iconpaths[i]))
 					fs.mkdirSync(iconpaths[i])
 				if (!fs.existsSync(Path.join(iconpaths[i],"apps")))
 					fs.mkdirSync(Path.join(iconpaths[i], "apps"))
-				fs.copyFileSync(srcicons[i], Path.join(iconpaths[i], "apps", id + "_0.png"))
+				fs.copyFileSync(srcicons[i], Path.join(iconpaths[i], "apps", iconid + ".png"))
 			}
 
 			// now create desktop file
 			var t = `[Desktop Entry]
 		Terminal=false
-		Icon=${id}_0
+		Icon=${iconid}
 		Type=Application
 		Categories=Application;Network;
 		Exec="${dir}/kwcore" --ui %F
@@ -224,12 +225,12 @@ var init= async function(){
 			<glob pattern="*.kwsh" />
 			<glob pattern="*.kwo" />
 			<glob pattern="*.kwa" />
-			<icon name="${id}"/>
+			<icon name="${iconid}"/>
 		</mime-type>
 		<mime-type type="application/kawix-package">
 			<comment xml:lang="en">KawixCore Package</comment>
 			<glob pattern="*.kwi"/>
-			<icon name="${id}"/>
+			<icon name="${iconid}"/>
 		</mime-type>
 		</mime-info>
 			`)
