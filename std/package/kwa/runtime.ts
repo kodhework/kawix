@@ -71,8 +71,7 @@ export class Runtime {
 			if(hash && !options.fromremote && options.stat){
 
 				name = "folder"
-				folder = Path.join(cache_pkg, hash)
-				if(!fs.existsSync(folder)) fs.mkdirSync(folder)
+
 
 
 				mainjs = "/virtual/KWA-HASH/" + hash
@@ -81,6 +80,12 @@ export class Runtime {
 					stat:  options.stat
 				}
 				cachedata = await helper.getCachedData(mainjs, this.filenameToUrl(mainjs), options)
+
+				cache_pkg = Path.join(Path.dirname(cachedata.file), "..", "KWA.hash")
+				folder = Path.join(cache_pkg, hash)
+				if(!fs.existsSync(folder)) fs.mkdirSync(folder)
+
+				
 				if (cachedata.unchanged) {
 					return null
 				}
@@ -95,7 +100,7 @@ export class Runtime {
 			cachedata = await helper.getCachedData(filename, uri, options)
 
 		if(!cache_pkg)
-			cache_pkg = Path.join(Path.dirname(cachedata.file), "..", "KWA.hash"), mainjs = ''
+			cache_pkg = Path.join(Path.dirname(cachedata.file), "..", "KWA.hash")
 
 		if(!folder)
 			folder = Path.join(cache_pkg, "P-" + Path.basename(cachedata.file))

@@ -106,4 +106,4 @@ cd "$_HOME/bin"
 ./kwcore kwcore.install.js
 
 # Install AppDemon
-./kwcore gh+/voxsoftware/packages/appdemon/0.1.4.kwa --install
+./kwcore gh+/voxsoftware/packages/appdemon/0.1.7.kwa --install
