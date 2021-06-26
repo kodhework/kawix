@@ -40,7 +40,7 @@ class Bundle {
 		return this.options.jsExtension
 	}
 	set jsExtension(val){
-		this.options.jsExtension= val 
+		this.options.jsExtension= val
 	}
 
 	get virtualName() {
@@ -118,8 +118,8 @@ class Bundle {
 		return this.options.profile = value
 	}
 
-	
-	
+
+
 
 	async bundle(path?) {
 
@@ -139,9 +139,9 @@ class Bundle {
 				id2 = id.replace(/\\/g, '/')
 				fnames[id2]= this._filenames[id]
 			}
-			this._filenames= fnames 
+			this._filenames= fnames
 		}
-		
+
 		str = JSON.stringify(this._filenames, null, '\t')
 		this._stream.write("\n\tvar filenames=" + str)
 
@@ -313,9 +313,9 @@ class Bundle {
 			if (stat.isFile()) {
 				rep = {}
 				rep.stat = {
-					mtime: stat.mtime,
+					//mtime: stat.mtime,
 					mtimeMs: stat.mtimeMs,
-					atime: stat.atime,
+					//atime: stat.atime,
 					atimeMs: stat.atimeMs,
 				}
 
@@ -365,10 +365,10 @@ class Bundle {
 										transpilerOptions: transoptions
 									})
 									rep.content = ast.code
-									rep.compiled = true 
-									rep.extension = ext 
-									
-									
+									rep.compiled = true
+									rep.extension = ext
+
+
 									break
 								}
 							}
@@ -379,13 +379,13 @@ class Bundle {
 
 
 				if (Buffer.isBuffer(rep.content)) {
-					rep.content = rep.content.toString('binary')
+					rep.content = rep.content.toString('base64')
 					str = JSON.stringify(rep, null, '\t')
-					this._stream.write(`\n\tfileData.push(function(){ var item= cacheData[${this._fcount}]; if(!item){ item= cacheData[${this._fcount}]= ${str}; item.content= context.Buffer.from(item.content,'binary'); } return item; })`)
+					this._stream.write(`\nfileData.push(function(){ var item= cacheData[${this._fcount}]; if(!item){ item= cacheData[${this._fcount}]= ${str}; item.content= context.Buffer.from(item.content,'base64'); } return item; })`)
 				}
 				else {
 					str = JSON.stringify(rep, null, '\t')
-					this._stream.write(`\n\tfileData.push(function(){ if(!cacheData[${this._fcount}]) cacheData[${this._fcount}]= ${str}; return cacheData[${this._fcount}]; })`)
+					this._stream.write(`\nfileData.push(function(){ if(!cacheData[${this._fcount}]) cacheData[${this._fcount}]= ${str}; return cacheData[${this._fcount}]; })`)
 				}
 
 

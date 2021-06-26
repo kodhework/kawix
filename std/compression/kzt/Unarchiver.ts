@@ -10,22 +10,24 @@ import Zlib from 'zlib'
 let ZstdCodec = null
 
 export class Unarchiver{
-	file:string 
+	file:string
 	_opened = false
     _fd = -1
-    
-    _Streaming = null 
+
+    _Streaming = null
     _zstd = null
-    metadata = null 
-    _tempfile = false 
+    metadata = null
+    _tempfile = false
     _cacheBlocks = {}
 
     method = "zstd"
+	props = {}
+	$propJson = ''
 
 	constructor(file:string){
 		this.file = file
     }
-    
+
 
     static async fromStream(stream: Readable){
         let path = Path.join(Os.homedir(),".kawi", "kzt")
@@ -43,11 +45,11 @@ export class Unarchiver{
         await def.promise
 
         let archiver = new Unarchiver(path)
-        archiver._tempfile = true 
+        archiver._tempfile = true
         return archiver
     }
 
-    
+
     async dispose(){
         if(this._fd){
             await fs.closeAsync(this._fd)
@@ -60,10 +62,10 @@ export class Unarchiver{
 	async open(){
 		if(!this._opened){
 			this._fd = await fs.openAsync(this.file, "r")
-			this._opened = true 
+			this._opened = true
 		}
     }
-    
+
     async $decompress(bytes: Buffer){
         if(this.method == "zstd"){
             let streaming = await this.zstd()
@@ -71,8 +73,8 @@ export class Unarchiver{
             return Buffer.from(content)
         }
         else if(this.method == "brotli"){
-            let buf = Zlib.brotliDecompressSync(bytes)            
-            return buf 
+            let buf = Zlib.brotliDecompressSync(bytes)
+            return buf
         }
         else if(this.method == "gzip"){
             return Zlib.gunzipSync(bytes)
@@ -98,10 +100,14 @@ export class Unarchiver{
 		let buf = Buffer.allocUnsafe(21)
 		let response = await this._read_async(buf, 21, stat.size - 21)
 		if(buf.slice(12,17).toString() == "#kzst"){
-            return true 
+            return true
         }
-        if(buf.slice(0,7).toString() == "#2-kzst"){
-            return true 
+		if(buf.slice(0,7).toString() == "#2-kzst"){
+            return true
+        }
+
+		if(buf.slice(10,17).toString() == "#3-kzst"){
+            return true
         }
     }
 
@@ -113,43 +119,66 @@ export class Unarchiver{
     }
 
 	async readMetadata(){
+
+
         if(!this.metadata){
+			let fv = 1
+
             await this.open()
             let stat = await fs.fstatAsync(this._fd)
             let buf = Buffer.allocUnsafe(21)
             let response = await this._read_async(buf, 21, stat.size - 21)
-            let fixedCount = 9
-            if(buf.slice(12,17).toString() != "#kzst"){
-                if(buf.slice(0,7).toString() != "#2-kzst"){
-                    throw Exception.create("The file format is not kzst").putCode("INVALID_FORMAT")
-                }else{
-                    fixedCount = 21
+            let fixedCount = 9, offsetCount = 17
+
+            if(buf.slice(12, 17).toString() != "#kzst"){
+
+                if(buf.slice(0, 7).toString() == "#2-kzst"){
+					fv = 2
+					fixedCount = 21
+					offsetCount = 17
                     this.method = buf.slice(7, 17).toString().trim()
+                }else{
+
+					/*
+					if(buf.slice(10, 17).toString() == "#3-kzst"){
+						fixedCount = 0
+						fv = 3
+					}
+					else{
+						*/
+                    	throw Exception.create("The file format is not kzst").putCode("INVALID_FORMAT")
+					//}
                 }
             }
 
-            let count = buf.readUInt32LE(fixedCount - 4)
+
+			let count = buf.readUInt32LE(offsetCount)
+
             buf = Buffer.allocUnsafe(count)
-            response = await this._read_async(buf, count, stat.size - fixedCount - count) 
+
+            response = await this._read_async(buf, count, stat.size - fixedCount - count)
             if(response.bytesRead != count)
                 throw Exception.create("The file format is not kzst. Failed to read metadata").putCode("INVALID_FORMAT")
-            
 
-            
-            
+
             let content = await this.$decompress(buf)
-            this.metadata = JSON.parse(content.toString())
+            this.metadata = JSON.parse(content.toString()) || {}
+
+			if(this.metadata){
+				if(this.metadata.method) this.method = this.metadata.method
+			}
+
         }
         return this.metadata
     }
-    
+
 
     get entries(){
         return this.metadata && this.metadata.files
     }
 
     async getFileContent(path: string){
-        
+
         await this.readMetadata()
         let file = this.metadata.files.filter((a)=>a.path == path)[0]
         if(!file){
@@ -157,7 +186,7 @@ export class Unarchiver{
         }
 
         if(file.stat.isdirectory){
-            return null 
+            return null
         }
 
         if(file.stat.issymlink){
@@ -175,7 +204,7 @@ export class Unarchiver{
 
             total.push(buf)
             length += buf.length
-            block++ 
+            block++
             offset += buf.length
 
         }
@@ -188,8 +217,6 @@ export class Unarchiver{
         let cached = this._cacheBlocks[number]
         if(!cached){
             let Streaming = this._Streaming
-            
-            
             cached = this.metadata.blocks[number]
             let buf = Buffer.allocUnsafe(cached.compressedLength)
 
@@ -197,11 +224,11 @@ export class Unarchiver{
             let dec = await this.$decompress(buf)
             if(!dec)
                 throw Exception.create("Failed to read block: " + number).putCode("FILE_ERROR")
-            
+
             cached.data = Buffer.from(dec)
             this._cacheBlocks[number] = cached
         }
-        return cached 
+        return cached
     }
 
 
@@ -226,7 +253,7 @@ export class Unarchiver{
                 }
             }
         }
-        
+
     }
 
 

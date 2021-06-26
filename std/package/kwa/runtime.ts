@@ -52,26 +52,65 @@ export class Runtime {
 
 		var helper = kawix.KModule.helper
 		var uri = this.filenameToUrl(filename)
+		options = options || {}
+		options.stat = await fs.statAsync(filename)
 		return await this._internal_execute(stream, filename, uri, options, helper)
 	}
 
 
 
 	static async _internal_execute(stream: Readable, filename: string, uri, options, helper) {
-		var cachedata = await helper.getCachedData(filename, uri, options)
+
+		let cachedata = null,  name = Path.basename(filename).substring(0, 60), mainjs = ''
+		let cache_pkg = '', folder = ''
+		let unarchiver = undefined
+		if (options.compression == "kzt") {
+			unarchiver = await Unarchiver.fromStream(stream)
+			await unarchiver.readMetadata()
+			let hash = unarchiver.metadata.uid //|| unarchiver.metadata.sha1
+			if(hash && !options.fromremote && options.stat){
+
+				name = "folder"
+				folder = Path.join(cache_pkg, hash)
+				if(!fs.existsSync(folder)) fs.mkdirSync(folder)
+
+
+				mainjs = "/virtual/KWA-HASH/" + hash
+				kwcore.KModule._virtualfile[mainjs] = {
+					content: '',
+					stat:  options.stat
+				}
+				cachedata = await helper.getCachedData(mainjs, this.filenameToUrl(mainjs), options)
+				if (cachedata.unchanged) {
+					return null
+				}
+				if (cachedata.data) {
+					fs.writeFileSync(Path.join(folder, "time"), Date.now().toString())
+					return cachedata.data
+				}
+			}
+		}
+
+		if(!cachedata)
+			cachedata = await helper.getCachedData(filename, uri, options)
+
+		if(!cache_pkg)
+			cache_pkg = Path.join(Path.dirname(cachedata.file), "..", "KWA.hash"), mainjs = ''
+
+		if(!folder)
+			folder = Path.join(cache_pkg, "P-" + Path.basename(cachedata.file))
+
 		if (cachedata.unchanged) {
 			return null
 		}
 		if (cachedata.data) {
+			fs.writeFileSync(Path.join(folder, "time"), Date.now().toString())
 			return cachedata.data
 		}
-		var stat = cachedata.stats[1] || {
-			mtimeMs: Date.now()
-		}
 
-		// decompress
-		// .kwa is a compressed format
-		var folder = cachedata.file + ".pkg"
+		if (!fs.existsSync(cache_pkg)) {
+			fs.mkdirSync(cache_pkg)
+		}
 		if (!fs.existsSync(folder)) {
 			fs.mkdirSync(folder)
 		}
@@ -82,59 +121,32 @@ export class Runtime {
 		}
 
 
-		/*
-		var creations = 0
-		var sym = Path.join(folder, Path.basename(filename).substring(0, 60))
-		var ifolder = Path.join(folder, creations.toString())
-
-
-		// TRY REMOVE OLD FOLDERS?
-		// maybe add this later
-		let toremove = []
-		while (true) {
-			if (await fs.existsAsync(ifolder)) {
-				toremove.push(ifolder)
-				creations++
-				ifolder = Path.join(folder, creations.toString())
-			} else {
-				break
-			}
-		}*/
-
-
-		var sym = Path.join(folder, "S-" + Path.basename(filename).substring(0, 60))
+		var sym = Path.join(folder, "S-" + name)
 		if(!sym.endsWith(".kwa")) sym += ".kwa"
 		let files = await fs.readdirAsync(folder)
 		files = files.filter((a)=> (!a.endsWith(".kwa")) && /^\d/.test(a))
 		files.sort(function(a,b){
 			let c = Number(a)
 			let d = Number(b)
-			return c - d 
+			return c - d
 		})
     	let lastfile = Number(files.pop() || 0)
     	let toremove = files.map((a)=> Path.join(folder,a))
 		let ifolder = Path.join(folder, (lastfile+1).toString())
-
-
-
-
 		folder = ifolder
 		await fs.mkdirAsync(folder)
 
-		//if (!options.fromremote) {
-		if (options.compression == "kzt") {
 
-			let unarchiver
+		if (options.compression == "kzt") {
 			try {
-				unarchiver = await Unarchiver.fromStream(stream)
 				await unarchiver.extractAllTo(folder)
 			} catch (e) {
 				throw e
 			} finally {
 				if (unarchiver) await unarchiver.dispose()
 			}
-
 		} else {
+			//await fs.mkdirAsync(folder)
 			let def = new async.Deferred < void > ()
 			let stout = tar.x({
 				C: folder
@@ -145,12 +157,8 @@ export class Runtime {
 			stout.on("finish", def.resolve)
 			await def.promise
 		}
-		/*}
-		else {
-				throw Exception.create("Not implemented").putCode("NOT_IMPLEMENTED")
-		}*/
 
-		
+
 		try {
 			// remove async and put sync functions
 			// to avoid some sync problems
@@ -164,7 +172,7 @@ export class Runtime {
 		} catch (e) {}
 
 
-		// DELETE PREVIOUS, NOT USED ANYMORE FOLDERS, except first
+
 		setTimeout(async function(){
 			if (toremove.length) {
 				for (let i = 0; i < toremove.length; i++) {
@@ -174,7 +182,7 @@ export class Runtime {
 				}
 			}
 		}, 500)
-		
+
 
 
 		// tar uncompressed ...
@@ -182,31 +190,34 @@ export class Runtime {
 			"code": `
 		var fs= require('fs')
 		exports.kawixPreload= async function(){
-						if(!fs.existsSync(${JSON.stringify(Path.join(folder))}))
-								throw new Error('Cannot load this module. Empty or invalid content')
+			if(!fs.existsSync(${JSON.stringify(Path.join(folder))}))
+				throw new Error('Cannot load this module. Empty or invalid content')
+
 			try{
 				module.exports= await KModule.import(${JSON.stringify(Path.join(folder, 'mod'))})
 			}catch(e){
 
-								if(e.message.indexOf("Cannot resolve") < 0){throw e}
-								else {
-										let files = fs.readdirSync(${JSON.stringify(Path.join(folder))})
-										if(files.length == 0)
-												throw e
-								}
-						}
-						module.exports.kawixDynamic={
-								time: 10000
-						}
+				if(e.message.indexOf("Cannot resolve") < 0){
+					throw e
+				}
+				else {
+					let files = fs.readdirSync(${JSON.stringify(Path.join(folder))})
+					if(files.length == 0)
+						throw e
+				}
+			}
+			module.exports.kawixDynamic={
+				time: 10000
+			}
 			module.exports["kawix.app"]= {
 				original: ${JSON.stringify(filename)},
 				resolved: ${JSON.stringify(folder)}
 			}
-		}
-		`
+		}`
 		}
 		options.language = "javascript"
-		return await helper.compile(filename, filename + ".js", source, options, cachedata)
+
+		return await helper.compile(mainjs || filename, filename + ".js", source, options, cachedata)
 
 	}
 

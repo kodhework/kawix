@@ -242,8 +242,14 @@ export async function main() {
 
         // Load the file
         if (filename.toUpperCase().endsWith(".KWA")) {
-            await loadStd()
-            await import("/virtual/@kawix/std/package/kwa/register")
+            try{
+                await import("/virtual/@kawix/std/package/kwa/register")
+            }
+            catch(e){
+                await loadStd()
+                await import("/virtual/@kawix/std/package/kwa/register")
+            }
+
 
             let mod = await import(filename)
             if (mod && mod.Program) {

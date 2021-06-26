@@ -8,13 +8,14 @@ Next.prototype.transpile= function(source, options){
 
 	if(source.indexOf(transpiledLine) >= 0){
 		return {
-			code: source
+			code: source,
+			ignore: true
 		}
 	}
 
 	if(!Babel){
 		require("./babel")
-		Babel = ___Babel 
+		Babel = ___Babel
 	}
 	/*
 	if (!options) {
@@ -42,11 +43,11 @@ Next.prototype.transpile= function(source, options){
 			dynamicImport=require("./babel.dynamic.import.js")
 		options.plugins= [dynamicImport]
 	}*/
-	var result 
-	
+	var result
+
 	if(Babel.__defaultTransform)
 		result = Babel.__defaultTransform(source,options)
-	else 
+	else
 		result= Babel.transform(source, options)
 	if(result.code){
 		result.code += transpiledLine
@@ -57,7 +58,7 @@ Next.prototype.transpile= function(source, options){
 			result.code= result.code.join("\n")
 		}
 	}
-	
+
 	return result
 
 }

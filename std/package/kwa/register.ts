@@ -62,7 +62,7 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 			httpinvoke(uri)
 			await def.promise
 
-			// save as file 
+			// save as file
 
 			let path1 = path + "." + uniqid()
 			try {
@@ -84,7 +84,7 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 		}
 
 		// saber si es KZT
-		options = options || {}		
+		options = options || {}
 		let unan:Unarchiver = null
 		try{
 			unan = new Unarchiver(path)
@@ -93,7 +93,7 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 				options.compression = "kzt"
 			}
 		}catch(e){
-			throw e 
+			throw e
 		}finally{
 			await (unan && unan.dispose())
 		}
@@ -113,7 +113,7 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 		await def.promise
 		let content = Buffer.concat(buffer).toString()
 		if(content.startsWith("#!")){
-			start = content.indexOf("\n")			
+			start = content.indexOf("\n")
 			content = content.substring(start+1)
 			if (content.startsWith("$KWA\n")) {
 				start += 5
@@ -127,7 +127,7 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 	} else {
 
 		// saber si es KZT
-		options = options || {}		
+		options = options || {}
 		let unan:Unarchiver = null
 		try{
 			unan = new Unarchiver(filename)
@@ -136,11 +136,11 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 				options.compression = "kzt"
 			}
 		}catch(e){
-			throw e 
+			throw e
 		}finally{
 			await (unan && unan.dispose())
 		}
-		
+
 		let start = -1
 		def = new async.Deferred<void>()
 		let stream0 = fs.createReadStream(filename, {
@@ -166,7 +166,10 @@ var loader1 = async function (filename, uri, options, helper): Promise<any> {
 		stream = fs.createReadStream(filename, {
 			start
 		})
+
+		options.stat = fs.statSync(filename)
 	}
+
 
 	return await Runtime._internal_execute(stream, filename, uri, options, helper)
 }

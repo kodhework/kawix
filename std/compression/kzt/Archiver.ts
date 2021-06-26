@@ -1,6 +1,6 @@
 
 // kzst is an archiver based on zstd compression
-// allow add files and other thinks 
+// allow add files and other thinks
 import fs from '../../fs/mod'
 import {Writable, Readable} from 'stream'
 //import 'npm://zstd-codec@0.1.2'
@@ -10,12 +10,16 @@ import * as async from '../../util/async'
 import {FileStat} from './types'
 import { Stats } from 'fs'
 import Zlib from 'zlib'
+import crypto from 'crypto'
+
 // import Glob from '../../../dhs/glob/mod'
 let ZstdCodec = null
 
+
+
 export class Archiver extends Readable{
-    _zstd = null 
-    followSymlinks = false 
+    _zstd = null
+    followSymlinks = false
     _buf = []
 
     _position = 0
@@ -25,6 +29,8 @@ export class Archiver extends Readable{
     _Streaming = null
     _workingLength = 0
     _uncompressedLength = 0
+    $crypto = crypto.createHash('sha1')
+    props = {}
 
     filter: Function = null
     method = "brotli"
@@ -33,7 +39,7 @@ export class Archiver extends Readable{
         super()
         //this._tempstream = fs.createWriteStream(Path.join(Os.tmpdir(), ))
     }
-    
+
     _read(){
 
     }
@@ -42,12 +48,16 @@ export class Archiver extends Readable{
 
 
         if(typeof this.filter == "function"){
-            if(this.filter(path, content, stat) === false) return 
+            if(this.filter(path, content, stat) === false) return
         }
 
 
         let data = Buffer.from(content)
-        let start = this._blocks.length 
+        if(data.length)
+            this.$crypto.update(data)
+
+
+        let start = this._blocks.length
         let offset = this._uncompressedLength
         this._addBuffer(data)
         this._files.push({
@@ -58,7 +68,7 @@ export class Archiver extends Readable{
             block: start
         })
     }
-    
+
 
     async createDirectory(path: string){
         let stat: FileStat = {
@@ -75,7 +85,7 @@ export class Archiver extends Readable{
     }
 
     async _addDirectory(directory: string, stat: FileStat, path: string){
-        
+
         let files = await fs.readdirAsync(directory)
         this.createDirectory(path)
         for(let file of files){
@@ -86,7 +96,7 @@ export class Archiver extends Readable{
     async addFile(file:string, path: string){
 
         if(typeof this.filter == "function"){
-            if(this.filter(path,file) === false) return 
+            if(this.filter(path,file) === false) return
         }
 
         let stat:Stats = null
@@ -98,17 +108,17 @@ export class Archiver extends Readable{
 
         let nstat:FileStat = {}
         if(stat.isSymbolicLink()){
-            nstat.issymlink = true 
+            nstat.issymlink = true
         }
         else if(stat.isFile()){
-            nstat.isfile = true 
+            nstat.isfile = true
         }
         else if(stat.isDirectory()){
-            nstat.isdirectory = true 
+            nstat.isdirectory = true
             return this._addDirectory(file, nstat, path)
         }else{
             // not supported file
-            return 
+            return
         }
 
         let start = this._blocks.length
@@ -125,7 +135,7 @@ export class Archiver extends Readable{
             block: start
         })
 
-        
+
     }
 
     write(){
@@ -133,18 +143,20 @@ export class Archiver extends Readable{
             this._gcompress()
         }
 
-        // writeBlocksAndFiles 
-        let json = JSON.stringify({
+        // writeBlocksAndFiles
+        let json = JSON.stringify(Object.assign({}, this.props, {
             blocks: this._blocks,
-            files: this._files
-        })
+            files: this._files,
+            sha1: this.$crypto.digest('hex'),
+            method: this.method
+        }))
         let data = Buffer.from(json)
         this._buf = [data]
         this._gcompress()
 
-
         this.push(Buffer.from("#2-kzst"))
-        
+
+
         let bufmethod = Buffer.allocUnsafe(10)
         bufmethod.fill(32)
         bufmethod.write(this.method,0)
@@ -154,6 +166,7 @@ export class Archiver extends Readable{
         let len = Buffer.allocUnsafe(4)
         len.writeUInt32LE(this._blocks.pop().compressedLength,0)
         this.push(len)
+
         this.push(null)
 
         let def = new async.Deferred<void>()
@@ -164,7 +177,7 @@ export class Archiver extends Readable{
     _addBuffer(content){
         let portion = 4*1024*1024
         while(content.length){
-            let b = content.slice(0,4096) 
+            let b = content.slice(0,4096)
             this._buf.push(b)
             this._workingLength += b.length
             this._uncompressedLength += b.length
@@ -207,7 +220,7 @@ export class Archiver extends Readable{
 
     _gcompressBrotli(){
 
-        
+
         let bytes = Buffer.concat(this._buf.splice(0, this._buf.length))
         //console.info(bytes.length)
         let data = Zlib.brotliCompressSync(bytes,{
@@ -215,7 +228,7 @@ export class Archiver extends Readable{
                 [Zlib.constants.BROTLI_PARAM_QUALITY]: 7
             }
         })
-        
+
         this.push(data)
         this._blocks.push({
             number: this._blocks.length,
@@ -232,7 +245,7 @@ export class Archiver extends Readable{
     _gcompressGzip(){
         let bytes = Buffer.concat(this._buf.splice(0, this._buf.length))
         let data = Zlib.gzipSync(bytes)
-        
+
         this.push(data)
         this._blocks.push({
             number: this._blocks.length,
@@ -247,7 +260,7 @@ export class Archiver extends Readable{
     }
 
     async _compressStream(streamin){
-        let gcompress = undefined 
+        let gcompress = undefined
         if(this.method == "zstd"){
             if(!this._zstd){
                 let def = new async.Deferred<any>()
@@ -277,9 +290,9 @@ export class Archiver extends Readable{
         let compressedLength = 0, uncompressedLength = 0
         let portion = 4*1024*1024
         let buf = this._buf
-        streamin.on("data", (b)=>{   
+        streamin.on("data", (b)=>{
             buf.push(b)
-            this._workingLength += b.length 
+            this._workingLength += b.length
             this._uncompressedLength += b.length
             uncompressedLength += b.length
             if(this._workingLength >= portion){
@@ -287,9 +300,9 @@ export class Archiver extends Readable{
             }
         })
         let def = new async.Deferred<void>()
-        streamin.on("error", (e)=>{   
+        streamin.on("error", (e)=>{
             def.reject(e)
-        })        
+        })
         streamin.on("end",()=>{
             //gcompress()
             def.resolve()

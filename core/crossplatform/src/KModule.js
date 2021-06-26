@@ -855,7 +855,7 @@ var builtinModules = _module.builtinModules;
 
 			json = Next().transpile(source, transpilerOptions)
 			delete json.options
-			if (options.injectImport) {
+			if (!json.ignore && options.injectImport) {
 
 				imports = changeSource(json.code)
 
@@ -1237,7 +1237,6 @@ Mod._writeCache = function (cache, file, data) {
 			atimeMs: Date.now()
 		}
 	}
-
 	content[file] = d
 	content = JSON.stringify(content)
 	if (allowCacheCompress == "gzip") {
@@ -1334,7 +1333,8 @@ Mod.compileSync = function (file, options) {
 				// str= JSON.stringify(ast)
 				// fs.writeFileSync(cached2, str)
 
-				Mod._writeCache(cached2, file, ast)
+				if(!ast.ignore)
+					Mod._writeCache(cached2, file, ast)
 
 				delete ast.options
 				ast.time = Date.now()
@@ -2006,9 +2006,9 @@ var helper = {
 		var actioner = function (value1) {
 			var dir, content
 			cache_file = value1
+
 			try {
 				dir = Path.dirname(value1)
-
 				if (!fs.existsSync(dir)) {
 					fs.mkdirSync(dir)
 				}
@@ -2299,7 +2299,9 @@ var helper = {
 		if (cachedata && cachedata.stats && cachedata.stats[1] && cachedata.stats[1].mtimeMs > Date.now()) {
 			data.time = cachedata.stats[1].mtimeMs + 1000
 		}*/
-		Mod._writeCache(cachedata, filename, data)
+		if(!data.ignore)
+			Mod._writeCache(cachedata, filename, data)
+
 		if (cachedata && cachedata.stats && cachedata.stats[1]) {
 			data.time = cachedata.stats[1].mtimeMs
 		}
@@ -2444,305 +2446,7 @@ Mod.compile = function (file, options) {
 }
 
 
-/** Transpile modern es2017 code to old javascript */
-/*
-Mod.compile= function(file, options){
-	var source= ''
-	options= createDefault(options)
-	source= options.source
-	if(options.injectImport === undefined){
-		options.injectImport= Mod.__injected
-	}
 
-	var uri= validateFileUrl(file)
-	if(uri.protocol == "file:"){
-		file= Url.fileURLToPath(Url.format(uri))
-		file= Path.normalize(file)
-	}
-
-	var basename= uri.pathname
-	var transpilerOptions, cached1, cached2, fromHttp
-	if (uri.protocol && uri.protocol != "file:") {
-		fromHttp= true // remote
-	}
-
-	var json, stat, statc, str, ucached, isjson, vfile
-
-	vfile= Mod._virtualfile[file]
-	if(vfile){
-		if(typeof vfile == "function")
-			vfile= vfile()
-		if(!(vfile.stat.mtime instanceof Date))
-			vfile.stat.mtime= new Date(vfile.stat.mtime)
-	}
-
-
-
-	var readRemote= function(){
-
-		if(uri.protocol == "http:" || uri.protocol== "https:"){
-			return readHttp.apply(this, arguments)
-		}else if(uri.protocol == "npm:"){
-			return readNpm.apply(this, arguments)
-		}
-		else if(uri.protocol == "npmi:"){
-			throw new Error("Not implemented")
-		}
-	}
-
-	var getstat= function(file, callback){
-		if(vfile){
-			return callback(null, vfile.stat)
-		}else{
-			return fs.stat(file, callback)
-		}
-	}
-
-	var readfile= function(file, callback){
-
-
-		if(vfile){
-			return callback(null, vfile.content.toString())
-		}
-		else{
-			return fs.readFile(file, 'utf8', callback)
-		}
-	}
-
-
-	var promise= new Promise(function(resolv, reject){
-
-		var resolve= function(value){
-			if(value){
-				value.time= Date.now()
-				Mod._cache[file]= value
-			}
-			return resolv(value)
-		}
-		var action= ''
-		var f
-		var ug = function (err, value) {
-
-			if(!action){
-
-				action= 'cached3'
-				return getCachedFilename(uri, options).then(function(val){
-					cached2= val
-					cached1= Path.dirname(val)
-					return f()
-				}).catch(reject)
-
-			}
-
-			else if(action == "cached"){
-
-				action = "cached3"
-				if (err) {
-					fs.mkdir(cached, f)
-				}
-				return f()
-
-			}
-
-			else if(action == "cached3"){
-				action = "cached4"
-				return fs.access(cached2, fs.constants.F_OK, f)
-			}
-			else if(action == "cached4"){
-				if(!err){
-					action= "stat"
-				}
-				else{
-					action= "compile"
-				}
-			}
-			else if(action == "stat"){
-				if(err)
-					return reject(err)
-
-				if(uri.protocol && uri.protocol.startsWith("npm")){
-					action= "transpile"
-					value=  readRemote(file)
-					if(value.then){
-
-						return value.then(function (value) {
-							return f(null, value)
-						}).catch(reject)
-					}
-					else{
-						return f(null, value)
-					}
-				}
-
-				ucached= Mod._cache[file]
-				if(ucached &&  (Date.now() - ucached.time <= Mod.cachetime)){
-					if(options.ignoreonunchanged)
-						return resolv(null)
-					return resolv(ucached)
-				}
-
-				action= 'stat2'
-				return fs.stat(cached2, f)
-			}
-			else if (action == "stat2") {
-				if (err)
-					return reject(err)
-
-				action = 'compare'
-				statc = value
-				if(fromHttp && !options.force){
-					return f(null, statc)
-				}
-				else if(fromHttp && options.force){
-					return f(null, {
-						mtime: new Date()
-					})
-				}
-
-				if(options.force){
-					return f(null, {
-						mtime: new Date()
-					})
-				}
-				return getstat(file, f)
-			}
-
-			else if (action == "compare") {
-				if (err)
-					if(!source)
-						return reject(err)
-					else
-						stat= {mtime:new Date(options.mtime)}
-
-				stat = value
-				if(stat.mtime.getTime() > statc.mtime.getTime()){
-					action= "compile"
-					return f()
-				}
-				else{
-
-					if(options.ignoreonunchanged){
-						if(!ucached || ucached.time < stat.mtime.getTime()){
-							action = "json"
-							return fs.readFile(cached2, 'utf8', f)
-						}
-
-						return resolve(null)
-					}
-
-
-					// good, return the cached
-					action= "json"
-					return fs.readFile(cached2, 'utf8', f)
-
-				}
-			}
-			else if (action == "json") {
-				if (err) {
-					return reject(err)
-				}
-				try{
-					json= JSON.parse(value)
-				}catch(e){
-					action= "compile"
-					return f(null)
-				}
-				return resolve(json)
-			}
-			else if(action == "compile"){
-				if (err) {
-					return reject(err)
-				}
-
-				action= "transpile"
-				if(source){
-					return f(null, source)
-				}else{
-
-					if(fromHttp){
-						if (!process.env.DISABLE_COMPILATION_INFO) {
-							if(!file.startsWith("npm"))
-								console.info("Downloading: " + file + " ...")
-						}
-
-						value=  readRemote(file)
-						if(value.then){
-
-							return value.then(function (value) {
-								return f(null, value)
-							}).catch(reject)
-						}
-						else{
-							return f(null, value)
-						}
-					}
-					return readfile(file, f)
-				}
-			}
-			else if (action == "transpile") {
-				if (err) {
-					return reject(err)
-				}
-				if(!process.env.DISABLE_COMPILATION_INFO){
-					if(!file.startsWith("npm"))
-						console.info("Compiling file: " + file)
-				}
-
-				if(value.redirect){
-					// forget this and compile other URL
-					return resolve(value)
-				}
-				else if(value.type){
-					if(value.name)
-						basename= value.name
-					isjson= value.type.startsWith("application/json")
-					value= value.code
-				}
-				else{
-					isjson= file.endsWith(".json")
-				}
-
-				if(isjson){
-					json={
-						code: "module.exports= " + value
-					}
-				}
-				else{
-
-					if(vfile && vfile.transpiled){
-
-						options.transpile= false
-					}
-
-
-					json= transpile(file, basename, value, options)
-				}
-				str= JSON.stringify(json,null,'\t')
-				action= "writecache"
-				fs.writeFile(cached2, str, f)
-			}
-			else if (action == "writecache") {
-				if(err){
-					return reject(err)
-				}
-				// good return result
-				return resolve(json)
-			}
-			return f()
-		}
-		f= function(err, data){
-			try{
-				ug(err,data)
-			}catch(e){
-
-				return reject(e)
-			}
-		}
-		f()
-	})
-	return promise
-}
-*/
 
 
 module.exports = Mod
