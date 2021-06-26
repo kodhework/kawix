@@ -85,7 +85,7 @@ export class Runtime {
 					return null
 				}
 				if (cachedata.data) {
-					fs.writeFileSync(Path.join(folder, "time"), Date.now().toString())
+					try{ fs.writeFileSync(Path.join(folder, "time"), Date.now().toString()) } catch(e){}
 					return cachedata.data
 				}
 			}
@@ -104,7 +104,7 @@ export class Runtime {
 			return null
 		}
 		if (cachedata.data) {
-			fs.writeFileSync(Path.join(folder, "time"), Date.now().toString())
+			try{ fs.writeFileSync(Path.join(folder, "time"), Date.now().toString()) }catch(e){}
 			return cachedata.data
 		}
 
