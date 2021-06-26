@@ -693,8 +693,7 @@ var builtinModules = _module.builtinModules;
 				return resolve(continue3(moduledesc))
 			}
 			var continue1 = function () {
-				if (!process.env.DISABLE_COMPILATION_INFO) {
-
+				if (process.env.ENABLE_COMPILATION_INFO == 1) {
 					console.info("\x1b[32m[kawix] NPM Module:", "\x1b[0m", url)
 				}
 				Mod._npmImport.resolve(module, {
@@ -2381,7 +2380,7 @@ var helper = {
 					if (source.redirect) {
 						return def.resolve(source)
 					}
-					if (!file.startsWith("npm:") && process.env.ENABLE_COMPILATION_INFO == 1) {
+					if (!file.startsWith("npm:") && (process.env.ENABLE_COMPILATION_INFO == 1)) {
 						console.info("\x1b[32m[kawix] Compile:", "\x1b[0m", file)
 					}
 
