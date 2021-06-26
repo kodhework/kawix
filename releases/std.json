@@ -138,6 +138,10 @@
 	{
 		"version": "1.0.1",
 		"branch": "std1.0.1"
+	},
+	{
+		"version": "1.0.2",
+		"branch": "std1.0.2"
 	}
 
 ]
