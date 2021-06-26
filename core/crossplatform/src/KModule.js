@@ -2381,7 +2381,7 @@ var helper = {
 					if (source.redirect) {
 						return def.resolve(source)
 					}
-					if (!file.startsWith("npm:") && process.env.DISABLE_COMPILATION_INFO != 1) {
+					if (!file.startsWith("npm:") && process.env.ENABLE_COMPILATION_INFO == 1) {
 						console.info("\x1b[32m[kawix] Compile:", "\x1b[0m", file)
 					}
 
