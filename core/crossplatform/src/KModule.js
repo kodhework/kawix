@@ -854,7 +854,7 @@ var builtinModules = _module.builtinModules;
 
 			json = Next().transpile(source, transpilerOptions)
 			delete json.options
-			if (!json.ignore && options.injectImport) {
+			if (options.injectImport) {
 
 				imports = changeSource(json.code)
 
