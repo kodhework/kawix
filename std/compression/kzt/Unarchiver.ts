@@ -22,6 +22,8 @@ export class Unarchiver{
 
     method = "zstd"
 	props = {}
+
+	$disposed = false 
 	$propJson = ''
 
 	constructor(file:string){
@@ -51,12 +53,15 @@ export class Unarchiver{
 
 
     async dispose(){
-        if(this._fd){
-            await fs.closeAsync(this._fd)
-        }
-        if(this._tempfile){
-            await fs.unlinkAsync(this.file)
-        }
+		if(!this.$disposed){
+	        if(this._fd){
+	            await fs.closeAsync(this._fd)
+	        }
+	        if(this._tempfile){
+	            await fs.unlinkAsync(this.file)
+	        }
+			this.$disposed = true
+		}
     }
 
 	async open(){

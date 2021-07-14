@@ -73,44 +73,57 @@ export class Runtime {
 				name = "folder"
 
 
+				try{
+					mainjs = "/virtual/KWA-HASH/" + hash
+					kwcore.KModule._virtualfile[mainjs] = {
+						content: '',
+						stat:  options.stat
+					}
+					cachedata = await helper.getCachedData(mainjs, this.filenameToUrl(mainjs), options)
 
-				mainjs = "/virtual/KWA-HASH/" + hash
-				kwcore.KModule._virtualfile[mainjs] = {
-					content: '',
-					stat:  options.stat
+					cache_pkg = Path.join(Path.dirname(cachedata.file), "..", "KWA.hash")
+					folder = Path.join(cache_pkg, hash)
+					if(!fs.existsSync(folder)) fs.mkdirSync(folder)
+
+
+					if (cachedata.unchanged) {
+						return null
+					}
+					if (cachedata.data) {
+						try{ fs.writeFileSync(Path.join(folder, "time"), Date.now().toString()) } catch(e){}
+						return cachedata.data
+					}
 				}
-				cachedata = await helper.getCachedData(mainjs, this.filenameToUrl(mainjs), options)
-
-				cache_pkg = Path.join(Path.dirname(cachedata.file), "..", "KWA.hash")
-				folder = Path.join(cache_pkg, hash)
-				if(!fs.existsSync(folder)) fs.mkdirSync(folder)
-
-				
-				if (cachedata.unchanged) {
-					return null
+				catch(e){
+					throw e
 				}
-				if (cachedata.data) {
-					try{ fs.writeFileSync(Path.join(folder, "time"), Date.now().toString()) } catch(e){}
-					return cachedata.data
+				finally{
+					if(unarchiver) await unarchiver.dispose()
 				}
 			}
 		}
 
-		if(!cachedata)
-			cachedata = await helper.getCachedData(filename, uri, options)
+		try{
+			if(!cachedata)
+				cachedata = await helper.getCachedData(filename, uri, options)
 
-		if(!cache_pkg)
-			cache_pkg = Path.join(Path.dirname(cachedata.file), "..", "KWA.hash")
+			if(!cache_pkg)
+				cache_pkg = Path.join(Path.dirname(cachedata.file), "..", "KWA.hash")
 
-		if(!folder)
-			folder = Path.join(cache_pkg, "P-" + Path.basename(cachedata.file))
+			if(!folder)
+				folder = Path.join(cache_pkg, "P-" + Path.basename(cachedata.file))
 
-		if (cachedata.unchanged) {
-			return null
-		}
-		if (cachedata.data) {
-			try{ fs.writeFileSync(Path.join(folder, "time"), Date.now().toString()) }catch(e){}
-			return cachedata.data
+			if (cachedata.unchanged) {
+				return null
+			}
+			if (cachedata.data) {
+				try{ fs.writeFileSync(Path.join(folder, "time"), Date.now().toString()) }catch(e){}
+				return cachedata.data
+			}
+		}catch(e){
+			throw e
+		}finally{
+			if(unarchiver) await unarchiver.dispose()
 		}
 
 		if (!fs.existsSync(cache_pkg)) {
