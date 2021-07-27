@@ -57,6 +57,8 @@ export interface Context{
 
 export interface Request{
     server?: DhsServer,
+    handled?: boolean,
+    head?:any
     request?: IncomingMessage
     response?: ServerResponse
     reply?: Reply

@@ -186,7 +186,7 @@ generate1= (params)->
 
 							if currentid < id
 								await fs.writeFileAsync(outp, await fs.readFileAsync(fname))
-								await fs.writeFileAsync(outr, id)
+								await fs.writeFileAsync(outr, String(id))
 
 							return
 								path: outp

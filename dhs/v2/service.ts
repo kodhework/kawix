@@ -154,7 +154,10 @@ export class Service extends EventEmitter{
                         for(let i=0;i<keys.length;i++){
                             let worker = workers.get(keys[i])
                             if(worker.type == "fork"){
-                                process.kill(worker.pid, code)
+                                let cdesc = this.$clusters.get(worker.pid)
+                                if(cdesc)
+                                    cdesc.finished = true 
+                                process.kill(worker.pid, 'SIGKILL')
                             }
                         }
                         setTimeout(function(){
