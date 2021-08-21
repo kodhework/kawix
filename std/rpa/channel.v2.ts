@@ -18,12 +18,12 @@ interface RPATarget {
 
 
 export class RPAHandler{
-    
-    channel: Channel 
+
+    channel: Channel
     socket: Socket
     constructor(channel, socket ){
-        this.channel = channel 
-        this.socket= socket 
+        this.channel = channel
+        this.socket= socket
     }
 
     set(target: any, prop: string, value:any) {
@@ -38,14 +38,14 @@ export class RPAHandler{
 
 
     get(target: any, prop: string){
-        var self= this 
+        var self= this
         if(!target.$map){
             target.$map = {}
         }
-        
+
         if(target.hasOwnProperty(prop))
             return target[prop]
-        
+
         if(prop == "then") return undefined
         if(prop == "catch") return undefined
 
@@ -53,7 +53,7 @@ export class RPAHandler{
         let props = [...(target.$props||[])]
         props.push(prop)
         let value = this.channel.$genProxy(null, {rpa_id: target.$rpaData.id}, this, props)
-        return target[prop]= value 
+        return target[prop]= value
     }
 
 
@@ -70,7 +70,7 @@ let currentIdN = 0
 export class Channel extends EventEmitter{
 
     serialization = "mixed"
-    $tasks = new Map() 
+    $tasks = new Map()
     $taskPrefix = currentId + "-"  + (currentIdN++).toString() + "-"
     $taskId = 0
 
@@ -80,8 +80,8 @@ export class Channel extends EventEmitter{
     taskid = Date.now()
 
     $net: Net.Server
-    cid: string 
-    client: any 
+    cid: string
+    client: any
 
 
     constructor(id){
@@ -121,7 +121,7 @@ export class Channel extends EventEmitter{
         let socket = await this.getSocket()
         this.$net = socket
         this.$net.on("close", ()=> this.emit("close"))
-        this.$connection(socket)        
+        this.$connection(socket)
         this.client = this.$getArgument(socket, {
             rpa_id: "R>0",
             rpa_from: true
@@ -225,7 +225,7 @@ export class Channel extends EventEmitter{
         net.listen(listen)
         this.$net = net
         await def.promise
-        
+
         def = null
     }
 
@@ -254,7 +254,7 @@ export class Channel extends EventEmitter{
         }
         this.$vars.delete("R>0")
         this.$vars.set("R>0", newservice)
-        
+
     }
 
     async connectRemote(port: number, host: string) {
@@ -284,7 +284,7 @@ export class Channel extends EventEmitter{
 
         try {
 
-            
+
             let cl = this.$getArgument(socket, {
                 rpa_id: "R>0",
                 rpa_from: true
@@ -318,7 +318,7 @@ export class Channel extends EventEmitter{
             refs: {}
         }
         socket.on("close", () => {
-            // reject all tasks 
+            // reject all tasks
             let tasks = socket.store.tasks
             if (tasks) {
                 let ex = Exception.create("RPA connection was destroyed").putCode("RPA_DESTROYED")
@@ -333,7 +333,7 @@ export class Channel extends EventEmitter{
                         this.unRef(id)
                 }
             }
-            delete socket.store 
+            delete socket.store
         })
         socket.on("error", function () { })
     }
@@ -346,8 +346,8 @@ export class Channel extends EventEmitter{
         let id = (store ? store.id : "") + "R>" + (store ? store.count++ : this.$id++)
         this.$vars.set(id, object)
         if(store){
-            store.refs[id] = true 
-            store.count ++ 
+            store.refs[id] = true
+            store.count ++
         }
         return id
     }
@@ -356,9 +356,9 @@ export class Channel extends EventEmitter{
         let obj = this.$getArgument(socket, target)
         let args = this.$getArguments(socket, params)
         if(obj){
-            let main = obj 
+            let main = obj
             for(let i=0;i<props.length;i++){
-                main = obj 
+                main = obj
                 obj = obj[props[i]]
             }
             if(!obj){
@@ -368,7 +368,7 @@ export class Channel extends EventEmitter{
             //console.info(obj)
             if(obj.apply){
                 return obj.apply(main, args)
-                
+
             }
             else{
                 if(args.length){
@@ -376,7 +376,7 @@ export class Channel extends EventEmitter{
                 }
                 return obj
             }
-            
+
         }
         throw Exception.create(`Object ${JSON.stringify(target)} not found`).putCode("RPA_OBJECT_NOT_FOUND")
 
@@ -392,20 +392,20 @@ export class Channel extends EventEmitter{
                 if(response instanceof Promise){
                     response = await response
                 }
-                
+
                 let obj = this.$getArgument(socket, cmd.target)
                 if(obj == response){
-                    
+
                     response = {
                         rpa_id: cmd.target.rpa_id,
-                        rpa_from: true 
+                        rpa_from: true
                     }
                 }
                 else{
                     response = this.$convertArgument(response , this.serialization, socket.store)
                 }
             }catch(e){
-                er= true 
+                er= true
                 response = {
                     message:e.message,
                     code: e.code,
@@ -426,14 +426,14 @@ export class Channel extends EventEmitter{
                 this.$tasks.delete(cmd.taskid)
                 if(cmd.errored){
                     let e = Exception.create(cmd.value.message).putCode(cmd.value.code)
-                    e.stack = cmd.value.stack 
+                    e.stack = cmd.value.stack
                     task.reject(e)
                 }
                 else{
                     let value = this.$getArgument(socket, cmd.value)
                     task.resolve(value)
                 }
-            }            
+            }
         }
     }
 
@@ -456,6 +456,7 @@ export class Channel extends EventEmitter{
         let def = new async.Deferred<any>()
         this.$tasks.set(taskid, def)
         let data = JSON.stringify(command)+"\n"
+        //console.info(data)
         socket.write(data)
 
         return def.promise
@@ -465,7 +466,7 @@ export class Channel extends EventEmitter{
         for(let i=0;i<args.length;i++){
             args[i] = this.$getArgument(socket, args[i])
         }
-        return args 
+        return args
     }
 
     $getArgument(socket, arg){
@@ -479,7 +480,7 @@ export class Channel extends EventEmitter{
             }
             else if(arg.rpa_id){
                 if(arg.rpa_from){
-                    // generate Proxy? 
+                    // generate Proxy?
                     // TODO
                     return this.$genProxy(socket, arg)
                 }
@@ -497,14 +498,14 @@ export class Channel extends EventEmitter{
                 }
             }
         }
-        return arg 
+        return arg
     }
 
     $genProxy(socket, arg, handler: RPAHandler = null, props: string[] = undefined){
         if(!handler){
             handler = new RPAHandler(this, socket)
         }
-        let value = function(){            
+        let value = function(){
             return handler.channel.$sendExecute({
                 socket: handler.socket,
                 rpa: value.$rpaData,
@@ -520,7 +521,7 @@ export class Channel extends EventEmitter{
         value.$props = props || []
 
         return new Proxy(value, handler)
-        
+
     }
 
 
@@ -528,7 +529,7 @@ export class Channel extends EventEmitter{
         for(let i=0;i<args.length;i++){
             args[i] = this.$convertArgument(args[i])
         }
-        return args 
+        return args
     }
 
     $convertArgument(arg, serialization = 'mixed', store = null){
@@ -537,7 +538,7 @@ export class Channel extends EventEmitter{
         if(arg instanceof Date){
             return {
                 rpa_type: "date",
-                time: arg.getTime() 
+                time: arg.getTime()
             }
         }
 
@@ -548,7 +549,7 @@ export class Channel extends EventEmitter{
             }
         }
 
-        if(serialization == "plain") return arg 
+        if(serialization == "plain") return arg
         if(serialization == "proxy"){
             let id = this.$addVariable(arg, store)
             return {
@@ -562,22 +563,22 @@ export class Channel extends EventEmitter{
         }
 
         if(typeof arg != "object"){
-            return arg 
+            return arg
         }
 
         if(arg){
             if(arg.rpa_plain){
                 if(typeof arg.rpa_plain == "object")
-                    return arg.rpa_plain 
-                else 
-                    return arg 
+                    return arg.rpa_plain
+                else
+                    return arg
             }
 
             if(arg.rpa_proxied){
                 if(typeof arg.rpa_proxied == "object")
-                    return arg.rpa_proxied 
-                else 
-                    return arg 
+                    return arg.rpa_proxied
+                else
+                    return arg
             }
 
             if(Object.getPrototypeOf(arg) == Object.prototype){
@@ -590,20 +591,20 @@ export class Channel extends EventEmitter{
                         narg[id] = this.$convertArgument(arg[id], serialization, store)
                     }
                 }
-                return narg 
+                return narg
             }
             else if(Object.getPrototypeOf(arg) == Array.prototype){
                 let narg = []
                 for(let i=0;i<arg.length;i++){
                     narg[i] = this.$convertArgument(arg[i], serialization, store)
                 }
-                return narg 
+                return narg
             }
-        
+
 
             return this.$convertArgument(arg, "proxy", store)
         }
-        
+
         return arg
     }
 
@@ -623,12 +624,12 @@ export class Channel extends EventEmitter{
 
     }
 
-    
+
 
 
     static async registerRemote(cid: string, service: any, port: number, hostname?: string) {
 
-        let channel = new Channel(cid)        
+        let channel = new Channel(cid)
         //channel.service = service
         channel.$addVariable(service)
         await channel.registerRemote(port, hostname)
@@ -639,7 +640,7 @@ export class Channel extends EventEmitter{
 
     static async connectLocal(cid: string) {
 
-        let channel = new Channel(cid)    
+        let channel = new Channel(cid)
         await channel.connectLocal()
         return channel
 
@@ -648,7 +649,7 @@ export class Channel extends EventEmitter{
 
     static async connectRemote(cid: string, port: number, host: string) {
 
-        let channel = new Channel(cid)        
+        let channel = new Channel(cid)
         await channel.connectRemote(port, host)
         return channel
 
