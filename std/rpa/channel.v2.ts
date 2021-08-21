@@ -21,6 +21,7 @@ export class RPAHandler{
 
     channel: Channel
     socket: Socket
+
     constructor(channel, socket ){
         this.channel = channel
         this.socket= socket
@@ -55,8 +56,6 @@ export class RPAHandler{
         let value = this.channel.$genProxy(null, {rpa_id: target.$rpaData.id}, this, props)
         return target[prop]= value
     }
-
-
 
 }
 //RPAHandler  = new RPAObject()
@@ -339,6 +338,7 @@ export class Channel extends EventEmitter{
     }
 
     unRef(id){
+        this.$vars.set(id, null)
         this.$vars.delete(id)
     }
 
@@ -515,13 +515,12 @@ export class Channel extends EventEmitter{
         }
         value.rpa_preserve = function(){}
         value.rpa_unref = ()=>{
+            this.$vars.set(arg.rpa_id, null)
             this.$vars.delete(arg.rpa_id)
         }
         value.$rpaData = {id: arg.rpa_id}
         value.$props = props || []
-
         return new Proxy(value, handler)
-
     }
 
 
@@ -533,7 +532,6 @@ export class Channel extends EventEmitter{
     }
 
     $convertArgument(arg, serialization = 'mixed', store = null){
-
 
         if(arg instanceof Date){
             return {

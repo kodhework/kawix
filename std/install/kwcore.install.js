@@ -25,6 +25,7 @@ var writePath = function (dir) {
 	}
 
 
+	/** SUPPORT ZSH SHELL */
 	file = Path.join(Os.homedir(), ".zshrc")
 	if (process.getuid() == 0) {
 		file = "/etc/zsh/zshrc"
@@ -32,7 +33,26 @@ var writePath = function (dir) {
 			fs.mkdirSync("/etc/zsh")
 		}
 	}
-	var content = ''
+	content = ''
+	if (fs.existsSync(file)) {
+		content = fs.readFileSync(file, 'utf8')
+	}
+	if (content.indexOf(newline) < 0) {
+		fs.writeFileSync(file, content + newline + "\"\n")
+	}
+	
+
+	/** SUPPORT FISH SHELL */
+	file = Path.join(Os.homedir(), ".config/fish")
+	if(!fs.existsSync(file)) fs.mkdirSync(file)
+	file = Path.join(file, "config.fish")
+	if (process.getuid() == 0) {
+		file = "/etc/fish/config.fish"
+		if(!fs.existsSync("/etc/fish")){
+			fs.mkdirSync("/etc/fish")
+		}
+	}
+	content = ''
 	if (fs.existsSync(file)) {
 		content = fs.readFileSync(file, 'utf8')
 	}
@@ -41,7 +61,7 @@ var writePath = function (dir) {
 	}
 
 
-
+	/** DEFAULT SHELL --- */
 	if (process.getuid() != 0) {
 		file = Path.join(Os.homedir(), ".profile")
 	}

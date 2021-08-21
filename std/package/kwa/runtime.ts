@@ -64,6 +64,9 @@ export class Runtime {
 		let cachedata = null,  name = Path.basename(filename).substring(0, 60), mainjs = ''
 		let cache_pkg = '', folder = ''
 		let unarchiver = undefined
+		let dispose = false
+
+
 		if (options.compression == "kzt") {
 			unarchiver = await Unarchiver.fromStream(stream)
 			await unarchiver.readMetadata()
@@ -87,9 +90,11 @@ export class Runtime {
 
 
 					if (cachedata.unchanged) {
+						dispose = true
 						return null
 					}
 					if (cachedata.data) {
+						dispose = true
 						try{ fs.writeFileSync(Path.join(folder, "time"), Date.now().toString()) } catch(e){}
 						return cachedata.data
 					}
@@ -98,11 +103,11 @@ export class Runtime {
 					throw e
 				}
 				finally{
-					if(unarchiver) await unarchiver.dispose()
+					if(unarchiver && dispose) await unarchiver.dispose()
 				}
 			}
 		}
-
+		
 		try{
 			if(!cachedata)
 				cachedata = await helper.getCachedData(filename, uri, options)
@@ -114,16 +119,18 @@ export class Runtime {
 				folder = Path.join(cache_pkg, "P-" + Path.basename(cachedata.file))
 
 			if (cachedata.unchanged) {
+				dispose = true
 				return null
 			}
 			if (cachedata.data) {
+				dispose = true
 				try{ fs.writeFileSync(Path.join(folder, "time"), Date.now().toString()) }catch(e){}
 				return cachedata.data
 			}
 		}catch(e){
 			throw e
 		}finally{
-			if(unarchiver) await unarchiver.dispose()
+			if(unarchiver && dispose) await unarchiver.dispose()
 		}
 
 		if (!fs.existsSync(cache_pkg)) {

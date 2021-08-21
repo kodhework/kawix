@@ -150,6 +150,9 @@
 	{
 		"version": "1.0.4",
 		"branch": "std1.0.4"
+	},
+	{
+		"version": "1.0.5",
+		"branch": "std1.0.5"
 	}
-
 ]

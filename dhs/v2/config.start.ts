@@ -64,7 +64,7 @@ export async function start(config, service){
 
     service.configureStart(init)
     init()
-    console.info("HERE...")
+    //console.info("HERE...")
     /*
     setTimeout(() => {
         return service.restart()

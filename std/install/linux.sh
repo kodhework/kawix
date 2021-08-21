@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 if [ "$EUID" -eq 0 ]
 then
-	export _HOME=/usr/local/Kawix
+	export _HOME=/usr/local/KwRuntime
 else
 	export _HOME="$HOME/Kawix"
 fi
