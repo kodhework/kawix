@@ -13,6 +13,9 @@ This purpose is give the benefits of an advanced loader, will al the features of
 * [@kawix/std](./std) A standard library with some basic utilities and sublibraries
 
 
+## Notice
+
+@kawix/core development stopped and was replaced by ```kwruntime```. Link: [https://github.com/kodhework/kwruntime/core](https://github.com/kwruntime/core)
 
 ## Install runtime
 
