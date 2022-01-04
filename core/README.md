@@ -7,6 +7,13 @@
 **@kawix/core** allows requiring modules in async and more elegant way, and use last features of EcmaScript (for example async/await) without requiring a lot of dependencies, packagers or build scripts
 
 
+## DEPRECATED
+
+Now you can use the new project ```kwruntime``` is similar to ```@kawix/core``` in many aspects, but more modern, better code, more features, and better dependency management.
+
+Go to [https://github.com/kwruntime/core](https://github.com/kwruntime/core)
+
+
 ## More info
 
 Please go to [https://github.com/kodhework/kawix](https://github.com/kodhework/kawix) for see the full **kawix** project
@@ -18,6 +25,15 @@ Please go to [https://github.com/kodhework/kawix](https://github.com/kodhework/k
 * [DOCS.md](https://github.com/kodhework/kawix/blob/master/core/DOCS.md)
 * [CHANGES.md](https://github.com/kodhework/kawix/blob/master/core/CHANGES.md)
 
+
+## Usage from node
+
+```javascript
+require("@kawix/core")
+global.kawix.KModule.import("/path/to/script.ts").then(function(exports){
+	console.info("Result:", exports)
+}).catch(console.error)
+```
 
 ## Do you want contribute?
 

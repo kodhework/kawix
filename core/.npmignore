@@ -5,3 +5,7 @@ package-lock.json
 yarn-lock.json
 example
 dist/kwcore.app.js
+core/bin/old.cli.js
+core/bin/kwcore
+core/bin/kwcorec
+core/bin/kwcore.bat
